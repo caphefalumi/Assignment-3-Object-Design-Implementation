@@ -91,19 +91,22 @@ files (`02a`/`02a2`/`02b`/`02c` and `04a`/`04b`) purely so each figure
 fits on one page in `asm3.typ`; the content is identical, just divided
 at clean menu boundaries.
 
-## Capturing GUI screenshots (optional, run on your own machine)
+## GUI screenshots (report evidence)
 
-`tools/java/smartfm/ui/gui/ScreenshotDriver.java` drives the real GUI
-through the same five scenarios as the CLI transcripts and saves a
-screenshot of only the application window (never the full desktop)
-after each step, to `screenshots/`. It is not part of the shipped
-application. To run it:
+`implementation/screenshots/` contains 26 PNG images generated from the real
+Swing application and embedded selectively in `asm3.typ`. The capture helper
+renders the Swing frame directly, so each image contains only SmartFM—not the
+rest of the desktop. The driver performs the same button actions and controller
+calls as a user, then exits automatically.
+
+To regenerate the evidence on a JDK 17 machine:
 
 ```
+# Compile production classes first, then compile/run the tool.
 javac -d target/tools-classes -cp target/classes -encoding UTF-8 tools/java/smartfm/ui/gui/ScreenshotDriver.java
 java -cp "target/classes;target/tools-classes" smartfm.ui.gui.ScreenshotDriver
 ```
 
-Run this on a machine where no other window is likely to be brought to
-the foreground during the ~10 second capture sequence, and check each
-screenshot before using it as evidence.
+The tool resets only the local `data/smartfm-store.dat` demonstration snapshot
+before producing the files. In a POSIX shell with GNU Make, `make screenshots`
+performs the equivalent workflow.

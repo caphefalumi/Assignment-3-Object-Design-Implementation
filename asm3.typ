@@ -243,6 +243,20 @@ The following four diagrams specify the selected implemented use cases. They are
   caption: [UC-05: billing and payment. `PaymentProcessor` validates the amount before strategy/gateway processing; a receipt is issued only after settlement.],
 ) <fig-seq-payment>
 
+#heading(level: 2, numbering: none)[2.5 Justification of changes and non-changes]
+
+#heading(level: 3, numbering: none)[2.5.1 Class-level changes and non-changes]
+
+The fourteen core entity classes from Assignment 2 (`Customer`, `Order`, `Consignment`, `Shipment`, `Vehicle`, `Driver`, `Branch`, `ServiceOffering`, `PricingTariff`, `Invoice`, `Payment`, `Receipt`, and the `Person`/`StaffMember` hierarchy) remain in the implemented design with their original information-expert responsibilities. The four State hierarchies and the `IPaymentGateway`, `IPaymentStrategy`, `IPricingStrategy`, and `ITelemetrySource` contracts also remain. The implementation adds only the classes that Assignment 2 explicitly deferred or left abstract: `DataStore`, concrete payment/telemetry adapters, `Bootstrap`, listener interfaces, and boundary classes for the CLI/Swing UI. `Report` remains in the Assignment 2 design but is deliberately deferred; it is not represented as an implemented feature.
+
+#heading(level: 3, numbering: none)[2.5.2 Responsibilities and collaborators]
+
+The responsibility allocation is preserved: entities own information and local invariants; controllers coordinate system operations; boundaries gather/display information. The material collaborator change is that every controller receives `DataStore` as an infrastructure collaborator so durable state can be saved without giving persistence responsibilities to domain entities. The former narrative observer callbacks are explicit listener interfaces, so `OrderProcessor` depends on `OrderApprovedListener`/`InvoiceCreatedListener`, not concrete dispatch/payment classes. `DispatchManager.onOrderApproved` only observes availability of work; the dispatcher still supplies the vehicle and driver in the explicit `assignShipment` operation.
+
+#heading(level: 3, numbering: none)[2.5.3 Dynamic aspects: bootstrap and interactions]
+
+`Bootstrap` now has two deterministic paths. On a first launch it seeds branches, vehicles, drivers, and services, then saves them. On later launches `DataStore` reloads that snapshot before controllers are recreated and listeners are wired. This makes startup idempotent across separate runs while retaining Assignment 2's dependency-safe construction order. At runtime, approval persists an order and invoice before notification; dispatch persists a shipment before publishing `shipmentAssigned`; and payment creates a receipt only after payment settlement. The four sequence diagrams in Section 2.4 document these orders explicitly. The scenario changes are therefore justified dynamic refinements, not undocumented deviations from Assignment 2.
+
 #heading(level: 1, numbering: none)[#text("3. Design Quality")]
 
 #heading(level: 2, numbering: none)[3.1 Good aspects of the Assignment 2 design]
@@ -257,17 +271,35 @@ The original design deliberately left UI and persistence outside its high-level 
 
 The main ambiguity was the phrase that `DispatchManager` “reacts” to an approved order. Automatic dispatch conflicts with the operational requirement that a human dispatcher selects the vehicle and driver. The revision preserves event awareness but makes allocation an explicit operation. This resolves the ambiguity while retaining the intended Observer decoupling.
 
-#heading(level: 2, numbering: none)[3.3 Architecture quality and lessons learnt]
+#heading(level: 2, numbering: none)[3.3 Flaws or errors in the initial design]
 
-The implemented architecture is layered with an event-driven application/control layer. Downward method-call dependencies run from presentation to application to domain/infrastructure; observer messages coordinate controllers at the application layer. Domain classes never import GUI or application classes, and they do not hold `DataStore` references. This structure makes the Swing UI, CLI, adapter implementations, and persistence mechanism replaceable without rewriting business rules.
+The principal design flaw was the unresolved conflict between automatic and human-controlled dispatch. Assignment 2's bootstrap prose could be interpreted as an automatic response to order approval, whereas the operational requirement requires a dispatcher to choose an appropriate vehicle and driver. A second weakness was that persistence was deferred without even a narrow repository contract, making startup/recovery and save responsibility an implementation-time decision. Neither problem invalidated the core class model, but both required an explicit, justified refinement before the system could operate correctly.
 
-The most important lesson is that state machines and human/automatic decisions must be specified before coding. State diagrams/lifecycle tables avoided later rework; in contrast, the dispatch ambiguity required interpretation. A future iteration should define a persistence interface and UI interaction sketch during high-level design, even if the concrete database/UI toolkit remains undecided. It should also label each observer relationship as either “notify a human decision-maker” or “automate a reaction”.
+#heading(level: 2, numbering: none)[3.4 Level of interpretation required]
+
+The initial design required a low-to-moderate amount of interpretation. Entity responsibilities, State transitions, and the four major controller roles were sufficiently precise to implement directly. Interpretation was required at the UI boundary (field order, inline errors, clear/cancel actions), infrastructure boundary (file persistence and first-run bootstrap), concrete Adapter behaviour, and the dispatch-observer ambiguity. The revision table and Section 2.5 make each interpretation traceable, so the final implementation does not hide an assumption behind code.
+
+#heading(level: 2, numbering: none)[3.5 Architecture style(s): components, connectors, and constraints]
+
+SmartFM uses a *layered architecture* with an *event-driven application/control layer*. Its architectural components are larger than individual classes: (1) the Presentation component (`SmartFmConsoleApp`, `SmartFmMainFrame`, and panels), (2) the Order and Billing component (`OrderProcessor`, `PaymentProcessor`, and their aggregates), (3) the Fleet and Dispatch component (`DispatchManager`, `ShipmentTracker`, and their aggregates), and (4) the Persistence component (`DataStore`).
+
+Two connector types are used. Direct method-call connectors run downward: UI boundaries call controller public operations, controllers coordinate domain objects, and controllers use `DataStore`. Event connectors run within the application layer: order approval/invoice creation and shipment assignment are published to narrow listener interfaces. These connectors permit the order/billing and fleet/dispatch components to cooperate without a publisher depending on a concrete subscriber.
+
+Three constraints preserve the architecture. First, domain classes do not import presentation or application classes. Second, `DataStore` is held by controllers, never by domain entities. Third, listener lists are typed to abstractions such as `OrderApprovedListener`, not `DispatchManager` or `PaymentProcessor`. This gives a replaceable Swing/CLI boundary, persistence indirection, and low cross-component coupling.
+
+#heading(level: 2, numbering: none)[3.6 Lessons learnt]
+
+The most important lesson is that state machines and human/automatic decisions should be specified before coding. State tables avoided later rework; in contrast, the dispatch ambiguity required interpretation. Future high-level OO designs should include a small persistence contract and a UI interaction sketch even if technology choices remain open. They should also label each observer relationship as either “notify a human decision-maker” or “automate a reaction”, and include the bootstrap/restart path as a first-class dynamic scenario.
 
 #heading(level: 1, numbering: none)[#text("4. Implementation and Testing")]
 
 #heading(level: 2, numbering: none)[4.1 Mapping design to code]
 
 SmartFM is implemented in Java 17 in a Maven-standard structure. The following mapping demonstrates that the classes and calls in the selected sequence diagrams match code rather than a separate conceptual design.
+
+*Professional coding standard.* The source follows the Google Java Style Guide @google2023javastyle as the project coding standard: `UpperCamelCase` type names, `lowerCamelCase` members, one public top-level type per source file, consistently braced control flow, descriptive package names, and concise Javadoc for non-obvious public classes/operations. The Maven-standard package layout and `-Xlint:all` compilation check complement that manual code-style review. No formatter plugin is claimed where none is configured.
+
+*Development and test platform.* Development and evidence capture were performed in the Kiro IDE (VS Code-based) on Windows (`win32`) using PowerShell 7.6.0 and Microsoft OpenJDK 17.0.19 LTS. The application requires only a Java 17+ JDK at runtime; Maven 3.x or GNU Make is optional because the documented `javac` fallback is available.
 
 #figure(
   styled-table((2.0fr, 2.65fr, 3.8fr), (
@@ -310,7 +342,7 @@ java -jar target/smartfm.jar
 java -jar target/smartfm.jar --cli
 ```) 
 
-The first command compiles production code, runs Maven tests when present, and creates `target/smartfm.jar`. The second launches the graphical interface; the third launches the CLI.
+The first command compiles the Maven project and runs any future tests placed under `src/test/java`; the submitted verification coverage is the scenario-based evidence in Section 4.3. It then creates `target/smartfm.jar`. The second command launches the graphical interface; the third launches the CLI.
 
 *Using the supplied Makefile:* a GNU Make implementation and JDK 17+ must be available. On Windows, GNU Make can be provided by MSYS2, Git Bash, or WSL. Run:
 
@@ -339,21 +371,64 @@ Data is stored locally in `data/smartfm-store.dat`. Delete this file (or run `ma
   caption: [Compilation evidence from a clean plain-JDK build: all 74 Java source files compile with `-Xlint:all`, zero errors/warnings, exit code 0.],
 ) <fig-compilation>
 
-#heading(level: 3, numbering: none)[GUI and screenshot evidence]
+#heading(level: 3, numbering: none)[GUI execution screenshots]
 
-The GUI opens by default and has Customer Registration, Order Management, Fleet Dispatch, Shipment Tracking, and Billing/Payment tabs. Each panel calls the same controllers identified in @tbl-grasp-controller; no workflow has a GUI-only business-rule implementation. The application was manually smoke-tested by launching `smartfm.ui.Launcher` on the development machine and confirming that all five tabs render.
+The following screenshots were generated by the real Swing application through `tools/java/smartfm/ui/gui/ScreenshotDriver.java`. The driver performs the same button actions and controller calls as a user, and the capture helper renders the Swing frame directly rather than capturing the desktop. Thus every image contains only SmartFM application content. The complete set of 26 images is retained in `implementation/screenshots/`; the representative images below cover every evidence condition required by the specification.
 
-A development-only `ScreenshotDriver` can capture the application window after real GUI interactions:
+#figure(
+  grid(columns: (1fr, 1fr), gutter: 7pt,
+    image("implementation/screenshots/00_home_screen_empty.png", width: 100%),
+    image("implementation/screenshots/01b_customer_registration_validation_errors.png", width: 100%),
+  ),
+  caption: [GUI evidence: empty customer-registration home screen (left) and rejected invalid phone/email input with inline messages (right).],
+) <fig-gui-empty-validation>
 
-#console(```
-make screenshots
-```) 
+#figure(
+  grid(columns: (1fr, 1fr), gutter: 7pt,
+    image("implementation/screenshots/01c_customer_registration_success.png", width: 100%),
+    image("implementation/screenshots/02f_order_management_order_cancelled.png", width: 100%),
+  ),
+  caption: [GUI evidence: accepted customer input and successful account creation (left); a customer change of mind cancels an order without deleting unrelated data (right).],
+) <fig-gui-input-change>
 
-Automated captures from the development machine are intentionally not embedded in this report because they occasionally contained unrelated desktop/browser content. The images were deleted rather than risk submitting private or irrelevant material. This report therefore does not falsely label a diagram as a screenshot. The reproducible CLI transcripts below are the primary runtime evidence; a marker may safely generate and inspect local GUI-only images using the supplied tool before relying on them. This limitation is disclosed because evidence integrity is more important than an unverified image.
+#figure(
+  grid(columns: (1fr, 1fr), gutter: 7pt,
+    image("implementation/screenshots/03d_fleet_dispatch_shipment_created.png", width: 100%),
+    image("implementation/screenshots/04b_shipment_tracking_invalid_transition_rejected.png", width: 100%),
+  ),
+  caption: [GUI evidence: successful vehicle/driver assignment creates a shipment (left); an illegal delivery-before-pickup transition is rejected by the State pattern (right).],
+) <fig-gui-dispatch-tracking-validation>
+
+#figure(
+  grid(columns: (1fr, 1fr), gutter: 7pt,
+    image("implementation/screenshots/04e_shipment_tracking_delivered.png", width: 100%),
+    image("implementation/screenshots/05d_billing_payment_settled.png", width: 100%),
+  ),
+  caption: [GUI evidence: successful delivery transition (left); simulated payment completion, receipt issuance, and a paid invoice (right). No real banking transaction is performed.],
+) <fig-gui-completion>
+
+#figure(
+  image("implementation/screenshots/06_final_state_before_exit.png", width: 75%),
+  caption: [Final application state immediately before normal exit. Closing the window invokes the registered handler, saves the `DataStore` snapshot, and exits; the recorded CLI scenarios independently verify that saved data is restored in a later process.],
+) <fig-gui-exit>
+
+To reproduce the complete screenshot set on a machine with JDK 17 and GNU Make, run `make screenshots` from `implementation/`. The driver resets only the local demonstration data, runs its finite scenario sequence, saves the images, and exits automatically.
 
 #heading(level: 2, numbering: none)[4.3 Testing]
 
 Testing combines compilation with warning checks, scenario-based functional tests, boundary/negative-path tests, and persistence checks. The five scenarios below exercise every selected use case shown in the sequence diagrams. They are replayable by running the files in `scenarios/` in numerical order after resetting the persistent store. Each transcript is captured from a separate CLI process, proving that persisted data is reread between operations.
+
+#figure(
+  styled-table((1.05fr, 2.35fr, 3.05fr, 2.3fr), (
+    th[Scenario], th[User entry and options], th[Validation / change path], th[Completion evidence],
+    [01 Customer], [Open *Register Customer*; enter name, gender, date of birth, phone, email, and address; select *Register Customer*.], [Enter `abc` and `not-an-email`, observe inline errors, correct both in place, and resubmit.], [Customer `CUS-0001` is created; @fig-gui-empty-validation and @fig-gui-input-change.],
+    [02 Order], [Open *Order Management*; select customer/service/origin/destination; enter distance/date and consignment values; add then submit. Dispatcher may approve/reject; customer may cancel.], [Negative weight is rejected. A separate submitted order is selected and cancelled to demonstrate change of mind.], [Approval creates invoice `INV-0001`; cancellation appears in @fig-gui-input-change.],
+    [03 Dispatch], [Open *Fleet Dispatch*; select an approved order, choose available vehicle/driver, then select *Create Shipment*.], [Attempting the action without a selected order is rejected; valid compatible resources are then selected.], [`SHP-0001` is created and tracking is notified; @fig-gui-dispatch-tracking-validation.],
+    [04 Tracking], [Open *Shipment Tracking*; select `SHP-0001`, enter a location, then choose Pickup, In Transit, or Delivery.], [Delivery from Assigned is rejected; the user then selects the legal Pickup -> In Transit -> Delivery sequence.], [Delivered status and final location are shown in @fig-gui-completion.],
+    [05 Payment], [Open *Billing and Payment*; select outstanding invoice; enter amount; select Cash or Card; select *Submit Payment*.], [An amount above the outstanding balance is rejected. A partial cash payment and final card payment are then submitted.], [Simulated processing produces receipts and a Paid invoice; @fig-gui-completion.],
+  )),
+  caption: [Scenario instructions, user options, validation paths, and completion outcomes.],
+) <tbl-scenario-instructions>
 
 #figure(
   styled-table((1.05fr, 2.25fr, 3.35fr, 2.1fr), (

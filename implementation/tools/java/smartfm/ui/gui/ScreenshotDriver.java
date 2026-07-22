@@ -322,7 +322,13 @@ public final class ScreenshotDriver {
   private void shoot(String name) throws Exception {
     pause(120);
     Path path = OUTPUT_DIR.resolve(name + ".png");
-    ScreenshotCapture.capture(frame, path);
+    onEdt(() -> {
+      try {
+        ScreenshotCapture.capture(frame, path);
+      } catch (java.io.IOException exception) {
+        throw new java.io.UncheckedIOException(exception);
+      }
+    });
     shotCounter++;
     System.out.println(shotCounter + ". Captured " + path);
   }

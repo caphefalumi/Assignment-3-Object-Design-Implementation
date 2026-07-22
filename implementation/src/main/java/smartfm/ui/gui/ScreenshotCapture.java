@@ -1,8 +1,6 @@
 package smartfm.ui.gui;
 
-import java.awt.AWTException;
-import java.awt.Rectangle;
-import java.awt.Robot;
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -11,28 +9,31 @@ import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 
 /**
- * Captures a screenshot of exactly one window's on-screen bounds, never
- * the full desktop. Used only by the Assignment 3 evidence-capture
- * driver ({@code ScreenshotDriver}, kept outside the shipped
- * application) to produce genuine GUI screenshots for asm3.typ Part VI
- * without risking capture of unrelated desktop content.
+ * Saves a rendered image of exactly one SmartFM window, never the desktop.
+ *
+ * <p>The evidence driver uses this class instead of {@code Robot} screen
+ * capture. Rendering the Swing frame directly means that another desktop
+ * window cannot appear in an evidence image even if the operating system
+ * changes focus while the scenarios are running.
  */
 public final class ScreenshotCapture {
 
   private ScreenshotCapture() {}
 
-  /** Brings {@code frame} to the foreground and saves a screenshot of only its bounds to {@code pngPath}. */
-  public static void capture(JFrame frame, Path pngPath) throws AWTException, IOException {
-    frame.toFront();
-    frame.requestFocus();
+  /**
+   * Renders {@code frame} into a PNG containing only the application window.
+   * The method is called on the Swing event-dispatch thread by the driver.
+   */
+  public static void capture(JFrame frame, Path pngPath) throws IOException {
+    int width = Math.max(1, frame.getWidth());
+    int height = Math.max(1, frame.getHeight());
+    BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+    Graphics2D graphics = image.createGraphics();
     try {
-      Thread.sleep(200);
-    } catch (InterruptedException ignored) {
-      Thread.currentThread().interrupt();
+      frame.printAll(graphics);
+    } finally {
+      graphics.dispose();
     }
-    Rectangle bounds = frame.getBounds();
-    Robot robot = new Robot();
-    BufferedImage image = robot.createScreenCapture(bounds);
     Files.createDirectories(pngPath.toAbsolutePath().getParent());
     ImageIO.write(image, "png", pngPath.toFile());
   }
