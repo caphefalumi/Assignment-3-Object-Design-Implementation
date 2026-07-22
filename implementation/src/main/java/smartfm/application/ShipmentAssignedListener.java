@@ -1,6 +1,6 @@
 package smartfm.application;
 
-import smartfm.domain.Shipment;
+import smartfm.domain.shipment.Shipment;
 
 /**
  * Observer interface for the shipment-created / resources-assigned

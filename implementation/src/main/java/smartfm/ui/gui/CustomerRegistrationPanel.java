@@ -10,7 +10,7 @@ import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JPanel;
 import smartfm.common.Validators;
-import smartfm.domain.Customer;
+import smartfm.domain.customer.Customer;
 
 /**
  * GUI equivalent of {@code SmartFmConsoleApp.registerCustomer()}.

@@ -38,7 +38,7 @@ Assignment 3/
     ├── src/
     │   └── main/java/smartfm/
     │       ├── common/                      # Exceptions, validators, Money formatter
-    │       ├── domain/                      # Core entities, State hierarchies, Strategy/Adapter interfaces
+    │       ├── domain/                      # Domain sub-packages (customer, order, shipment, billing, fleet, catalog)
     │       ├── application/                 # 4 GRASP Controllers, Observer listeners, Bootstrap
     │       ├── infrastructure/              # DataStore: SQLite database gateway
     │       └── ui/                          # Launcher, CLI, and Swing GUI (`ui.gui`)

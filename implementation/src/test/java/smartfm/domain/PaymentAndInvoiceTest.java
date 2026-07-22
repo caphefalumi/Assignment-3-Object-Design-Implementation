@@ -10,6 +10,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import smartfm.common.InvalidDataException;
+import smartfm.domain.billing.CashPaymentStrategy;
+import smartfm.domain.billing.GatewayPaymentStrategy;
+import smartfm.domain.billing.IPaymentGateway;
+import smartfm.domain.billing.IPaymentStrategy;
+import smartfm.domain.billing.Invoice;
+import smartfm.domain.billing.PaymentMethod;
+import smartfm.domain.billing.SimulatedGatewayAdapter;
 
 @DisplayName("Payment & Invoice Domain Tests")
 class PaymentAndInvoiceTest {

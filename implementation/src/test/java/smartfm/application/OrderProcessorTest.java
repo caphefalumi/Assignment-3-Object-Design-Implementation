@@ -9,12 +9,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import smartfm.domain.Branch;
-import smartfm.domain.Consignment;
-import smartfm.domain.Customer;
-import smartfm.domain.Order;
-import smartfm.domain.PricingTariff;
-import smartfm.domain.ServiceOffering;
+import smartfm.domain.catalog.PricingTariff;
+import smartfm.domain.catalog.ServiceOffering;
+import smartfm.domain.customer.Customer;
+import smartfm.domain.fleet.Branch;
+import smartfm.domain.order.Consignment;
+import smartfm.domain.order.Order;
 import smartfm.infrastructure.DataStore;
 
 @DisplayName("OrderProcessor Application Controller Tests")

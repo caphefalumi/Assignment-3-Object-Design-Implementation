@@ -18,12 +18,12 @@ import javax.swing.table.DefaultTableModel;
 import smartfm.common.InvalidDataException;
 import smartfm.common.Money;
 import smartfm.common.Validators;
-import smartfm.domain.Branch;
-import smartfm.domain.Consignment;
-import smartfm.domain.Customer;
-import smartfm.domain.Invoice;
-import smartfm.domain.Order;
-import smartfm.domain.ServiceOffering;
+import smartfm.domain.billing.Invoice;
+import smartfm.domain.catalog.ServiceOffering;
+import smartfm.domain.customer.Customer;
+import smartfm.domain.fleet.Branch;
+import smartfm.domain.order.Consignment;
+import smartfm.domain.order.Order;
 
 /**
  * GUI panel for Business Area 1: Order Management. Reuses {@link

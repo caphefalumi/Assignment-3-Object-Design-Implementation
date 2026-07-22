@@ -27,18 +27,18 @@ import org.jooq.SQLDialect;
 import org.jooq.Table;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
-import smartfm.domain.Branch;
-import smartfm.domain.Customer;
-import smartfm.domain.Driver;
-import smartfm.domain.Invoice;
-import smartfm.domain.Order;
-import smartfm.domain.Payment;
-import smartfm.domain.PricingTariff;
-import smartfm.domain.Receipt;
-import smartfm.domain.ServiceOffering;
-import smartfm.domain.Shipment;
-import smartfm.domain.StaffMember;
-import smartfm.domain.Vehicle;
+import smartfm.domain.billing.Invoice;
+import smartfm.domain.billing.Payment;
+import smartfm.domain.billing.Receipt;
+import smartfm.domain.catalog.PricingTariff;
+import smartfm.domain.catalog.ServiceOffering;
+import smartfm.domain.customer.Customer;
+import smartfm.domain.fleet.Branch;
+import smartfm.domain.fleet.Driver;
+import smartfm.domain.fleet.StaffMember;
+import smartfm.domain.fleet.Vehicle;
+import smartfm.domain.order.Order;
+import smartfm.domain.shipment.Shipment;
 
 /**
  * SQLite-backed persistence gateway for SmartFM.

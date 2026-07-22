@@ -1,6 +1,6 @@
 package smartfm.application;
 
-import smartfm.domain.Order;
+import smartfm.domain.order.Order;
 
 /**
  * Observer interface for the order-approved event published by {@link

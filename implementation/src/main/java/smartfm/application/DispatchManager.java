@@ -3,13 +3,13 @@ package smartfm.application;
 import java.util.ArrayList;
 import java.util.List;
 import smartfm.common.InvalidDataException;
-import smartfm.domain.Branch;
-import smartfm.domain.Driver;
-import smartfm.domain.DutyState;
-import smartfm.domain.Order;
-import smartfm.domain.Shipment;
-import smartfm.domain.Vehicle;
-import smartfm.domain.VehicleStatus;
+import smartfm.domain.fleet.Branch;
+import smartfm.domain.fleet.Driver;
+import smartfm.domain.fleet.DutyState;
+import smartfm.domain.fleet.Vehicle;
+import smartfm.domain.fleet.VehicleStatus;
+import smartfm.domain.order.Order;
+import smartfm.domain.shipment.Shipment;
 import smartfm.infrastructure.DataStore;
 
 /**

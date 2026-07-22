@@ -7,6 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import smartfm.common.InvalidDataException;
+import smartfm.domain.catalog.PricingTariff;
 
 @DisplayName("Pricing Tariff Domain Tests")
 class PricingTariffTest {

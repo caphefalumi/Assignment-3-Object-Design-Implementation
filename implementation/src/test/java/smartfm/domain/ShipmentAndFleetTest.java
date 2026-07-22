@@ -10,6 +10,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import smartfm.common.InvalidDataException;
+import smartfm.domain.fleet.Driver;
+import smartfm.domain.fleet.DutyState;
+import smartfm.domain.fleet.Vehicle;
+import smartfm.domain.fleet.VehicleStatus;
+import smartfm.domain.shipment.Shipment;
 
 @DisplayName("Shipment & Fleet Domain Tests")
 class ShipmentAndFleetTest {

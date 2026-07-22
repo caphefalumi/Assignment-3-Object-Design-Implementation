@@ -3,12 +3,12 @@ package smartfm.application;
 import java.util.HashMap;
 import java.util.Map;
 import smartfm.common.InvalidDataException;
-import smartfm.domain.Driver;
-import smartfm.domain.DutyState;
-import smartfm.domain.ITelemetrySource;
-import smartfm.domain.Shipment;
-import smartfm.domain.Vehicle;
-import smartfm.domain.VehicleStatus;
+import smartfm.domain.fleet.Driver;
+import smartfm.domain.fleet.DutyState;
+import smartfm.domain.fleet.Vehicle;
+import smartfm.domain.fleet.VehicleStatus;
+import smartfm.domain.shipment.ITelemetrySource;
+import smartfm.domain.shipment.Shipment;
 import smartfm.infrastructure.DataStore;
 
 /**

@@ -4,15 +4,15 @@ import java.util.HashMap;
 import java.util.Map;
 import smartfm.common.InvalidDataException;
 import smartfm.common.Money;
-import smartfm.domain.CashPaymentStrategy;
-import smartfm.domain.GatewayPaymentStrategy;
-import smartfm.domain.IPaymentGateway;
-import smartfm.domain.IPaymentStrategy;
-import smartfm.domain.Invoice;
-import smartfm.domain.Payment;
-import smartfm.domain.PaymentMethod;
-import smartfm.domain.Receipt;
-import smartfm.domain.SimulatedGatewayAdapter;
+import smartfm.domain.billing.CashPaymentStrategy;
+import smartfm.domain.billing.GatewayPaymentStrategy;
+import smartfm.domain.billing.IPaymentGateway;
+import smartfm.domain.billing.IPaymentStrategy;
+import smartfm.domain.billing.Invoice;
+import smartfm.domain.billing.Payment;
+import smartfm.domain.billing.PaymentMethod;
+import smartfm.domain.billing.Receipt;
+import smartfm.domain.billing.SimulatedGatewayAdapter;
 import smartfm.infrastructure.DataStore;
 
 /**

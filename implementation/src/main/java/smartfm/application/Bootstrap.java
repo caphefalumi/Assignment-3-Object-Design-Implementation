@@ -1,15 +1,16 @@
 package smartfm.application;
 
 import java.time.LocalDate;
-import smartfm.domain.Branch;
-import smartfm.domain.Driver;
-import smartfm.domain.ManualTelemetrySource;
-import smartfm.domain.PricingTariff;
-import smartfm.domain.ServiceOffering;
-import smartfm.domain.StaffMember;
-import smartfm.domain.StaffRole;
-import smartfm.domain.SystemConfiguration;
-import smartfm.domain.Vehicle;
+import smartfm.domain.catalog.PricingTariff;
+import smartfm.domain.catalog.ServiceOffering;
+import smartfm.domain.catalog.SystemConfiguration;
+import smartfm.domain.fleet.Branch;
+import smartfm.domain.fleet.Driver;
+import smartfm.domain.fleet.DutyState;
+import smartfm.domain.fleet.StaffMember;
+import smartfm.domain.fleet.StaffRole;
+import smartfm.domain.fleet.Vehicle;
+import smartfm.domain.shipment.ManualTelemetrySource;
 import smartfm.infrastructure.DataStore;
 
 /**
@@ -84,9 +85,9 @@ public final class Bootstrap {
         "DRV-0003", "Le Van C", "Male", LocalDate.of(1992, 1, 20),
         "+84-90-5556666", "levanc@abc-trans.vn", "8 Trang Tien, Hanoi",
         han.getId(), "LIC-000333", LocalDate.now().plusYears(1));
-    d1.setDutyState(smartfm.domain.DutyState.AVAILABLE);
-    d2.setDutyState(smartfm.domain.DutyState.AVAILABLE);
-    d3.setDutyState(smartfm.domain.DutyState.AVAILABLE);
+    d1.setDutyState(DutyState.AVAILABLE);
+    d2.setDutyState(DutyState.AVAILABLE);
+    d3.setDutyState(DutyState.AVAILABLE);
     store.drivers().put(d1.getId(), d1);
     store.drivers().put(d2.getId(), d2);
     store.drivers().put(d3.getId(), d3);

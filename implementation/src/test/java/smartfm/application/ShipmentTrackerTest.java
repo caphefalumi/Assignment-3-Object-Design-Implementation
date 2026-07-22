@@ -7,12 +7,12 @@ import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import smartfm.domain.Driver;
-import smartfm.domain.DutyState;
-import smartfm.domain.ManualTelemetrySource;
-import smartfm.domain.Shipment;
-import smartfm.domain.Vehicle;
-import smartfm.domain.VehicleStatus;
+import smartfm.domain.fleet.Driver;
+import smartfm.domain.fleet.DutyState;
+import smartfm.domain.fleet.Vehicle;
+import smartfm.domain.fleet.VehicleStatus;
+import smartfm.domain.shipment.ManualTelemetrySource;
+import smartfm.domain.shipment.Shipment;
 import smartfm.infrastructure.DataStore;
 
 @DisplayName("ShipmentTracker Application Controller Tests")

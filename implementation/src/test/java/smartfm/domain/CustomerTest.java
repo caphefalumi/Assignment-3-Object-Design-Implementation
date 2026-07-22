@@ -6,6 +6,8 @@ import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import smartfm.domain.customer.Customer;
+import smartfm.domain.customer.CustomerStatus;
 
 @DisplayName("Customer Domain Tests")
 class CustomerTest {

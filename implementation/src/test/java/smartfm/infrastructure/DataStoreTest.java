@@ -13,9 +13,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import smartfm.domain.Branch;
-import smartfm.domain.Customer;
-import smartfm.domain.Order;
+import smartfm.domain.customer.Customer;
+import smartfm.domain.fleet.Branch;
+import smartfm.domain.order.Order;
 
 @DisplayName("DataStore Persistence Infrastructure Tests")
 class DataStoreTest {

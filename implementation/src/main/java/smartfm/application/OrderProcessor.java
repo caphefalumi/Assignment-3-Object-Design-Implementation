@@ -4,12 +4,12 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import smartfm.common.InvalidDataException;
-import smartfm.domain.Consignment;
-import smartfm.domain.Customer;
-import smartfm.domain.Invoice;
-import smartfm.domain.Order;
-import smartfm.domain.PricingTariff;
-import smartfm.domain.ServiceOffering;
+import smartfm.domain.billing.Invoice;
+import smartfm.domain.catalog.PricingTariff;
+import smartfm.domain.catalog.ServiceOffering;
+import smartfm.domain.customer.Customer;
+import smartfm.domain.order.Consignment;
+import smartfm.domain.order.Order;
 import smartfm.infrastructure.DataStore;
 
 /**

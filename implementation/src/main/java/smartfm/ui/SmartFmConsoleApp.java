@@ -14,17 +14,17 @@ import smartfm.application.ShipmentTracker;
 import smartfm.common.InvalidDataException;
 import smartfm.common.Money;
 import smartfm.common.Validators;
-import smartfm.domain.Branch;
-import smartfm.domain.Consignment;
-import smartfm.domain.Customer;
-import smartfm.domain.Driver;
-import smartfm.domain.Invoice;
-import smartfm.domain.Order;
-import smartfm.domain.PaymentMethod;
-import smartfm.domain.Receipt;
-import smartfm.domain.ServiceOffering;
-import smartfm.domain.Shipment;
-import smartfm.domain.Vehicle;
+import smartfm.domain.billing.Invoice;
+import smartfm.domain.billing.PaymentMethod;
+import smartfm.domain.billing.Receipt;
+import smartfm.domain.catalog.ServiceOffering;
+import smartfm.domain.customer.Customer;
+import smartfm.domain.fleet.Branch;
+import smartfm.domain.fleet.Driver;
+import smartfm.domain.fleet.Vehicle;
+import smartfm.domain.order.Consignment;
+import smartfm.domain.order.Order;
+import smartfm.domain.shipment.Shipment;
 import smartfm.infrastructure.DataStore;
 
 /**

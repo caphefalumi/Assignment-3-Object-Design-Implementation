@@ -11,7 +11,7 @@ import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
 import smartfm.common.InvalidDataException;
 import smartfm.common.Validators;
-import smartfm.domain.Shipment;
+import smartfm.domain.shipment.Shipment;
 
 /**
  * GUI panel for Business Area 3: Shipment Tracking. Reuses {@link

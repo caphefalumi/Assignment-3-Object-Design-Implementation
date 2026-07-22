@@ -1,6 +1,6 @@
 package smartfm.application;
 
-import smartfm.domain.Invoice;
+import smartfm.domain.billing.Invoice;
 
 /**
  * Observer interface for the invoice-created event published by {@link

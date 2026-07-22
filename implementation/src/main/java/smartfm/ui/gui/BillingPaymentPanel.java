@@ -14,9 +14,9 @@ import javax.swing.table.DefaultTableModel;
 import smartfm.common.InvalidDataException;
 import smartfm.common.Money;
 import smartfm.common.Validators;
-import smartfm.domain.Invoice;
-import smartfm.domain.PaymentMethod;
-import smartfm.domain.Receipt;
+import smartfm.domain.billing.Invoice;
+import smartfm.domain.billing.PaymentMethod;
+import smartfm.domain.billing.Receipt;
 
 /**
  * GUI panel for Business Area 4: Billing and Payment. Reuses {@link

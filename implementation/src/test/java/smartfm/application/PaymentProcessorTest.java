@@ -9,9 +9,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import smartfm.common.InvalidDataException;
-import smartfm.domain.Invoice;
-import smartfm.domain.PaymentMethod;
-import smartfm.domain.Receipt;
+import smartfm.domain.billing.Invoice;
+import smartfm.domain.billing.PaymentMethod;
+import smartfm.domain.billing.Receipt;
 import smartfm.infrastructure.DataStore;
 
 @DisplayName("PaymentProcessor Application Controller Tests")

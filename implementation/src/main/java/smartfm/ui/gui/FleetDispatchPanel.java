@@ -12,10 +12,10 @@ import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
 import smartfm.common.InvalidDataException;
 import smartfm.common.Money;
-import smartfm.domain.Driver;
-import smartfm.domain.Order;
-import smartfm.domain.Shipment;
-import smartfm.domain.Vehicle;
+import smartfm.domain.fleet.Driver;
+import smartfm.domain.fleet.Vehicle;
+import smartfm.domain.order.Order;
+import smartfm.domain.shipment.Shipment;
 
 /**
  * GUI panel for Business Area 2: Fleet Dispatch. Reuses {@link
