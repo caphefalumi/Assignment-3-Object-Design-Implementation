@@ -46,7 +46,7 @@ import smartfm.infrastructure.DataStore;
  */
 public final class SmartFmConsoleApp {
 
-  private static final Path DATA_FILE = Paths.get("data", "smartfm-store.dat");
+  private static final Path DATA_FILE = Paths.get("data", "smartfm.db");
 
   private final ConsoleIO io;
   private final DataStore store;
@@ -70,7 +70,7 @@ public final class SmartFmConsoleApp {
     io.println(" SmartFM - Smart Fleet Management System (Assignment 3)");
     io.println(" ABC-Trans internal operations console");
     io.println("======================================================");
-    io.println("Data file: " + DATA_FILE.toAbsolutePath());
+    io.println("SQLite database: " + DATA_FILE.toAbsolutePath());
     io.println("Loaded " + store.branches().size() + " branch(es), "
         + store.vehicles().size() + " vehicle(s), " + store.drivers().size() + " driver(s), "
         + store.orders().size() + " order(s) on record.");
@@ -109,7 +109,7 @@ public final class SmartFmConsoleApp {
       }
     }
     store.saveTo(DATA_FILE);
-    io.println("Data saved to " + DATA_FILE.toAbsolutePath() + ". Goodbye.");
+    io.println("SQLite database committed to " + DATA_FILE.toAbsolutePath() + ". Goodbye.");
   }
 
   // ---------------------------------------------------------------

@@ -1,15 +1,32 @@
 package smartfm.infrastructure;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import static org.jooq.impl.DSL.check;
+import static org.jooq.impl.DSL.field;
+import static org.jooq.impl.DSL.name;
+import static org.jooq.impl.DSL.primaryKey;
+import static org.jooq.impl.DSL.table;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.jooq.DSLContext;
+import org.jooq.Field;
+import org.jooq.Record;
+import org.jooq.SQLDialect;
+import org.jooq.Table;
+import org.jooq.impl.DSL;
+import org.jooq.impl.SQLDataType;
 import smartfm.domain.Branch;
 import smartfm.domain.Customer;
 import smartfm.domain.Driver;
@@ -24,28 +41,38 @@ import smartfm.domain.StaffMember;
 import smartfm.domain.Vehicle;
 
 /**
- * File-based persistent data store for SmartFM.
+ * SQLite-backed persistence gateway for SmartFM.
  *
- * <p>Assignment 1 Assumption A1 states that "all system data is stored
- * in a single, shared relational database ... outside the scope of this
- * high-level design", and the Assignment 3 brief explicitly permits
- * "files may also be used for persistent data storage, instead of using
- * databases" as a simplification for the implementation stage. This
- * class is the concrete data access layer that Assumption A1 deferred:
- * it holds every long-lived aggregate in memory as a plain {@link Map}
- * keyed by id, and persists the entire snapshot to a single binary file
- * on disk using standard JDK object serialization (every domain class
- * already implements {@link Serializable} for exactly this reason).
+ * <p>Assignment 2 Assumption A1 specifies a single shared relational
+ * database behind a data-access layer. This class is that layer: it keeps
+ * the existing controller-facing map API in memory, but commits the durable
+ * snapshot to {@code data/smartfm.db} with jOOQ's typed SQLite DSL. Domain
+ * classes do not know about JDBC, SQL, jOOQ, or this class.
  *
- * <p>This keeps the domain classes completely unaware of how or where
- * they are stored (Assignment 2 Section 4.1.3, low coupling): {@code
- * Order}, {@code Invoice}, etc. have no knowledge of {@code DataStore}.
- * Repository classes in this package are the only collaborators that
- * touch {@code DataStore} directly.
+ * <p>The small schema contains a versioned metadata row and one transactionally
+ * updated snapshot row. The snapshot payload preserves the existing aggregate
+ * graph, including State-pattern objects and consignment collections, while
+ * SQLite provides a real database file, atomic transaction boundaries, and a
+ * clear migration point for future per-entity repository tables.
  */
 public final class DataStore implements Serializable {
 
   private static final long serialVersionUID = 1L;
+  private static final int SCHEMA_VERSION = 1;
+  private static final String SQLITE_DRIVER = "org.sqlite.JDBC";
+
+  private static final Table<Record> SCHEMA_METADATA = table(name("schema_metadata"));
+  private static final Field<Integer> METADATA_ID =
+      field(name("id"), SQLDataType.INTEGER.notNull());
+  private static final Field<Integer> SCHEMA_VERSION_FIELD =
+      field(name("schema_version"), SQLDataType.INTEGER.notNull());
+  private static final Table<Record> STORE_SNAPSHOT = table(name("store_snapshot"));
+  private static final Field<Integer> SNAPSHOT_ID =
+      field(name("snapshot_id"), SQLDataType.INTEGER.notNull());
+  private static final Field<byte[]> SNAPSHOT_PAYLOAD =
+      field(name("payload"), SQLDataType.BLOB.notNull());
+  private static final Field<String> SNAPSHOT_UPDATED_AT =
+      field(name("updated_at"), SQLDataType.VARCHAR.notNull());
 
   private final Map<String, Customer> customers = new LinkedHashMap<>();
   private final Map<String, StaffMember> staffMembers = new LinkedHashMap<>();
@@ -108,33 +135,126 @@ public final class DataStore implements Serializable {
     return receipts;
   }
 
-  /** Persists this entire snapshot to {@code path} in one atomic write. */
-  public void saveTo(Path path) {
-    try {
-      Path tmp = path.resolveSibling(path.getFileName().toString() + ".tmp");
-      Files.createDirectories(path.toAbsolutePath().getParent());
-      try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(tmp.toFile()))) {
-        out.writeObject(this);
-      }
-      Files.move(tmp, path, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-    } catch (IOException exc) {
-      throw new IllegalStateException("Failed to persist SmartFM data store to " + path, exc);
+  /** Saves this aggregate snapshot in one jOOQ-managed SQLite transaction. */
+  public void saveTo(Path databasePath) {
+    ensureParentDirectory(databasePath);
+    ensureJdbcDriver();
+    try (Connection connection = DriverManager.getConnection(sqliteUrl(databasePath))) {
+      DSLContext context = DSL.using(connection, SQLDialect.SQLITE);
+      context.transaction(configuration -> {
+        DSLContext transaction = DSL.using(configuration);
+        initializeSchema(transaction);
+        byte[] payload = serialize(this);
+        String updatedAt = Instant.now().toString();
+        transaction.insertInto(STORE_SNAPSHOT)
+            .columns(SNAPSHOT_ID, SNAPSHOT_PAYLOAD, SNAPSHOT_UPDATED_AT)
+            .values(1, payload, updatedAt)
+            .onConflict(SNAPSHOT_ID)
+            .doUpdate()
+            .set(SNAPSHOT_PAYLOAD, payload)
+            .set(SNAPSHOT_UPDATED_AT, updatedAt)
+            .execute();
+      });
+    } catch (SQLException exception) {
+      throw new IllegalStateException("Failed to save SmartFM SQLite database to " + databasePath, exception);
     }
   }
 
-  /** Loads a previously persisted snapshot, or returns a fresh empty store if none exists. */
-  public static DataStore loadFrom(Path path) {
-    if (!Files.exists(path)) {
-      return new DataStore();
+  /** Loads the persisted SQLite snapshot, or returns an empty store for a new database. */
+  public static DataStore loadFrom(Path databasePath) {
+    ensureParentDirectory(databasePath);
+    ensureJdbcDriver();
+    try (Connection connection = DriverManager.getConnection(sqliteUrl(databasePath))) {
+      DSLContext context = DSL.using(connection, SQLDialect.SQLITE);
+      return context.transactionResult(configuration -> {
+        DSLContext transaction = DSL.using(configuration);
+        initializeSchema(transaction);
+        byte[] payload = transaction.select(SNAPSHOT_PAYLOAD)
+            .from(STORE_SNAPSHOT)
+            .where(SNAPSHOT_ID.eq(1))
+            .fetchOne(SNAPSHOT_PAYLOAD);
+        return payload == null ? new DataStore() : deserialize(payload);
+      });
+    } catch (SQLException exception) {
+      throw new IllegalStateException("Failed to load SmartFM SQLite database from " + databasePath, exception);
     }
-    try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(path.toFile()))) {
-      Object obj = in.readObject();
-      if (obj instanceof DataStore) {
-        return (DataStore) obj;
+  }
+
+  private static void initializeSchema(DSLContext context) {
+    context.createTableIfNotExists(SCHEMA_METADATA)
+        .column(METADATA_ID)
+        .column(SCHEMA_VERSION_FIELD)
+        .constraints(primaryKey(METADATA_ID), check(METADATA_ID.eq(1)))
+        .execute();
+    context.createTableIfNotExists(STORE_SNAPSHOT)
+        .column(SNAPSHOT_ID)
+        .column(SNAPSHOT_PAYLOAD)
+        .column(SNAPSHOT_UPDATED_AT)
+        .constraints(primaryKey(SNAPSHOT_ID), check(SNAPSHOT_ID.eq(1)))
+        .execute();
+
+    Integer storedVersion = context.select(SCHEMA_VERSION_FIELD)
+        .from(SCHEMA_METADATA)
+        .where(METADATA_ID.eq(1))
+        .fetchOne(SCHEMA_VERSION_FIELD);
+    if (storedVersion == null) {
+      context.insertInto(SCHEMA_METADATA)
+          .columns(METADATA_ID, SCHEMA_VERSION_FIELD)
+          .values(1, SCHEMA_VERSION)
+          .execute();
+      return;
+    }
+    if (storedVersion != SCHEMA_VERSION) {
+      throw new IllegalStateException(
+          "Unsupported SmartFM SQLite schema version " + storedVersion
+              + "; expected " + SCHEMA_VERSION + ".");
+    }
+  }
+
+  private static String sqliteUrl(Path databasePath) {
+    return "jdbc:sqlite:" + databasePath.toAbsolutePath();
+  }
+
+  private static void ensureParentDirectory(Path path) {
+    try {
+      Path parent = path.toAbsolutePath().getParent();
+      if (parent != null) {
+        Files.createDirectories(parent);
       }
-      throw new IllegalStateException("Data file " + path + " did not contain a DataStore.");
-    } catch (IOException | ClassNotFoundException exc) {
-      throw new IllegalStateException("Failed to load SmartFM data store from " + path, exc);
+    } catch (IOException exception) {
+      throw new IllegalStateException("Failed to create database directory for " + path, exception);
+    }
+  }
+
+  private static void ensureJdbcDriver() {
+    try {
+      Class.forName(SQLITE_DRIVER);
+    } catch (ClassNotFoundException exception) {
+      throw new IllegalStateException(
+          "SQLite JDBC driver is unavailable. Build with the pinned sqlite-jdbc dependency.", exception);
+    }
+  }
+
+  private static byte[] serialize(DataStore store) {
+    try (ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        ObjectOutputStream output = new ObjectOutputStream(bytes)) {
+      output.writeObject(store);
+      output.flush();
+      return bytes.toByteArray();
+    } catch (IOException exception) {
+      throw new IllegalStateException("Failed to serialize SmartFM database snapshot", exception);
+    }
+  }
+
+  private static DataStore deserialize(byte[] payload) {
+    try (ObjectInputStream input = new ObjectInputStream(new ByteArrayInputStream(payload))) {
+      Object value = input.readObject();
+      if (value instanceof DataStore) {
+        return (DataStore) value;
+      }
+      throw new IllegalStateException("SQLite snapshot did not contain a DataStore.");
+    } catch (IOException | ClassNotFoundException exception) {
+      throw new IllegalStateException("Failed to deserialize SmartFM SQLite snapshot", exception);
     }
   }
 }

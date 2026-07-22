@@ -19,7 +19,7 @@ public final class Launcher {
 
   public static void main(String[] args) {
     boolean useCli = args.length > 0 && ("--cli".equalsIgnoreCase(args[0]) || "-cli".equalsIgnoreCase(args[0]));
-    Path dataFile = Paths.get("data", "smartfm-store.dat");
+    Path dataFile = Paths.get("data", "smartfm.db");
 
     if (useCli) {
       Scanner scanner = new Scanner(System.in);

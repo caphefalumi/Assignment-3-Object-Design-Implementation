@@ -61,7 +61,7 @@ public class SmartFmMainFrame extends JFrame {
     tabs.addTab("3. Shipment Tracking", trackingPanel);
     tabs.addTab("4. Billing and Payment", billingPanel);
 
-    JLabel statusBar = new JLabel(" Persistent data: " + dataFile.getFileName() + " (saved in data/)");
+    JLabel statusBar = new JLabel(" SQLite database: " + dataFile.getFileName() + " (saved in data/)");
     statusBar.setBorder(javax.swing.BorderFactory.createEmptyBorder(4, 8, 4, 8));
 
     setLayout(new BorderLayout());

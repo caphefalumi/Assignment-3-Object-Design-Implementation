@@ -2,9 +2,8 @@
  SmartFM - Smart Fleet Management System (Assignment 3)
  ABC-Trans internal operations console
 ======================================================
-Data file: C:\Users\Toan\OneDrive - Swinburne University\Documents\Swinburne_Course\Current\SWE30003-Software Architectures and Design\Assignment 3\implementation\data\smartfm-store.dat
+SQLite database: data/smartfm.db
 Loaded 2 branch(es), 3 vehicle(s), 3 driver(s), 0 order(s) on record.
-
 ==== Main Menu ====
 [1] Business Area 1: Order Management
 [2] Business Area 2: Fleet Dispatch
@@ -18,7 +17,6 @@ Full name, contact details, and address are all required.
 Full name (or 'c' to cancel): Gender: Date of birth (YYYY-MM-DD) (or 'c' to cancel): Phone number (or 'c' to cancel):   [Invalid input] Phone number 'abc' is not a valid phone number. Please try again.
 Phone number (or 'c' to cancel): Email address (or 'c' to cancel):   [Invalid input] Email 'not-an-email' is not a valid email address. Please try again.
 Email address (or 'c' to cancel): Address (or 'c' to cancel): Success: customer account CUS-0001 (Nguyen Thi Mai) created.
-
 ==== Main Menu ====
 [1] Business Area 1: Order Management
 [2] Business Area 2: Fleet Dispatch
@@ -30,7 +28,6 @@ Select an option:
 ==== Register Customer Account (empty form below) ====
 Full name, contact details, and address are all required.
 Full name (or 'c' to cancel): Gender: Date of birth (YYYY-MM-DD) (or 'c' to cancel): Phone number (or 'c' to cancel): Email address (or 'c' to cancel): Address (or 'c' to cancel): Success: customer account CUS-0002 (Tran Van Long) created.
-
 ==== Main Menu ====
 [1] Business Area 1: Order Management
 [2] Business Area 2: Fleet Dispatch
@@ -38,4 +35,4 @@ Full name (or 'c' to cancel): Gender: Date of birth (YYYY-MM-DD) (or 'c' to canc
 [4] Business Area 4: Billing and Payment
 [5] Register a new customer account
 [0] Save and exit
-Select an option: Data saved to C:\Users\Toan\OneDrive - Swinburne University\Documents\Swinburne_Course\Current\SWE30003-Software Architectures and Design\Assignment 3\implementation\data\smartfm-store.dat. Goodbye.
+Select an option: SQLite database committed to data/smartfm.db. Goodbye.

@@ -1,18 +1,8 @@
-==== Business Area 1: Order Management ====
-[1] Place a new shipment order
-[2] View pending orders
-[3] Approve an order
-[4] Reject an order
-[5] Cancel my own order (change of mind)
-[0] Back to main menu
-Select an option: 
 ==== Reject an Order ====
-
 ==== Pending Orders ====
 Order ORD-0001 [Submitted] total=22,290,000.00 VND | customer=CUS-0001 | weight=300.0kg
 Order ORD-0003 [Submitted] total=25,720,000.00 VND | customer=CUS-0001 | weight=20.0kg
 Order id to reject (or 'c' to cancel): Rejection reason (or 'c' to cancel): Success: order ORD-0003 rejected. Reason recorded: Cold Chain vehicle unavailable on requested date at Ho Chi Minh City branch
-
 ==== Main Menu ====
 [1] Business Area 1: Order Management
 [2] Business Area 2: Fleet Dispatch
@@ -21,21 +11,11 @@ Order id to reject (or 'c' to cancel): Rejection reason (or 'c' to cancel): Succ
 [5] Register a new customer account
 [0] Save and exit
 Select an option: 
-==== Business Area 1: Order Management ====
-[1] Place a new shipment order
-[2] View pending orders
-[3] Approve an order
-[4] Reject an order
-[5] Cancel my own order (change of mind)
-[0] Back to main menu
-Select an option: 
 ==== Approve an Order ====
-
 ==== Pending Orders ====
 Order ORD-0001 [Submitted] total=22,290,000.00 VND | customer=CUS-0001 | weight=300.0kg
 Order id to approve (or 'c' to cancel): Success: order ORD-0001 approved. Invoice INV-0001 generated for 22,290,000.00 VND, due 2026-08-05.
 (Observer notification: DispatchManager and PaymentProcessor were notified automatically.)
-
 ==== Main Menu ====
 [1] Business Area 1: Order Management
 [2] Business Area 2: Fleet Dispatch
@@ -43,4 +23,4 @@ Order id to approve (or 'c' to cancel): Success: order ORD-0001 approved. Invoic
 [4] Business Area 4: Billing and Payment
 [5] Register a new customer account
 [0] Save and exit
-Select an option: Data saved to C:\Users\Toan\OneDrive - Swinburne University\Documents\Swinburne_Course\Current\SWE30003-Software Architectures and Design\Assignment 3\implementation\data\smartfm-store.dat. Goodbye.
+Select an option: SQLite database committed to data/smartfm.db. Goodbye.

@@ -1,23 +1,29 @@
-SmartFM Assignment 3 — compilation and GUI evidence run
+SmartFM Assignment 3 — Java 26, jOOQ, SQLite compilation and persistence evidence
 
 Environment
 - Operating system: Windows (win32)
 - Shell: PowerShell 7.6.0
-- JDK: Microsoft OpenJDK 17.0.19 LTS
+- JDK: Azul Zulu OpenJDK 26.0.2 (26.32.13)
+- Build tool: GNU Make 4.4.1 (Windows32)
 
-Commands executed from implementation/
-1. javac -d target/classes -encoding UTF-8 -Xlint:all <all 74 files under src/main/java>
-2. javac -d target/tools-classes -cp target/classes -encoding UTF-8 tools/java/smartfm/ui/gui/ScreenshotDriver.java
-3. java -cp "target/classes;target/tools-classes" smartfm.ui.gui.ScreenshotDriver
+Pinned runtime dependencies
+- Xerial SQLite JDBC 3.46.1.0
+- jOOQ SQL DSL 3.20.0
+- R2DBC SPI 1.0.0.RELEASE and Reactive Streams 1.0.3
+- Jakarta XML Bind API 4.0.1 and Jakarta Activation API 2.1.2
+- SLF4J API and no-operation binding 1.7.36
+
+Commands executed from implementation/ with JAVA_HOME set to the Java 26 JDK
+1. make reset
+2. make compile
+3. "0" | make run-cli
+4. JShell jOOQ query of sqlite_master and schema_metadata.
 
 Result
 - Production Java source files compiled: 74
-- javac diagnostics: none (no errors or -Xlint warnings)
-- Evidence screenshots generated: 26
-- Exit code: 0
-
-Makefile validation
-- GNU Make: 4.4.1 (Windows32 build)
-- Command: make compile
-- Result: Compiled 74 source files to target/classes
+- javac result: no errors; Java 26 emitted 36 existing -Xlint:all serial/this-escape warnings.
+- CLI started from a fresh database, seeded 2 branches, 3 vehicles, and 3 drivers, then committed on exit.
+- jOOQ schema query: tables=[schema_metadata, store_snapshot]; schema=1
+- DataStore source scan: no PreparedStatement, ResultSet, Statement, or raw SQLite DDL/DML statements remain.
+- SQLite database header: SQLite format 3
 - Exit code: 0

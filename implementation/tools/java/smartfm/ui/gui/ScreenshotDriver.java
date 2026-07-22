@@ -22,7 +22,7 @@ import javax.swing.UIManager;
  */
 public final class ScreenshotDriver {
 
-  private static final Path DATA_FILE = Paths.get("data", "smartfm-store.dat");
+  private static final Path DATA_FILE = Paths.get("data", "smartfm.db");
   private static final Path OUTPUT_DIR = Paths.get("screenshots");
 
   private SmartFmMainFrame frame;
@@ -30,7 +30,8 @@ public final class ScreenshotDriver {
 
   public static void main(String[] args) throws Exception {
     Files.deleteIfExists(DATA_FILE);
-    Files.deleteIfExists(Paths.get(DATA_FILE.toString() + ".tmp"));
+    Files.deleteIfExists(Paths.get(DATA_FILE.toString() + "-wal"));
+    Files.deleteIfExists(Paths.get(DATA_FILE.toString() + "-shm"));
     // Suppress the confirm-on-exit look and feel differences across machines.
     try {
       UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
