@@ -96,6 +96,7 @@ SmartFM is designed according to GRASP, GoF design patterns, and strict layered 
 | **Generate Screenshots** | `make screenshots` | Resets DB, runs `ScreenshotDriver` to generate evidence PNGs |
 | **Clean Output** | `make clean` | Removes `target/` directory |
 | **Reset State** | `make reset` | Cleans target output and removes `data/smartfm.db*` files |
+| **Maven Test** | `mvn test` | Executes JUnit 5 test suite across domain, application, and infrastructure layers |
 | **Maven Compile** | `mvn clean compile` | Alternative Maven compile command |
 | **Maven Package** | `mvn clean package` | Maven shaded jar build |
 
