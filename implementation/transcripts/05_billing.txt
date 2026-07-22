@@ -1,0 +1,62 @@
+======================================================
+ SmartFM - Smart Fleet Management System (Assignment 3)
+ ABC-Trans internal operations console
+======================================================
+Data file: C:\Users\Toan\OneDrive - Swinburne University\Documents\Swinburne_Course\Current\SWE30003-Software Architectures and Design\Assignment 3\implementation\data\smartfm-store.dat
+Loaded 2 branch(es), 3 vehicle(s), 3 driver(s), 3 order(s) on record.
+
+==== Main Menu ====
+[1] Business Area 1: Order Management
+[2] Business Area 2: Fleet Dispatch
+[3] Business Area 3: Shipment Tracking
+[4] Business Area 4: Billing and Payment
+[5] Register a new customer account
+[0] Save and exit
+Select an option: 
+==== Business Area 4: Billing and Payment (empty form below) ====
+Outstanding invoices:
+  Invoice INV-0001 [Unpaid] balance=22,290,000.00/22,290,000.00 VND
+Invoice id to pay (or 'c' to cancel): Outstanding balance: 22,290,000.00 VND.
+Payment amount in VND (positive number) (or 'c' to cancel): Payment methods: CASH, CARD, DIGITAL_WALLET
+Payment method (or 'c' to cancel):   [Rejected] Payment amount 30,000,000.00 exceeds the outstanding balance of 22,290,000.00 on invoice INV-0001.
+
+==== Main Menu ====
+[1] Business Area 1: Order Management
+[2] Business Area 2: Fleet Dispatch
+[3] Business Area 3: Shipment Tracking
+[4] Business Area 4: Billing and Payment
+[5] Register a new customer account
+[0] Save and exit
+Select an option: 
+==== Business Area 4: Billing and Payment (empty form below) ====
+Outstanding invoices:
+  Invoice INV-0001 [Unpaid] balance=22,290,000.00/22,290,000.00 VND
+Invoice id to pay (or 'c' to cancel): Outstanding balance: 22,290,000.00 VND.
+Payment amount in VND (positive number) (or 'c' to cancel): Payment methods: CASH, CARD, DIGITAL_WALLET
+Payment method (or 'c' to cancel): Success: payment processed. As per the Assignment 3 simplification, no real banking transaction was executed - this is a simulated confirmation only.
+Receipt RCT-0001 issued for 10,000,000.00 VND at 2026-07-22 11:37:37. Invoice status: Partially Paid.
+
+==== Main Menu ====
+[1] Business Area 1: Order Management
+[2] Business Area 2: Fleet Dispatch
+[3] Business Area 3: Shipment Tracking
+[4] Business Area 4: Billing and Payment
+[5] Register a new customer account
+[0] Save and exit
+Select an option: 
+==== Business Area 4: Billing and Payment (empty form below) ====
+Outstanding invoices:
+  Invoice INV-0001 [Partially Paid] balance=12,290,000.00/22,290,000.00 VND
+Invoice id to pay (or 'c' to cancel): Outstanding balance: 12,290,000.00 VND.
+Payment amount in VND (positive number) (or 'c' to cancel): Payment methods: CASH, CARD, DIGITAL_WALLET
+Payment method (or 'c' to cancel): Success: payment processed. As per the Assignment 3 simplification, no real banking transaction was executed - this is a simulated confirmation only.
+Receipt RCT-0002 issued for 12,290,000.00 VND at 2026-07-22 11:37:37. Invoice status: Paid.
+
+==== Main Menu ====
+[1] Business Area 1: Order Management
+[2] Business Area 2: Fleet Dispatch
+[3] Business Area 3: Shipment Tracking
+[4] Business Area 4: Billing and Payment
+[5] Register a new customer account
+[0] Save and exit
+Select an option: Data saved to C:\Users\Toan\OneDrive - Swinburne University\Documents\Swinburne_Course\Current\SWE30003-Software Architectures and Design\Assignment 3\implementation\data\smartfm-store.dat. Goodbye.

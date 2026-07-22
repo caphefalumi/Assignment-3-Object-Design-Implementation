@@ -1,0 +1,54 @@
+======================================================
+ SmartFM - Smart Fleet Management System (Assignment 3)
+ ABC-Trans internal operations console
+======================================================
+Data file: C:\Users\Toan\OneDrive - Swinburne University\Documents\Swinburne_Course\Current\SWE30003-Software Architectures and Design\Assignment 3\implementation\data\smartfm-store.dat
+Loaded 2 branch(es), 3 vehicle(s), 3 driver(s), 3 order(s) on record.
+
+==== Main Menu ====
+[1] Business Area 1: Order Management
+[2] Business Area 2: Fleet Dispatch
+[3] Business Area 3: Shipment Tracking
+[4] Business Area 4: Billing and Payment
+[5] Register a new customer account
+[0] Save and exit
+Select an option: 
+==== Business Area 2: Fleet Dispatch (empty form below) ====
+Approved orders awaiting dispatch:
+  Order ORD-0001 [Approved] total=22,290,000.00 VND
+Order id to dispatch (or 'c' to cancel): Available vehicles at origin branch BR-HCM:
+  VHC-0001 - 51C-11111 (Dry Van, AVAILABLE)
+  VHC-0002 - 51C-22222 (Refrigerated, AVAILABLE)
+Vehicle id (or 'c' to cancel): Available drivers at origin branch BR-HCM:
+  DRV-0001 - Nguyen Van A
+  DRV-0002 - Tran Thi B
+Driver id (or 'c' to cancel):   [Rejected] Unknown vehicle id 'VHC-9999'.
+
+==== Main Menu ====
+[1] Business Area 1: Order Management
+[2] Business Area 2: Fleet Dispatch
+[3] Business Area 3: Shipment Tracking
+[4] Business Area 4: Billing and Payment
+[5] Register a new customer account
+[0] Save and exit
+Select an option: 
+==== Business Area 2: Fleet Dispatch (empty form below) ====
+Approved orders awaiting dispatch:
+  Order ORD-0001 [Approved] total=22,290,000.00 VND
+Order id to dispatch (or 'c' to cancel): Available vehicles at origin branch BR-HCM:
+  VHC-0001 - 51C-11111 (Dry Van, AVAILABLE)
+  VHC-0002 - 51C-22222 (Refrigerated, AVAILABLE)
+Vehicle id (or 'c' to cancel): Available drivers at origin branch BR-HCM:
+  DRV-0001 - Nguyen Van A
+  DRV-0002 - Tran Thi B
+Driver id (or 'c' to cancel): Success: shipment SHP-0001 created for order ORD-0001. Status: Assigned.
+(Observer notification: ShipmentTracker was notified automatically.)
+
+==== Main Menu ====
+[1] Business Area 1: Order Management
+[2] Business Area 2: Fleet Dispatch
+[3] Business Area 3: Shipment Tracking
+[4] Business Area 4: Billing and Payment
+[5] Register a new customer account
+[0] Save and exit
+Select an option: Data saved to C:\Users\Toan\OneDrive - Swinburne University\Documents\Swinburne_Course\Current\SWE30003-Software Architectures and Design\Assignment 3\implementation\data\smartfm-store.dat. Goodbye.

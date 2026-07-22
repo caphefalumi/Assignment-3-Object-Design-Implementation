@@ -1,0 +1,64 @@
+
+==== Main Menu ====
+[1] Business Area 1: Order Management
+[2] Business Area 2: Fleet Dispatch
+[3] Business Area 3: Shipment Tracking
+[4] Business Area 4: Billing and Payment
+[5] Register a new customer account
+[0] Save and exit
+Select an option: 
+==== Business Area 3: Shipment Tracking ====
+[1] Confirm pickup
+[2] Confirm in transit
+[3] Confirm delivery
+[4] View shipment status
+[0] Back to main menu
+Select an option: 
+==== Shipment Status ====
+  Shipment SHP-0001 [In Transit] @ Highway 1A, near Da Nang
+
+==== Main Menu ====
+[1] Business Area 1: Order Management
+[2] Business Area 2: Fleet Dispatch
+[3] Business Area 3: Shipment Tracking
+[4] Business Area 4: Billing and Payment
+[5] Register a new customer account
+[0] Save and exit
+Select an option: 
+==== Business Area 3: Shipment Tracking ====
+[1] Confirm pickup
+[2] Confirm in transit
+[3] Confirm delivery
+[4] View shipment status
+[0] Back to main menu
+Select an option: 
+==== Shipment Tracking: mark delivered (empty form below) ====
+  Shipment SHP-0001 [In Transit] @ Highway 1A, near Da Nang
+Shipment id (or 'c' to cancel): Current location description (or 'c' to cancel): Success: shipment SHP-0001 is now 'Delivered' at WinMart Hanoi warehouse, delivered and signed for.
+
+==== Main Menu ====
+[1] Business Area 1: Order Management
+[2] Business Area 2: Fleet Dispatch
+[3] Business Area 3: Shipment Tracking
+[4] Business Area 4: Billing and Payment
+[5] Register a new customer account
+[0] Save and exit
+Select an option: 
+==== Business Area 3: Shipment Tracking ====
+[1] Confirm pickup
+[2] Confirm in transit
+[3] Confirm delivery
+[4] View shipment status
+[0] Back to main menu
+Select an option: 
+==== Shipment Status ====
+  Shipment SHP-0001 [Delivered] @ WinMart Hanoi warehouse, delivered and signed for
+
+==== Main Menu ====
+[1] Business Area 1: Order Management
+[2] Business Area 2: Fleet Dispatch
+[3] Business Area 3: Shipment Tracking
+[4] Business Area 4: Billing and Payment
+[5] Register a new customer account
+[0] Save and exit
+Select an option: Data saved to C:\Users\Toan\OneDrive - Swinburne University\Documents\Swinburne_Course\Current\SWE30003-Software Architectures and Design\Assignment 3\implementation\data\smartfm-store.dat. Goodbye.

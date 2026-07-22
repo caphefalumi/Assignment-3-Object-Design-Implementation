@@ -1,0 +1,17 @@
+5
+Nguyen Thi Mai
+Female
+1995-04-10
+abc
++84-91-2223344
+not-an-email
+mai.nguyen@coopmart.vn
+120 Nguyen Trai, District 5, Ho Chi Minh City
+5
+Tran Van Long
+Male
+1993-11-02
++84-93-4445566
+long.tran@winmart.vn
+88 Ly Thuong Kiet, Cau Giay, Hanoi
+0

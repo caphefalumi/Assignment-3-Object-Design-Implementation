@@ -1,0 +1,63 @@
+======================================================
+ SmartFM - Smart Fleet Management System (Assignment 3)
+ ABC-Trans internal operations console
+======================================================
+Data file: C:\Users\Toan\OneDrive - Swinburne University\Documents\Swinburne_Course\Current\SWE30003-Software Architectures and Design\Assignment 3\implementation\data\smartfm-store.dat
+Loaded 2 branch(es), 3 vehicle(s), 3 driver(s), 3 order(s) on record.
+
+==== Main Menu ====
+[1] Business Area 1: Order Management
+[2] Business Area 2: Fleet Dispatch
+[3] Business Area 3: Shipment Tracking
+[4] Business Area 4: Billing and Payment
+[5] Register a new customer account
+[0] Save and exit
+Select an option: 
+==== Business Area 3: Shipment Tracking ====
+[1] Confirm pickup
+[2] Confirm in transit
+[3] Confirm delivery
+[4] View shipment status
+[0] Back to main menu
+Select an option: 
+==== Shipment Tracking: mark delivered (empty form below) ====
+  Shipment SHP-0001 [Assigned] @ Origin branch (not yet departed)
+Shipment id (or 'c' to cancel): Current location description (or 'c' to cancel):   [Rejected] Cannot mark 'Delivered' from state Assigned.
+
+==== Main Menu ====
+[1] Business Area 1: Order Management
+[2] Business Area 2: Fleet Dispatch
+[3] Business Area 3: Shipment Tracking
+[4] Business Area 4: Billing and Payment
+[5] Register a new customer account
+[0] Save and exit
+Select an option: 
+==== Business Area 3: Shipment Tracking ====
+[1] Confirm pickup
+[2] Confirm in transit
+[3] Confirm delivery
+[4] View shipment status
+[0] Back to main menu
+Select an option: 
+==== Shipment Tracking: pick up (empty form below) ====
+  Shipment SHP-0001 [Assigned] @ Origin branch (not yet departed)
+Shipment id (or 'c' to cancel): Current location description (or 'c' to cancel): Success: shipment SHP-0001 is now 'Picked Up' at Origin branch dock, Ho Chi Minh City.
+
+==== Main Menu ====
+[1] Business Area 1: Order Management
+[2] Business Area 2: Fleet Dispatch
+[3] Business Area 3: Shipment Tracking
+[4] Business Area 4: Billing and Payment
+[5] Register a new customer account
+[0] Save and exit
+Select an option: 
+==== Business Area 3: Shipment Tracking ====
+[1] Confirm pickup
+[2] Confirm in transit
+[3] Confirm delivery
+[4] View shipment status
+[0] Back to main menu
+Select an option: 
+==== Shipment Tracking: mark in transit (empty form below) ====
+  Shipment SHP-0001 [Picked Up] @ Origin branch dock, Ho Chi Minh City
+Shipment id (or 'c' to cancel): Current location description (or 'c' to cancel): Success: shipment SHP-0001 is now 'In Transit' at Highway 1A, near Da Nang.

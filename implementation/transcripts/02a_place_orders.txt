@@ -1,0 +1,45 @@
+======================================================
+ SmartFM - Smart Fleet Management System (Assignment 3)
+ ABC-Trans internal operations console
+======================================================
+Data file: C:\Users\Toan\OneDrive - Swinburne University\Documents\Swinburne_Course\Current\SWE30003-Software Architectures and Design\Assignment 3\implementation\data\smartfm-store.dat
+Loaded 2 branch(es), 3 vehicle(s), 3 driver(s), 0 order(s) on record.
+
+==== Main Menu ====
+[1] Business Area 1: Order Management
+[2] Business Area 2: Fleet Dispatch
+[3] Business Area 3: Shipment Tracking
+[4] Business Area 4: Billing and Payment
+[5] Register a new customer account
+[0] Save and exit
+Select an option: 
+==== Business Area 1: Order Management ====
+[1] Place a new shipment order
+[2] View pending orders
+[3] Approve an order
+[4] Reject an order
+[5] Cancel my own order (change of mind)
+[0] Back to main menu
+Select an option: 
+==== Place a Shipment Order (empty form below) ====
+Registered customers:
+  CUS-0001 - Nguyen Thi Mai
+  CUS-0002 - Tran Van Long
+Customer id (or 'c' to cancel): Available service offerings:
+  SVC-STD - Standard Freight
+  SVC-EXP - Same-Day Express
+  SVC-CLD - Cold Chain Transport
+Service offering id (or 'c' to cancel): Branches:
+  BR-HCM - Ho Chi Minh City Branch (Ho Chi Minh City)
+  BR-HAN - Hanoi Branch (Hanoi)
+Origin branch id (or 'c' to cancel): Destination branch id (or 'c' to cancel): Distance in km (positive number) (or 'c' to cancel): Requested pickup date (YYYY-MM-DD, today or later) (or 'c' to cancel): -- Consignment #1 --
+  Description (or 'c' to cancel):   Weight in kg (positive number) (or 'c' to cancel):   [Invalid input] Weight must be a positive number. Please try again.
+  Weight in kg (positive number) (or 'c' to cancel):   Volume in m3 (positive number) (or 'c' to cancel):   Fragile? (y/n):   Requires refrigeration? (y/n): Add another consignment? (y/n): Success: order ORD-0001 submitted. Estimated quote: 22,290,000.00 VND. Status: Submitted.
+
+==== Main Menu ====
+[1] Business Area 1: Order Management
+[2] Business Area 2: Fleet Dispatch
+[3] Business Area 3: Shipment Tracking
+[4] Business Area 4: Billing and Payment
+[5] Register a new customer account
+[0] Save and exit

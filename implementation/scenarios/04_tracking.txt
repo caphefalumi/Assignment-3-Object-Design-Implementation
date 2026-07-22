@@ -1,0 +1,21 @@
+3
+3
+SHP-0001
+WinMart Hanoi warehouse dock
+3
+1
+SHP-0001
+Origin branch dock, Ho Chi Minh City
+3
+2
+SHP-0001
+Highway 1A, near Da Nang
+3
+4
+3
+3
+SHP-0001
+WinMart Hanoi warehouse, delivered and signed for
+3
+4
+0
