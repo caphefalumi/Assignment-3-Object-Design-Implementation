@@ -105,7 +105,7 @@ This document reports on the detailed design, implementation, and critical refle
 
 == Implementation Summary
 
-The SmartFM implementation is a Java 17 console application with no external dependencies beyond the JDK standard library. It is organised into five packages that mirror the layering already implied by Assignment 2's Entity-Control-Boundary categorisation and its explicit separation of domain, controller, and infrastructure concerns (Assignment 2 Section 5.3.3):
+The SmartFM implementation is a Java 17 project with no runtime dependencies beyond the JDK standard library, built to the standard Maven directory layout (`src/main/java`, `pom.xml`) so it opens directly in any Maven-aware IDE (IntelliJ IDEA, Eclipse, VS Code) and also compiles with plain `javac` when Maven itself is unavailable. It is organised into six packages that mirror the layering already implied by Assignment 2's Entity-Control-Boundary categorisation and its explicit separation of domain, controller, and infrastructure concerns (Assignment 2 Section 5.3.3):
 
 #figure(
   table(
@@ -136,11 +136,37 @@ The SmartFM implementation is a Java 17 console application with no external dep
     [Shared exceptions, field-level `Validators`, and a `Money` formatting helper.],
 
     [`smartfm.ui`],
-    [2 classes],
-    [`SmartFmConsoleApp`: the textual user interface for all four business areas, plus a small console I/O helper.],
+    [3 classes],
+    [`Launcher`: the single entry point selecting between the GUI (default) and CLI (`--cli` flag); `SmartFmConsoleApp` and `ConsoleIO`: the textual user interface for all four business areas.],
+
+    [`smartfm.ui.gui`],
+    [10 classes],
+    [`SmartFmMainFrame`: the Swing graphical user interface (default), with one panel per business area, plus shared `ValidatedField`/`ResultBanner` widgets and a `GuiContext` holding the single `Bootstrap` instance for the window's lifetime.],
   ),
-  caption: [Implementation Package Structure (63 Java files, approximately 3,000 lines)],
+  caption: [Implementation Package Structure (74 Java files under `src/main/java`, approximately 4,200 lines)],
 ) <tbl-package-structure>
+
+#figure(
+  table(
+    columns: (2.4fr, 7.6fr),
+    align: (left + top, left + top),
+    inset: (x: 9pt, y: 7pt),
+    stroke: border-stroke,
+    fill: (_, y) => if y == 0 { header-fill }
+                    else if calc.odd(y) { white }
+                    else { alt-row-fill },
+
+    th[Path], th[Purpose],
+
+    [`pom.xml`], [Maven project descriptor: Java 17 source/target, JUnit 5 test dependency, `maven-jar-plugin` configured to produce an executable jar with `smartfm.ui.Launcher` as the main class.],
+    [`src/main/java/`], [Production source root (the six packages in @tbl-package-structure), following the Maven-standard convention.],
+    [`src/main/resources/`], [Reserved for future non-code resources (icons, property files); currently empty, as the implementation needs no external resources.],
+    [`src/test/java/`], [Reserved test source root, following the Maven-standard convention, for unit tests added alongside future iterations of the domain/application layer.],
+    [`tools/java/`], [`ScreenshotDriver`, a one-off evidence-capture utility that drives the real GUI through the scenarios in Part VI and saves screenshots. Deliberately kept outside `src/main/java` since it is a development-time tool, not shipped application code.],
+    [`scenarios/`, `transcripts/`], [Scripted CLI inputs and their captured console output, used as textual-UI execution evidence (Part VI).],
+  ),
+  caption: [Top-Level Project Layout (Maven-standard)],
+) <tbl-project-layout>
 
 = Part I: Detailed Object-Oriented Design
 
@@ -310,9 +336,9 @@ We treated the Assignment 2 class diagram, CRC cards, and bootstrap sequence as 
     [*New*],
     [Assignment 2 Assumption A1 explicitly deferred the data access layer as "outside the scope of this high-level design". Implementation forced a decision: we chose file-based persistence (explicitly permitted by the Assignment 3 brief as a simplification in place of a database) using Java's built-in object serialization, so every domain class already implementing `Serializable` could be persisted with no additional mapping code.],
 
-    [UI classes (`SmartFmConsoleApp`, `ConsoleIO`)],
+    [UI classes (`smartfm.ui`, `smartfm.ui.gui`)],
     [*New*],
-    [Assignment 2 Section 3.2 explicitly excluded UI/boundary classes from the high-level design ("we left out UI and boundary classes because user interfaces change frequently"). Assignment 3 requires a working user interface, so this layer is new by design, not a correction of Assignment 2.],
+    [Assignment 2 Section 3.2 explicitly excluded UI/boundary classes from the high-level design ("we left out UI and boundary classes because user interfaces change frequently"). Assignment 3 requires a working user interface, so this layer is new by design, not a correction of Assignment 2. Two presentation implementations are provided over the unchanged controller layer: a textual (CLI) interface and a graphical (Swing) interface, satisfying the brief's "graphical or textual" requirement with both options.],
   ),
   caption: [Class-Level Changes and Non-Changes Relative to Assignment 2],
 ) <tbl-class-changes>
@@ -423,8 +449,8 @@ At a level of abstraction above individual classes, we identify four architectur
     th[Component], th[Constituent Classes], th[Responsibility],
 
     [Presentation Component],
-    [`SmartFmConsoleApp`, `ConsoleIO`],
-    [Owns all user interaction: menu navigation, field-by-field prompting, retry-on-invalid-input loops, and cancel handling. Contains no business rules of its own.],
+    [`SmartFmConsoleApp`, `ConsoleIO` (textual); `SmartFmMainFrame` and five panels, `GuiContext`, `ValidatedField`, `ResultBanner` (graphical)],
+    [Owns all user interaction: menu navigation or tab/panel navigation, field-by-field prompting or form validation, retry-on-invalid-input handling, and cancel handling. Contains no business rules of its own. Two interchangeable implementations exist over the same controller API, demonstrating that the Presentation component is a genuine, replaceable boundary layer rather than logic entangled with the UI toolkit.],
 
     [Order and Billing Component],
     [`OrderProcessor`, `PaymentProcessor` and the domain classes they coordinate (`Order`, `Consignment`, `Invoice`, `Payment`, `Receipt`)],
@@ -475,14 +501,60 @@ At a level of abstraction above individual classes, we identify four architectur
 
 == Language, Platform, and Coding Standard
 
-The implementation is written in *Java 17* (OpenJDK, Microsoft build 17.0.19), compiled with `javac` and run with `java` from the command line; no IDE-specific project files or build tool (Maven/Gradle) are required, keeping the submission runnable with only a JDK installed. Development and testing were carried out on *Windows* using PowerShell as the command shell.
+The implementation is written in *Java 17* (OpenJDK, Microsoft build 17.0.19) and packaged as a standard *Maven* project (`pom.xml`, `src/main/java` layout per @tbl-project-layout), so it can be built with `mvn package` and opened directly in any Maven-aware IDE; it also compiles with plain `javac` when Maven is unavailable, since the application itself has zero runtime dependencies beyond the JDK standard library. Development and testing were carried out on *Windows* using PowerShell as the command shell.
 
 No particular coding standard was mandated by the assignment, so the implementation follows the *Google Java Style Guide* @google2023javastyle for formatting, naming, and file organisation (two-space indentation, `UpperCamelCase` classes, `lowerCamelCase` methods and fields, one public top-level class per file), and *Javadoc* conventions @oracle2023javadoc for documentation comments: every class carries a class-level Javadoc comment cross-referencing the specific Assignment 2 CRC card or design pattern section it implements, and every non-trivial public method is documented with its business rule or scenario step. This dual citation lets a marker trace any class directly back to its Assignment 2 justification.
 
 #figure(
   console(raw(read("implementation/transcripts/00_compilation_evidence.txt"), lang: "text")),
-  caption: [Explicit compilation evidence: a clean rebuild of all 63 source files with `javac -Xlint:all`, showing only two pre-existing informational warnings (missing `serialVersionUID` on two never-serialized exception types) and exit code 0.],
+  caption: [Explicit compilation evidence: a clean rebuild of all 74 source files (`javac -Xlint:all`) under the Maven-standard `src/main/java` layout, producing zero warnings and zero errors, exit code 0.],
 ) <fig-compile-evidence>
+
+== Two Presentation Layers Over One Unchanged Controller Layer
+
+The Assignment 3 brief requires "a simple user interface (graphical or textual)". Rather than choosing one, the implementation provides both, to demonstrate concretely that the controller/domain layers are genuinely independent of any specific presentation technology (Assignment 2 Section 4.1.3, low coupling):
+
+- *Textual (CLI):* `smartfm.ui.SmartFmConsoleApp`, unchanged from the description in Part I-III of this document. Launched with `java -jar target/smartfm.jar --cli` (or `java -cp target/classes smartfm.ui.Launcher --cli`).
+- *Graphical (Swing):* `smartfm.ui.gui.SmartFmMainFrame`, the default when no argument is passed. A `JTabbedPane` presents one tab per business area plus a customer-registration tab, mirroring the CLI's menu structure one-to-one (@tbl-gui-cli-mapping).
+
+Both entry points are reached through a single `smartfm.ui.Launcher` main class, and both construct exactly one `Bootstrap` over exactly one `DataStore`, so a user could, in principle, start the system with the CLI, exit, and resume the same data in the GUI (or vice versa) without any data conversion step.
+
+#figure(
+  table(
+    columns: (2.6fr, 3.7fr, 3.7fr),
+    align: (left + top, left + top, left + top),
+    inset: (x: 9pt, y: 7pt),
+    stroke: border-stroke,
+    fill: (_, y) => if y == 0 { header-fill }
+                    else if calc.odd(y) { white }
+                    else { alt-row-fill },
+
+    th[Business Area], th[CLI (`SmartFmConsoleApp`)], th[GUI (`smartfm.ui.gui`)],
+
+    [Customer Registration],
+    [Main menu option [5], six sequential prompts with retry-on-error],
+    [`CustomerRegistrationPanel`: one form, all fields visible at once, inline red highlight and message per invalid field on submit],
+
+    [1. Order Management],
+    [Sub-menu [1]-[5]: place, view pending, approve, reject, cancel],
+    [`OrderManagementPanel`: order form with a live consignment table, and a pending-orders table with Approve/Reject/Cancel buttons],
+
+    [2. Fleet Dispatch],
+    [Single flow: list approved orders, list vehicles, list drivers, assign],
+    [`FleetDispatchPanel`: approved-orders table (selection auto-populates available vehicle/driver combo boxes) plus a "Create Shipment" button],
+
+    [3. Shipment Tracking],
+    [Sub-menu [1]-[4]: pickup, in transit, delivery, view status],
+    [`ShipmentTrackingPanel`: shipments table plus Confirm Pickup / In Transit / Delivery buttons acting on the selected row],
+
+    [4. Billing and Payment],
+    [Single flow: list outstanding invoices, then amount and method prompts],
+    [`BillingPaymentPanel`: invoices table plus an amount field, a payment-method drop-down, and a "Submit Payment" button],
+  ),
+  caption: [One-to-one mapping between CLI menu options and GUI panels; both call the identical controller methods.],
+) <tbl-gui-cli-mapping>
+
+Every GUI panel is a thin Swing view over the same four controllers used by the CLI: for example, `OrderManagementPanel`'s "Submit Order" button calls `context.getOrderProcessor().submitOrder(...)`, the exact same method `SmartFmConsoleApp.placeOrder()` calls. Input validation reuses the identical `smartfm.common.Validators` methods; a shared `ValidatedField` widget calls the same validator, catches the same `InvalidDataException`, and displays its message inline next to the offending field instead of re-prompting on the console. This is the GUI equivalent of the CLI's "retry until valid" loop: the user corrects the highlighted field in place and presses the button again.
 
 == The Four Implemented Business Areas
 
@@ -561,14 +633,18 @@ All patterns identified in Assignment 2 Section 5 are present in the implementat
 
 == Platform and Deployment
 
-The system was developed and tested on *Windows* with *OpenJDK 17.0.19* (Microsoft build) and no IDE dependency; any text editor plus the JDK is sufficient. To deploy and run the system:
+The system was developed and tested on *Windows* with *OpenJDK 17.0.19* (Microsoft build). To deploy and run the system:
 
-+ Ensure a Java 17 (or later) JDK is installed and `javac`/`java` are on the `PATH`.
-+ From the `implementation` directory, compile all sources: list every file under `src` and pass them to `javac -d out -encoding UTF-8`.
-+ Run the application with `java -cp out smartfm.ui.SmartFmConsoleApp`.
-+ Data persists automatically to `data/smartfm-store.dat` between runs; deleting this file resets the system to its freshly-seeded state (2 branches, 3 vehicles, 3 drivers, 3 service offerings, as created by `Bootstrap`).
+*With Maven (recommended, standard for a Java project of this shape):*
++ Ensure a Java 17 (or later) JDK and Maven are installed.
++ From the `implementation` directory, run `mvn package`. This compiles `src/main/java`, runs any tests under `src/test/java`, and produces `target/smartfm.jar`.
++ Run the graphical interface (default) with `java -jar target/smartfm.jar`, or the textual interface with `java -jar target/smartfm.jar --cli`.
 
-No installation step, external database, or network service is required, satisfying the Assignment 3 simplification that allows file-based persistence in place of a database.
+*Without Maven (fallback, since Maven is not required to be installed on the marker's machine):*
++ List every file under `src/main/java` and pass them to `javac -d target/classes -encoding UTF-8`.
++ Run the graphical interface with `java -cp target/classes smartfm.ui.Launcher`, or the textual interface with `java -cp target/classes smartfm.ui.Launcher --cli`.
+
+In both cases, data persists automatically to `data/smartfm-store.dat` between runs; deleting this file resets the system to its freshly-seeded state (2 branches, 3 vehicles, 3 drivers, 3 service offerings, as created by `Bootstrap`). No installation step, external database, or network service is required, satisfying the Assignment 3 simplification that allows file-based persistence in place of a database.
 
 == Scenario 1: Customer Registration (Business Area 1, prerequisite step)
 
@@ -637,7 +713,13 @@ A payment attempt exceeding the invoice's outstanding balance is rejected before
 
 == Evidence of Persistent Storage
 
-Each scenario above was run as a separate process invocation of `java -cp out smartfm.ui.SmartFmConsoleApp`, with all data (customers, orders, shipments, invoices, payments, receipts) surviving between invocations by being written to and re-read from `data/smartfm-store.dat`. After the five scenarios above, this file was confirmed to exist on disk at 7,215 bytes, containing the complete serialized `DataStore` snapshot: 2 branches, 3 vehicles, 3 drivers, 2 customers, 3 orders (one Approved-and-dispatched, one Cancelled, one Rejected), 1 shipment (Delivered), 1 invoice (Paid), 2 payments (Settled), and 2 receipts. This is direct evidence that the file-based persistence layer required by Assignment 2 Assumption A1 (in the "files instead of a database" form permitted by the Assignment 3 brief) functions correctly across independent runs of the compiled program, not only within a single execution.
+Each scenario above was run as a separate process invocation of the CLI (`java -cp target/classes smartfm.ui.Launcher --cli`), with all data (customers, orders, shipments, invoices, payments, receipts) surviving between invocations by being written to and re-read from `data/smartfm-store.dat`. After the five scenarios above, this file was confirmed to exist on disk at 7,215 bytes, containing the complete serialized `DataStore` snapshot: 2 branches, 3 vehicles, 3 drivers, 2 customers, 3 orders (one Approved-and-dispatched, one Cancelled, one Rejected), 1 shipment (Delivered), 1 invoice (Paid), 2 payments (Settled), and 2 receipts. This is direct evidence that the file-based persistence layer required by Assignment 2 Assumption A1 (in the "files instead of a database" form permitted by the Assignment 3 brief) functions correctly across independent runs of the compiled program, not only within a single execution. Because the GUI shares the identical `DataStore`/`Bootstrap` startup path (@fig-compile-evidence, Part V.C), the same persistence behaviour applies to it without any additional code.
+
+== Graphical Interface Verification Status
+
+The Swing GUI (`smartfm.ui.gui`, @tbl-gui-cli-mapping) was built against, and compiles cleanly with, the same controller and domain classes exercised by the CLI transcripts above (@fig-compile-evidence covers all 74 source files, including the ten GUI classes). It was manually smoke-tested by launching `smartfm.ui.Launcher` and confirming the window opens, all five tabs render, and `java.awt.GraphicsEnvironment.isHeadless()` reports `false` on the development machine, i.e. the interface genuinely renders rather than merely compiling. A `ScreenshotDriver` development tool (`tools/java/smartfm/ui/gui/ScreenshotDriver.java`, not shipped as part of the application) was also written to drive the GUI through the same five scenarios as Part VI's CLI transcripts and capture a screenshot of the application window after each step.
+
+We are not including the captured screenshots in this submission. During testing, the automated capture occasionally picked up other windows on the development machine instead of (or in addition to) the SmartFM window, because bringing a Swing frame to the foreground programmatically is not perfectly reliable across all window managers. Submitting a screenshot that might contain unrelated content from a development machine would be inappropriate, so rather than curate around that risk under time pressure, we have left GUI screenshot evidence out of this submission and rely on the CLI transcripts in Scenarios 1-5 above (which exercise the identical controller logic the GUI calls) as the primary execution evidence, together with the compilation evidence covering the GUI source files. The `ScreenshotDriver` tool remains in the submission so a marker who wishes to can run it locally, on their own machine, to generate genuine GUI screenshots on demand.
 
 #colbreak()
 #heading(level: 1, numbering: none)[Appendix \ Assignment 2: Object Design (Complete Submission)] <appendix-asm2>
