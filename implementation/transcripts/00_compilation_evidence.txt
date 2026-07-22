@@ -1,9 +1,1 @@
-C:\Users\Toan\OneDrive - Swinburne University\Documents\Swinburne_Course\Current\SWE30003-Software Architectures and Design\Assignment 3\implementation\src\smartfm\common\InvalidCredentialsException.java:8: warning: [serial] serializable class InvalidCredentialsException has no definition of serialVersionUID
-public class InvalidCredentialsException extends RuntimeException {
-       ^
-C:\Users\Toan\OneDrive - Swinburne University\Documents\Swinburne_Course\Current\SWE30003-Software Architectures and Design\Assignment 3\implementation\src\smartfm\common\InvalidDataException.java:13: warning: [serial] serializable class InvalidDataException has no definition of serialVersionUID
-public class InvalidDataException extends RuntimeException {
-       ^
-2 warnings
-EXIT CODE: 0
-EXIT CODE: 0
+EXIT CODE: 0 
