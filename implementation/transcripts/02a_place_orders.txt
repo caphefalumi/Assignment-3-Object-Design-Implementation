@@ -2,7 +2,7 @@
  SmartFM - Smart Fleet Management System (Assignment 3)
  ABC-Trans internal operations console
 ======================================================
-Data file: C:\Users\Toan\OneDrive - Swinburne University\Documents\Swinburne_Course\Current\SWE30003-Software Architectures and Design\Assignment 3\implementation\data\smartfm-store.dat
+SQLite database: data/smartfm.db
 Loaded 2 branch(es), 3 vehicle(s), 3 driver(s), 0 order(s) on record.
 
 ==== Main Menu ====

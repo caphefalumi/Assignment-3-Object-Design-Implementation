@@ -9,7 +9,7 @@ This file provides architectural context, repository layout, build instructions,
 - **Course**: SWE30003 — Software Architectures and Design (Swinburne University of Technology)
 - **Project**: SmartFM (Smart Fleet Management System) - Assignment 3
 - **Primary Stack**:
-  - **Java 17** (Desktop Application)
+  - **Java 26** (Desktop Application)
   - **Swing GUI** (`smartfm.ui.gui.*`) and **Console CLI** (`smartfm.ui.SmartFmConsoleApp`)
   - **SQLite JDBC** (`3.46.1.0`) embedded persistence via single-file DB `data/smartfm.db`
   - **SLF4J API** (`1.7.36`) with no-op logging binding
@@ -30,7 +30,7 @@ Assignment 3/
 ├── refs.bib                                 # Bibliography references
 ├── ieee.typ                                 # Typst IEEE template
 ├── images/                                  # Diagrams and figures for report
-└── implementation/                          # Java 17 desktop application
+└── implementation/                          # Java 26 desktop application
     ├── Makefile                             # Cross-platform build script (Windows / Unix)
     ├── pom.xml                              # Maven descriptor
     ├── data/                                # SQLite database storage (smartfm.db)
@@ -120,7 +120,7 @@ When modifying or analyzing code in this repository:
    - Maintain compatibility between GUI (`smartfm.ui.gui`), CLI (`smartfm.ui`), and the underlying Application Controllers.
    - Do not alter `DataStore` snapshot serialization schema without updating version metadata if required.
 3. **No Unrequested Dependencies**:
-   - Do not add new third-party JARs or libraries. Rely strictly on Java 17 standard libraries and pinned JARs in `lib/`.
+   - Do not add new third-party JARs or libraries. Rely strictly on Java 26 standard libraries and pinned JARs in `lib/`.
 4. **Validation**:
    - Verify code changes by running `make compile` in `Assignment 3/implementation`.
    - Ensure input validation prevents invalid state transitions and gracefully presents errors in UI/CLI.
