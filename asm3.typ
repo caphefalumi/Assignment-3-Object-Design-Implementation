@@ -129,7 +129,7 @@ No assessor or lecturer feedback document was supplied with the workspace. There
 #figure(
   styled-table((1.55fr, 2.25fr, 3.35fr, 2.0fr), (
     th[Review input / Assignment 2 basis], th[Finding during review or implementation], th[Revision made for Assignment 3], th[Effect and status],
-    [A2 Assumption A1 deferred the data access layer], [The conceptual model did not specify how state survives program restart.], [`smartfm.infrastructure.DataStore` was added as one persistence gateway using jOOQ `3.20.0` over SQLite. Its `schema_metadata` and transactionally updated `store_snapshot` tables persist the aggregate snapshot in `data/smartfm.db`; the GUI/CLI boundary commits it on a clean exit while entities remain storage-independent.], [Required implementation detail added; the domain layer remains persistence-agnostic.],
+    [A2 Assumption A1 deferred the data access layer], [The conceptual model did not specify how state survives program restart.], [`smartfm.infrastructure.DataStore` was added as one persistence gateway using SQLite. Its versioned normalized schema stores branches, people/resources, catalogue, orders/consignments, shipments, invoices/payments, receipts, and association links in `data/smartfm.db`; the GUI/CLI boundary commits the rows on a clean exit while entities remain storage-independent.], [Required implementation detail added; the domain layer remains persistence-agnostic.],
     [A2 intentionally excluded boundary/UI classes], [A UI was mandatory for a usable application, but A2 did not define input sequencing or field-level errors.], [Added CLI boundary classes and Swing GUI panels. Both validate user data and delegate to the same controllers; no business rule is duplicated in the GUI.], [New presentation layer; stable domain/application responsibilities unchanged.],
     [A2 bootstrap subscribed `DispatchManager` to order approval], [Automatic allocation would contradict the business requirement that a dispatcher selects an appropriate vehicle and driver.], [The listener registration remains, but `assignShipment(orderId, vehicleId, driverId)` is an explicit human decision.], [Ambiguity resolved without introducing automatic resource assignment.],
     [A2 State-pattern lifecycle tables], [State transitions needed machine-enforced guards rather than only documentation.], [Concrete Order, Shipment, Invoice, and Payment state hierarchies reject illegal transitions with `InvalidDataException`.], [Lifecycle integrity is executable and tested.],
@@ -152,7 +152,7 @@ The detailed design retains Assignment 2's Entity-Control-Boundary separation. D
     [`smartfm.ui`, `smartfm.ui.gui`], [`Launcher`, `SmartFmConsoleApp`, `SmartFmMainFrame`, five GUI panels], [Boundary layer. Collects and displays information only; it calls controller public operations and displays domain/controller validation messages.],
     [`smartfm.application`], [`OrderProcessor`, `DispatchManager`, `ShipmentTracker`, `PaymentProcessor`, `Bootstrap`], [Application layer. The four GRASP Controllers receive system events, coordinate entities, publish observer events, and invoke the persistence gateway.],
     [`smartfm.domain.*` (`customer`, `order`, `shipment`, `billing`, `fleet`, `catalog`)], [`Customer`, `Order`, `Consignment`, `Shipment`, `Vehicle`, `Driver`, `Invoice`, `Payment`, `Receipt`, state/strategy interfaces], [Domain layer. Divided into six domain sub-packages. Owns business information, lifecycle state, pricing/payment behaviour, and entity-level validation.],
-    [`smartfm.infrastructure`], [`DataStore`], [Infrastructure layer. Opens the local SQLite database and uses jOOQ `3.20.0` to initialise `schema_metadata`/`store_snapshot` and read or commit the aggregate snapshot inside managed SQLite transactions. It is the only persistence mechanism.],
+    [`smartfm.infrastructure`], [`DataStore`], [Infrastructure layer. Opens the local SQLite database and uses a versioned normalized schema for branches, people/resources, catalogue, orders, shipments, invoices, payments, receipts, and association links. It reads and replaces the aggregate rows inside one SQLite transaction; it is the only persistence mechanism.],
     [`smartfm.common`], [`Validators`, `Money`, `InvalidDataException`], [Small shared utilities. Validation rules are reused by controllers/boundaries rather than copied between interfaces.],
   )),
   caption: [Layered package design and responsibility allocation.],
@@ -282,18 +282,25 @@ The State pattern carries legal lifecycle transitions. An order progresses from 
 
 #heading(level: 3, numbering: none)[2.3.1 SQLite database design]
 
-`DataStore` is the persistence boundary introduced to realise Assignment 2 Assumption A1 without leaking persistence concerns into the domain. It opens the embedded `data/smartfm.db` file through the pinned Xerial SQLite JDBC driver and applies all schema/data operations with jOOQ `3.20.0`, a typed SQL DSL rather than an ORM. The schema is intentionally small because the existing object graph contains State objects, nested consignments, and ID-based relationships that must be restored together. A transactional snapshot is therefore used for this iteration; it is persisted *inside SQLite*, not as a standalone `.dat` file. jOOQ creates the tables if absent and checks the schema version on every startup so an incompatible future database is rejected rather than silently overwritten.
+`DataStore` is the persistence boundary introduced to realise Assignment 2 Assumption A1 without leaking persistence concerns into the domain. It opens the embedded `data/smartfm.db` file through the pinned Xerial SQLite JDBC driver and manages normalized rows with prepared statements inside explicit transactions. Each save clears and repopulates the aggregate tables atomically; each load reconstructs the maps, associations, and State objects in dependency order. The current application accepts only schema version 3 and requires a database reset when an older schema is encountered.
 
 #figure(
-  styled-table((2.05fr, 2.45fr, 4.4fr), (
-    th[SQLite table], th[Columns / key], th[Responsibility],
-    [`schema_metadata`], [`id` (fixed primary key 1), `schema_version`], [Records the SmartFM schema version. jOOQ creates it on a new database, reads the version through its DSL, and rejects a mismatch before reading or writing data.],
-    [`store_snapshot`], [`snapshot_id` (fixed primary key 1), `payload` BLOB, `updated_at` TEXT], [Stores the complete durable aggregate snapshot. A jOOQ transaction initialises/checks the schema, conflict-upserts the payload and timestamp, and commits atomically.],
+  styled-table((2.25fr, 3.4fr, 3.25fr), (
+    th[SQLite table group], th[Representative columns / keys], th[Responsibility],
+    [`schema_metadata`], [`id`, `schema_version`], [Records the current SmartFM schema version and rejects incompatible databases so the normalized schema is never silently mixed with an older format.],
+    [`branches`], [`id`, `name`, `city`, `contact_phone`], [Stores operational branches.],
+    [`customers`, `staff_members`, `drivers`], [Person details, status/role, branch, licence and duty fields], [Stores customers and workforce resources, including driver-specific attributes.],
+    [`vehicles`], [`id`, `branch_id`, capacities, `status`], [Stores fleet resources and current utilisation state.],
+    [`service_offerings`, `pricing_tariffs`], [Service/tariff IDs, descriptions, rates and multipliers], [Stores the commercial catalogue and pricing strategy data.],
+    [`branch_*`, `customers_orders`], [Branch/resource/catalogue and customer/order association keys plus positions], [Preserves aggregate links and collection order.],
+    [`orders`, `consignments`, `order_consignments`], [Order IDs, route/date/quote/state; cargo fields; foreign keys], [Stores order management data and its one-to-many cargo relationship.],
+    [`shipments`], [`order_id`, `vehicle_id`, `driver_id`, `state_name`, location], [Stores dispatch assignments, tracking state, and latest telemetry location.],
+    [`invoices`, `payments`, `invoice_payments`, `receipts`], [Billing IDs, amounts, dates, methods, states and foreign keys], [Stores billing/payment history and immutable receipt records.],
   )),
-  caption: [SQLite schema owned exclusively by `DataStore`.],
+  caption: [Normalized SQLite schema owned exclusively by `DataStore`; all writes occur in one transaction and all foreign-key relationships are enabled.],
 ) <tbl-sqlite-schema>
 
-This is a deliberate intermediate relational persistence design: SQLite supplies the durable database, schema/version control, and atomic transaction boundary while `DataStore` preserves the existing aggregate graph. A production-scale next iteration could decompose the snapshot into normalized `customer`, `order`, `shipment`, and `invoice` tables and add SQL reporting queries; that change is isolated behind the same `DataStore` facade.
+SQLite now supplies full relational storage. The schema supports direct SQL inspection of operational entities, foreign-key relationships, atomic replacement of the in-memory aggregate, schema versioning, and deterministic reconstruction of the domain graph. Only the current normalized schema is supported; an older database must be reset before use.
 
 #heading(level: 2, numbering: none)[2.4 Selected use-case sequence diagrams]
 
@@ -331,7 +338,7 @@ The responsibility allocation is preserved: entities own information and local i
 
 #heading(level: 3, numbering: none)[2.5.3 Dynamic aspects: bootstrap and interactions]
 
-`Bootstrap` now has two deterministic paths. On a first launch it seeds branches, vehicles, drivers, and services in the shared aggregate. On later launches `DataStore` reloads the previously committed snapshot before controllers are recreated and listeners are wired. The GUI/CLI boundary commits the aggregate on a normal exit, making the seeded and transactional state available across separate runs while retaining Assignment 2's dependency-safe construction order. At runtime, approval stages an order and invoice before notifying listeners; dispatch stages a shipment and resource allocation before publishing `shipmentAssigned`; and payment creates a receipt only after payment settlement. The four sequence diagrams in Section 2.4 document these in-memory orders and the boundary commit responsibility explicitly. The scenario changes are therefore justified dynamic refinements, not undocumented deviations from Assignment 2.
+`Bootstrap` now has two deterministic paths. On a first launch it seeds branches, vehicles, drivers, and services in the shared aggregate. On later launches `DataStore` reconstructs the previously committed normalized rows before controllers are recreated and listeners are wired. The GUI/CLI boundary commits the aggregate rows on a normal exit, making the seeded and transactional state available across separate runs while retaining Assignment 2's dependency-safe construction order. At runtime, approval stages an order and invoice before notifying listeners; dispatch stages a shipment and resource allocation before publishing `shipmentAssigned`; and payment creates a receipt only after payment settlement. The four sequence diagrams in Section 2.4 document these in-memory orders and the boundary commit responsibility explicitly. The scenario changes are therefore justified dynamic refinements, not undocumented deviations from Assignment 2.
 
 #heading(level: 1, numbering: none)[#text("3. Design Quality")]
 
@@ -375,7 +382,7 @@ SmartFM is implemented in Java 26 in a Maven-standard structure. The following m
 
 *Professional coding standard.* The source follows the Google Java Style Guide @google2023javastyle as the project coding standard: `UpperCamelCase` type names, `lowerCamelCase` members, one public top-level type per source file, consistently braced control flow, descriptive package names, and concise Javadoc for non-obvious public classes/operations. The Maven-standard package layout and `-Xlint:all` compilation check complement that manual code-style review. No formatter plugin is claimed where none is configured.
 
-*Development and test platform.* Development and evidence capture were performed in the Kiro IDE (VS Code-based) on Windows (`win32`) using PowerShell 7.6.0 and Azul Zulu OpenJDK 26.0.2. The application requires a Java 26 JDK plus the pinned jOOQ `3.20.0`, SQLite JDBC `3.46.1.0`, JAXB, R2DBC/Reactive Streams, and SLF4J runtime libraries supplied under `implementation/lib/`; it needs no external database server. Maven 3.x or GNU Make is optional because the documented `javac` fallback is available.
+*Development and test platform.* Development and evidence capture were performed in the Kiro IDE (VS Code-based) on Windows (`win32`) using PowerShell 7.6.0 and Azul Zulu OpenJDK 26.0.2. The application requires a Java 26 JDK plus the pinned SQLite JDBC `3.46.1.0` and the supplied JAXB, R2DBC/Reactive Streams, and SLF4J runtime libraries under `implementation/lib/`; it needs no external database server. Maven 3.x or GNU Make is optional because the documented `javac` fallback is available.
 
 #figure(
   styled-table((2.0fr, 2.65fr, 3.8fr), (
@@ -385,7 +392,7 @@ SmartFM is implemented in Java 26 in a Maven-standard structure. The following m
     [UC-03, @fig-seq-dispatch], [`DispatchManager`, `Vehicle`, `Driver`, `Shipment`, `ShipmentAssignedListener`], [Dispatch verifies prerequisites, allocates real seeded resources, creates a shipment, updates the shared aggregate, and sends the observer event.],
     [UC-04, @fig-seq-tracking], [`ShipmentTracker`, `ManualTelemetrySource`, `ShipmentState` subclasses], [Tracking events use the adapter interface and state hierarchy; invalid state transitions are rejected.],
     [UC-05, @fig-seq-payment], [`PaymentProcessor`, `IPaymentStrategy`, `SimulatedGatewayAdapter`, `Payment`, `Receipt`], [Payment amount is checked against the invoice before settlement; card verification is behind an adapter and receipt creation follows success.],
-    [Persistence / indirection], [`smartfm.infrastructure.DataStore`], [The GUI/CLI startup and shutdown boundary uses the single `DataStore` persistence gateway. It uses jOOQ `3.20.0` with SQLite to initialise the versioned schema and transactionally read or conflict-upsert the aggregate snapshot; domain classes remain storage-independent.],
+    [Persistence / indirection], [`smartfm.infrastructure.DataStore`], [The GUI/CLI startup and shutdown boundary uses the single `DataStore` persistence gateway. It uses SQLite JDBC with a versioned normalized schema and transactionally replaces/reloads the aggregate rows; domain classes remain storage-independent.],
     [Bootstrap / observer wiring], [`Bootstrap`, listener interfaces, `IdGenerator`], [Creates seeded reference data for a new store, constructs controllers on every launch, and registers listeners in dependency-safe order.],
   )),
   caption: [Traceability from detailed design and selected sequence diagrams to Java source.],
@@ -394,7 +401,7 @@ SmartFM is implemented in Java 26 in a Maven-standard structure. The following m
 #figure(
   styled-table((2.7fr, 6.0fr), (
     th[Project path], th[Purpose],
-    [`pom.xml`], [Maven descriptor: Java `26` release target, jOOQ `3.20.0`, pinned Xerial SQLite JDBC `3.46.1.0`, JAXB/R2DBC/Reactive Streams runtime closure, SLF4J `1.7.36`, JUnit Jupiter `5.10.2` test dependency, and a Shade-plugin executable JAR with `smartfm.ui.Launcher` as the main class.],
+    [`pom.xml`], [Maven descriptor: Java `26` release target, pinned Xerial SQLite JDBC `3.46.1.0`, supplied JAXB/R2DBC/Reactive Streams runtime closure, SLF4J `1.7.36`, JUnit Jupiter `5.10.2` test dependency, and a Shade-plugin executable JAR with `smartfm.ui.Launcher` as the main class.],
     [`src/main/java/smartfm/common/`], [Exceptions, validators, and money formatting.],
     [`src/main/java/smartfm/domain/`], [Six domain sub-packages (`customer`, `order`, `shipment`, `billing`, `fleet`, `catalog`) owning entities, state hierarchies, and strategy/adapter contracts.],
     [`src/test/java/smartfm/`], [JUnit 5 unit, integration, and E2E test suite (70 automated tests across six domain packages, application controllers, Swing GUI panels, real-time auto-persistence, complete business workflows, and SQLite persistence).],
@@ -414,7 +421,7 @@ SmartFM is implemented in Java 26 in a Maven-standard structure. The following m
 *Using Maven (recommended when available):*
 
 #console(```
-mvn test          # Runs all 67 automated JUnit 5 unit, integration, and E2E tests
+mvn test          # Runs all 70 automated JUnit 5 unit, integration, and E2E tests
 mvn package       # Compiles and builds the self-contained executable JAR
 java --enable-native-access=ALL-UNNAMED -jar target/smartfm.jar
 java --enable-native-access=ALL-UNNAMED -jar target/smartfm.jar --cli
@@ -425,7 +432,7 @@ Maven uses the `maven.compiler.release` value `26`, downloads the pinned depende
 *Using the supplied Makefile (verified on Windows GNU Make 4.4.1):*
 
 #console(```
-make compile      # 74 classes with -Xlint:all and SQLite/jOOQ
+make compile      # 74 classes with -Xlint:all and SQLite/JDBC
 make run          # graphical interface; native access is supplied automatically
 make run-cli      # textual interface; native access is supplied automatically
 make jar          # target/smartfm.jar plus target/lib/ runtime JARs
@@ -444,11 +451,11 @@ java --enable-native-access=ALL-UNNAMED -cp "target/classes;$deps" smartfm.ui.La
 java --enable-native-access=ALL-UNNAMED -cp "target/classes;$deps" smartfm.ui.Launcher --cli
 ```) 
 
-Data is stored locally in the embedded SQLite database `data/smartfm.db`. Delete this database and any `-wal`/`-shm` sidecar files (or run `make reset`) to return to the seeded state: two branches, three vehicles, three drivers, and three service offerings. The legacy `smartfm-store.dat` file is preserved but is no longer read. No external database server, credentials, or network service is required.
+Data is stored locally in the embedded SQLite database `data/smartfm.db`. Delete this database and any `-wal`/`-shm` sidecar files (or run `make reset`) to return to the seeded state: two branches, three vehicles, three drivers, and three service offerings. No external database server, credentials, or network service is required.
 
 #figure(
   console(raw(read("implementation/transcripts/00_compilation_evidence.txt"), lang: "text")),
-  caption: [Compilation evidence from a clean Java 26 build: all 74 production source files compile cleanly with the pinned SQLite/jOOQ/JAXB classpath, emitting 0 errors and 0 warnings under `-Xlint:all` with exit code 0.],
+  caption: [Compilation evidence from a clean Java 26 build: all 74 production source files compile with the pinned SQLite/JDBC classpath and exit code 0. Java 26 reports the existing serial/this-escape lint warnings but no compilation errors.],
 ) <fig-compilation>
 
 #heading(level: 3, numbering: none)[GUI execution screenshots]
@@ -489,7 +496,7 @@ The following screenshots were generated by the real Swing application through `
 
 #figure(
   image("implementation/screenshots/06_final_state_before_exit.png", width: 75%),
-  caption: [Final application state immediately before normal exit. Closing the window invokes the registered handler, commits the `DataStore` snapshot to SQLite, and exits; the recorded CLI scenarios independently verify that the database is restored in a later process.],
+  caption: [Final application state immediately before normal exit. Closing the window invokes the registered handler, commits the normalized `DataStore` rows to SQLite, and exits; the recorded CLI scenarios independently verify that the database is restored in a later process.],
 ) <fig-gui-exit>
 
 To reproduce the complete screenshot set on a machine with JDK 26 and GNU Make, run `make screenshots` from `implementation/`. The driver resets only the local demonstration data, runs its finite scenario sequence, saves the images, and exits automatically.
@@ -502,7 +509,7 @@ Testing combines compilation and static lint analysis, automated unit and integr
 1. *Common Layer*: `MoneyTest` (currency formatting, timestamp rendering) and `ValidatorsTest` (regex email/phone, string length boundaries, non-negative numbers, date constraints, enum mapping).
 2. *Domain Layer*: `smartfm.domain.customer.CustomerTest` (customer validation, order history tracking), `smartfm.domain.order.OrderAndConsignmentTest` (order/consignment weight aggregation, `OrderState` transition guards), `smartfm.domain.shipment.ShipmentAndTelemetryTest` (`ShipmentState` transition guards, manual telemetry adapter), `smartfm.domain.billing.InvoicePaymentAndReceiptTest` (`InvoiceState` and `PaymentState` state machines, receipt issuance, cash/gateway strategies), `smartfm.domain.fleet.FleetAndBranchTest` (branch resource registration, vehicle payload capacity, driver duty states, staff roles), and `smartfm.domain.catalog.ServiceCatalogAndTariffTest` (service offerings, pricing tariff quotes, peak multipliers, system configuration).
 3. *Application Layer*: `OrderProcessorTest` (end-to-end submission and approval event dispatch), `DispatchManagerTest` (resource lookup, shipment creation, fleet status updates), `ShipmentTrackerTest` (tracking updates and automatic resource deallocation on delivery), and `PaymentProcessorTest` (receipt issuance, partial payments, settled invoice locking).
-4. *Infrastructure Layer*: `DataStoreTest` (saving and reloading aggregate snapshots from embedded SQLite database files, verifying state graph integrity).
+4. *Infrastructure Layer*: `DataStoreTest` (saving and reloading normalized aggregate rows from embedded SQLite database files, verifying state graph integrity).
 5. *Core E2E Workflow Layer*: `SmartFmEndToEndTest` (executes the complete business path from customer registration, multi-consignment order placement, quote calculation, approval, fleet/driver resource allocation, milestone tracking, resource deallocation upon delivery, partial cash & final card payment settlement, to real SQLite database persistence and cold-start system recovery).
 6. *Swing GUI E2E Layer*: `smartfm.ui.gui.SmartFmGuiEndToEndTest` (executes the full interactive GUI flow on the Event Dispatch Thread: customer registration error & success paths, order creation & approval, fleet dispatch, tracking state machine guards, billing overpayment & settlement, and Swing window shutdown/persistence reload).
 7. *GUI Real-Time Persistence Layer*: `smartfm.ui.gui.GuiContextAndPersistenceTest` (validates immediate real-time auto-save to SQLite upon UI state mutation, 2-column order form layout rendering, and direct disk-file state verification without window closure).
@@ -514,7 +521,7 @@ All 70 automated tests execute in under 10 seconds and pass with zero failures o
 #figure(
   styled-table((1.05fr, 2.35fr, 3.05fr, 2.3fr), (
     th[Scenario], th[User entry and options], th[Validation / change path], th[Completion evidence],
-    [01 Customer], [Open *Register Customer*; enter name, gender, date of birth, phone, email, and address; select *Register Customer*.], [Enter `abc` and `not-an-email`, observe inline errors, correct both in place, and resubmit.], [Customer `CUS-0001` is created; @fig-gui-empty-validation and @fig-gui-input-change.],
+    [01 Customer], [Open *Register Customer*; enter name, gender, date of birth (`dd/MM/yyyy`), phone, email, and address; select *Register Customer*.], [Enter `abc` and `not-an-email`, observe inline errors, correct both in place, and resubmit.], [Customer `CUS-0001` is created; @fig-gui-empty-validation and @fig-gui-input-change.],
     [02 Order], [Open *Order Management*; select customer/service/origin/destination; enter distance/date and consignment values; add then submit. Dispatcher may approve/reject; customer may cancel.], [Negative weight is rejected. A separate submitted order is selected and cancelled to demonstrate change of mind.], [Approval creates invoice `INV-0001`; cancellation appears in @fig-gui-input-change.],
     [03 Dispatch], [Open *Fleet Dispatch*; select an approved order, choose available vehicle/driver, then select *Create Shipment*.], [Attempting the action without a selected order is rejected; valid compatible resources are then selected.], [`SHP-0001` is created and tracking is notified; @fig-gui-dispatch-tracking-validation.],
     [04 Tracking], [Open *Shipment Tracking*; select `SHP-0001`, enter a location, then choose Pickup, In Transit, or Delivery.], [Delivery from Assigned is rejected; the user then selects the legal Pickup -> In Transit -> Delivery sequence.], [Delivered status and final location are shown in @fig-gui-completion.],
@@ -560,7 +567,7 @@ All 70 automated tests execute in under 10 seconds and pass with zero failures o
   caption: [Scenario 05: overpayment is rejected, then partial and final payments demonstrate invoice state changes and receipt issuance.],
 ) <fig-test-payment>
 
-After Scenario 05, the embedded SQLite database `data/smartfm.db` contains the committed snapshot of two customers, three orders (approved/dispatched, cancelled, rejected), one delivered shipment, one paid invoice, two settled payments, and two receipts. `schema_metadata` records the database version and `store_snapshot` stores the transactionally committed aggregate payload. The independent-process transcript sequence and the saved SQLite database provide a practical persistence regression check in addition to individual business-rule checks.
+After Scenario 05, the embedded SQLite database `data/smartfm.db` contains the committed normalized rows for two customers, three orders (approved/dispatched, cancelled, rejected), one delivered shipment, one paid invoice, two settled payments, and two receipts. `schema_metadata` records schema version 3, while the entity and association tables store the operational data and foreign-key relationships. The independent-process transcript sequence and the saved SQLite database provide a practical persistence regression check in addition to individual business-rule checks.
 
 #heading(level: 1, numbering: none)[Conclusion]
 

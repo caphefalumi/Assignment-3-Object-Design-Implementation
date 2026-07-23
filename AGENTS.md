@@ -70,10 +70,10 @@ SmartFM is designed according to GRASP, GoF design patterns, and strict layered 
    - Entities, Value Objects (`Money`), State Machine patterns, and Strategy/Adapter interfaces.
    - Completely decoupled from UI frameworks and SQLite/JDBC.
 4. **Infrastructure Layer (`smartfm.infrastructure`)**:
-   - `DataStore`: Single gateway facade managing embedded SQLite connections and transactional aggregate snapshot serialization.
+   - `DataStore`: Single gateway facade managing embedded SQLite connections and transactional normalized relational persistence.
 
 ### Core Architectural Rules & Patterns
-- **Persistence**: Transactional aggregate snapshot storing system state into `data/smartfm.db`.
+- **Persistence**: Transactional normalized relational tables storing system state in `data/smartfm.db`.
 - **Observer Pattern**: Application controllers notify listeners on domain events.
 - **Strategy & Adapter Patterns**: Plugged into domain workflows for billing calculation, vehicle selection, and external adapter simulation.
 - **Input Boundaries**: Always validate input using shared helpers in `smartfm.common` before touching application or domain state.
@@ -118,7 +118,7 @@ When modifying or analyzing code in this repository:
    - Minimize file edits and avoid unnecessary refactoring or renames.
 2. **Preserve Compatibility**:
    - Maintain compatibility between GUI (`smartfm.ui.gui`), CLI (`smartfm.ui`), and the underlying Application Controllers.
-   - Do not alter `DataStore` snapshot serialization schema without updating version metadata if required.
+   - Do not change the normalized `DataStore` schema without updating its schema version and documentation when required.
 3. **No Unrequested Dependencies**:
    - Do not add new third-party JARs or libraries. Rely strictly on Java 26 standard libraries and pinned JARs in `lib/`.
 4. **Validation**:
