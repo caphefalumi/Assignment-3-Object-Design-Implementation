@@ -81,8 +81,8 @@ public class ShipmentTracker implements ShipmentAssignedListener {
   }
 
   private void applyTelemetry(Shipment shipment, String rawLocation) {
+    telemetrySource.stageLocation(shipment.getId(), rawLocation);
     String normalised = telemetrySource.readLocation(shipment.getId());
-    // Prefer the caller-supplied location if the adapter has nothing staged.
     shipment.updateLocation(normalised != null && !normalised.equals("Unknown")
         ? normalised : rawLocation);
   }

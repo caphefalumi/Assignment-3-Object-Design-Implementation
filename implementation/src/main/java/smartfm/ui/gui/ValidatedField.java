@@ -23,6 +23,7 @@ import smartfm.common.InvalidDataException;
  * user corrects the same field in place and re-submits, which is the
  * GUI equivalent of the CLI's in-place retry.
  */
+@SuppressWarnings({"serial", "this-escape"})
 public class ValidatedField extends JPanel {
 
   private static final long serialVersionUID = 1L;

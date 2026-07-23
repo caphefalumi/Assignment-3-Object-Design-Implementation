@@ -68,6 +68,15 @@ public class DispatchManager implements OrderApprovedListener {
     return candidates;
   }
 
+  /** Returns vehicles that satisfy every recorded payload requirement of an order. */
+  public List<Vehicle> findAvailableVehicles(Order order) {
+    if (order == null) {
+      throw new InvalidDataException("Order is required when searching for vehicles.");
+    }
+    return findAvailableVehicles(
+        order.getOriginBranchId(), order.getTotalWeightKg(), order.getTotalVolumeM3());
+  }
+
   /** Returns drivers at {@code branchId} who are currently AVAILABLE. */
   public List<Driver> findAvailableDrivers(String branchId) {
     List<Driver> candidates = new ArrayList<>();
@@ -93,6 +102,14 @@ public class DispatchManager implements OrderApprovedListener {
           "Order " + orderId + " must be Approved before a shipment can be created (currently "
               + order.getStateName() + ").");
     }
+    if (hasShipmentFor(order.getId())) {
+      throw new InvalidDataException("Order " + orderId + " already has a shipment.");
+    }
+
+    Branch originBranch = store.branches().get(order.getOriginBranchId());
+    if (originBranch == null) {
+      throw new InvalidDataException("Unknown origin branch id '" + order.getOriginBranchId() + "'.");
+    }
     Vehicle vehicle = store.vehicles().get(vehicleId);
     Driver driver = store.drivers().get(driverId);
     if (vehicle == null) {
@@ -101,32 +118,38 @@ public class DispatchManager implements OrderApprovedListener {
     if (driver == null) {
       throw new InvalidDataException("Unknown driver id '" + driverId + "'.");
     }
+    if (!vehicle.getBranchId().equals(originBranch.getId())) {
+      throw new InvalidDataException(
+          "Vehicle " + vehicleId + " does not belong to origin branch " + originBranch.getId() + ".");
+    }
+    if (!driver.getHomeBranchId().equals(originBranch.getId())) {
+      throw new InvalidDataException(
+          "Driver " + driverId + " does not belong to origin branch " + originBranch.getId() + ".");
+    }
     if (!vehicle.isAvailable()) {
       throw new InvalidDataException("Vehicle " + vehicleId + " is not available.");
     }
-    if (!driver.isAvailable()) {
-      throw new InvalidDataException("Driver " + driverId + " is not available.");
+    if (!driver.isAvailable() || !driver.isLicenseValid()) {
+      throw new InvalidDataException("Driver " + driverId + " is not available with a valid licence.");
     }
-    if (!vehicle.canCarry(order.getTotalWeightKg(), 0)) {
+    if (!vehicle.canCarry(order.getTotalWeightKg(), order.getTotalVolumeM3())) {
       throw new InvalidDataException(
-          "Vehicle " + vehicleId + " cannot carry the order's total weight of "
-              + order.getTotalWeightKg() + "kg.");
+          "Vehicle " + vehicleId + " cannot carry the order's total cargo of "
+              + order.getTotalWeightKg() + "kg and " + order.getTotalVolumeM3() + "m3.");
     }
 
     Shipment shipment = new Shipment(shipmentIds.next(), order.getId(), vehicleId, driverId);
     store.shipments().put(shipment.getId(), shipment);
-
     vehicle.setStatus(VehicleStatus.DISPATCHED);
     driver.setDutyState(DutyState.DISPATCHED);
-
-    Branch branch = store.branches().get(order.getOriginBranchId());
-    if (branch == null) {
-      throw new InvalidDataException("Unknown origin branch id '" + order.getOriginBranchId() + "'.");
-    }
 
     for (ShipmentAssignedListener listener : shipmentAssignedListeners) {
       listener.onShipmentAssigned(shipment);
     }
     return shipment;
+  }
+
+  private boolean hasShipmentFor(String orderId) {
+    return store.shipments().values().stream().anyMatch(shipment -> orderId.equals(shipment.getOrderId()));
   }
 }

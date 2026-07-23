@@ -12,6 +12,7 @@ import smartfm.common.Validators;
  * Branch} CRC card in Assignment 2 Section 3 (Fleet and Resources
  * Package). Acts as the aggregation root for local resources.
  */
+@SuppressWarnings("serial")
 public class Branch implements Serializable {
 
   private static final long serialVersionUID = 1L;

@@ -55,6 +55,7 @@ import smartfm.domain.shipment.Shipment;
  * SQLite provides a real database file, atomic transaction boundaries, and a
  * clear migration point for future per-entity repository tables.
  */
+@SuppressWarnings("serial")
 public final class DataStore implements Serializable {
 
   private static final long serialVersionUID = 1L;

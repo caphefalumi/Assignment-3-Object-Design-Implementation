@@ -13,6 +13,7 @@ import javax.swing.SwingConstants;
  * the same place and style (Assignment 3 brief: "successful completion
  * of the scenario").
  */
+@SuppressWarnings({"serial", "this-escape"})
 public class ResultBanner extends JLabel {
 
   private static final long serialVersionUID = 1L;

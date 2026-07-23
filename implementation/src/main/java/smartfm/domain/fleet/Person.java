@@ -47,7 +47,7 @@ public abstract class Person implements Serializable {
     return fullName;
   }
 
-  public void setFullName(String fullName) {
+  public final void setFullName(String fullName) {
     this.fullName = Validators.requireNonBlank(fullName, "Full name", 80);
   }
 
@@ -63,7 +63,7 @@ public abstract class Person implements Serializable {
     return phone;
   }
 
-  public void setPhone(String phone) {
+  public final void setPhone(String phone) {
     this.phone = Validators.requirePhone(phone, "Phone number");
   }
 
@@ -71,7 +71,7 @@ public abstract class Person implements Serializable {
     return email;
   }
 
-  public void setEmail(String email) {
+  public final void setEmail(String email) {
     this.email = Validators.requireEmail(email, "Email");
   }
 
@@ -79,7 +79,7 @@ public abstract class Person implements Serializable {
     return address;
   }
 
-  public void setAddress(String address) {
+  public final void setAddress(String address) {
     this.address = Validators.requireNonBlank(address, "Address", 160);
   }
 

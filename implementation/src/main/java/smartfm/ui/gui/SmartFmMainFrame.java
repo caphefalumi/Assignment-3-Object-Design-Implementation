@@ -22,6 +22,7 @@ import javax.swing.UIManager;
  * Application/Domain layer (Assignment 2 Section 5.3.3, layered
  * architecture; Assignment 3 Part IV, Presentation component).
  */
+@SuppressWarnings({"serial", "this-escape"})
 public class SmartFmMainFrame extends JFrame {
 
   private static final long serialVersionUID = 1L;

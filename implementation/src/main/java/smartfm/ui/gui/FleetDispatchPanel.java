@@ -23,6 +23,7 @@ import smartfm.domain.shipment.Shipment;
  * Area 1 (an order must already be Approved), matching the dependency
  * chain documented in asm3.typ Part V.C.
  */
+@SuppressWarnings({"serial", "this-escape"})
 public class FleetDispatchPanel extends JPanel {
 
   private static final long serialVersionUID = 1L;
@@ -144,8 +145,7 @@ public class FleetDispatchPanel extends JPanel {
     if (order == null) {
       return;
     }
-    for (Vehicle v : context.getDispatchManager()
-        .findAvailableVehicles(order.getOriginBranchId(), order.getTotalWeightKg(), 0)) {
+    for (Vehicle v : context.getDispatchManager().findAvailableVehicles(order)) {
       vehicleCombo.addItem(v.getId() + " - " + v);
     }
     for (Driver d : context.getDispatchManager().findAvailableDrivers(order.getOriginBranchId())) {

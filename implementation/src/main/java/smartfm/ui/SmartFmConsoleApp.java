@@ -152,7 +152,6 @@ public final class SmartFmConsoleApp {
     io.printHeader("Register Customer Account (empty form below)");
     io.println("Full name, contact details, and address are all required.");
 
-    String id = "CUS-" + String.format("%04d", store.customers().size() + 1);
     String fullName = io.readValidated("Full name", v -> Validators.requireNonBlank(v, "Full name", 80));
     if (fullName == null) {
       io.println("Registration cancelled.");
@@ -181,8 +180,8 @@ public final class SmartFmConsoleApp {
       return;
     }
 
-    Customer customer = new Customer(id, fullName, gender, dob, phone, email, address);
-    store.customers().put(customer.getId(), customer);
+    Customer customer = bootstrap.getOrderProcessor().registerCustomer(
+        fullName, gender, dob, phone, email, address);
     io.println("Success: customer account " + customer.getId() + " (" + fullName + ") created.");
   }
 
@@ -374,8 +373,7 @@ public final class SmartFmConsoleApp {
     }
 
     io.println("Available vehicles at origin branch " + order.getOriginBranchId() + ":");
-    List<Vehicle> vehicles = bootstrap.getDispatchManager()
-        .findAvailableVehicles(order.getOriginBranchId(), order.getTotalWeightKg(), 0);
+    List<Vehicle> vehicles = bootstrap.getDispatchManager().findAvailableVehicles(order);
     if (vehicles.isEmpty()) {
       io.println("  (no suitable vehicle available - try again later)");
       return;

@@ -245,7 +245,7 @@ public final class ScreenshotDriver {
     onEdt(() -> {
       selectTableRowContaining(panel.invoicesTable(), "INV-0001");
       panel.amountField().setText("30000000");
-      panel.methodCombo().setSelectedItem(smartfm.domain.PaymentMethod.CARD);
+      panel.methodCombo().setSelectedItem(smartfm.domain.billing.PaymentMethod.CARD);
     });
     clickButton(panel, "Submit Payment");
     shoot("05b_billing_payment_exceeds_balance_rejected");
@@ -253,7 +253,7 @@ public final class ScreenshotDriver {
     onEdt(() -> {
       selectTableRowContaining(panel.invoicesTable(), "INV-0001");
       panel.amountField().setText("10000000");
-      panel.methodCombo().setSelectedItem(smartfm.domain.PaymentMethod.CASH);
+      panel.methodCombo().setSelectedItem(smartfm.domain.billing.PaymentMethod.CASH);
     });
     clickButton(panel, "Submit Payment");
     shoot("05c_billing_payment_partial_success");
@@ -261,7 +261,7 @@ public final class ScreenshotDriver {
     onEdt(() -> {
       selectTableRowContaining(panel.invoicesTable(), "INV-0001");
       panel.amountField().setText("12290000");
-      panel.methodCombo().setSelectedItem(smartfm.domain.PaymentMethod.CARD);
+      panel.methodCombo().setSelectedItem(smartfm.domain.billing.PaymentMethod.CARD);
     });
     clickButton(panel, "Submit Payment");
     shoot("05d_billing_payment_settled");

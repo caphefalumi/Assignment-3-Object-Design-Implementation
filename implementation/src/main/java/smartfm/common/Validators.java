@@ -73,11 +73,18 @@ public final class Validators {
   }
 
   public static LocalDate requireTodayOrFuture(String raw, String fieldName) {
-    LocalDate parsed = requireValidDate(raw, fieldName);
-    if (parsed.isBefore(LocalDate.now())) {
+    return requireTodayOrFuture(requireValidDate(raw, fieldName), fieldName);
+  }
+
+  /** Validates a date supplied by an application or domain caller rather than a text boundary. */
+  public static LocalDate requireTodayOrFuture(LocalDate value, String fieldName) {
+    if (value == null) {
+      throw new InvalidDataException(fieldName + " is required.");
+    }
+    if (value.isBefore(LocalDate.now())) {
       throw new InvalidDataException(fieldName + " cannot be in the past.");
     }
-    return parsed;
+    return value;
   }
 
   public static LocalDate requireValidDate(String raw, String fieldName) {

@@ -16,6 +16,7 @@ import smartfm.common.Validators;
  * (Commercial and Ordering Package). Delegates lifecycle transitions to
  * an {@link OrderState} instance (State pattern).
  */
+@SuppressWarnings("serial")
 public class Order implements Serializable {
 
   private static final long serialVersionUID = 1L;
@@ -47,7 +48,7 @@ public class Order implements Serializable {
     this.originBranchId = Validators.requireNonBlank(originBranchId, "Origin branch id", 20);
     this.destinationBranchId = Validators.requireNonBlank(destinationBranchId, "Destination branch id", 20);
     this.distanceKm = Validators.requirePositive(distanceKm, "Distance");
-    this.requestedPickupDate = requestedPickupDate;
+    this.requestedPickupDate = Validators.requireTodayOrFuture(requestedPickupDate, "Requested pickup date");
     this.createdAt = LocalDateTime.now();
     this.state = new OrderSubmittedState();
   }
@@ -98,6 +99,11 @@ public class Order implements Serializable {
 
   public double getTotalWeightKg() {
     return consignments.stream().mapToDouble(Consignment::getWeightKg).sum();
+  }
+
+  /** Returns the total cargo volume used when dispatch checks vehicle capacity. */
+  public double getTotalVolumeM3() {
+    return consignments.stream().mapToDouble(Consignment::getVolumeM3).sum();
   }
 
   public void requireHasConsignments() {

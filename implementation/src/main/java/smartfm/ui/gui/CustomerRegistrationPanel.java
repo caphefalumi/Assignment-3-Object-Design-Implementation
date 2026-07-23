@@ -19,6 +19,7 @@ import smartfm.domain.customer.Customer;
  * field on submit, and shows a clear success message once the account
  * is created.
  */
+@SuppressWarnings({"serial", "this-escape"})
 public class CustomerRegistrationPanel extends JPanel {
 
   private static final long serialVersionUID = 1L;
@@ -86,10 +87,9 @@ public class CustomerRegistrationPanel extends JPanel {
       return;
     }
 
-    String id = "CUS-" + String.format("%04d", context.getStore().customers().size() + 1);
     String gender = (String) genderCombo.getSelectedItem();
-    Customer customer = new Customer(id, fullName, gender, dob, phone, email, address);
-    context.getStore().customers().put(customer.getId(), customer);
+    Customer customer = context.getOrderProcessor().registerCustomer(
+        fullName, gender, dob, phone, email, address);
     context.notifyChanged();
 
     banner.success("customer account " + customer.getId() + " (" + fullName + ") created.");
@@ -128,5 +128,9 @@ public class CustomerRegistrationPanel extends JPanel {
 
   ValidatedField addressField() {
     return addressField;
+  }
+
+  void clickSubmit() {
+    onSubmit();
   }
 }

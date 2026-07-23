@@ -19,6 +19,7 @@ import smartfm.domain.shipment.Shipment;
  * Area 2 (a shipment must already exist with an assigned vehicle and
  * driver before it can be tracked here).
  */
+@SuppressWarnings({"serial", "this-escape"})
 public class ShipmentTrackingPanel extends JPanel {
 
   private static final long serialVersionUID = 1L;

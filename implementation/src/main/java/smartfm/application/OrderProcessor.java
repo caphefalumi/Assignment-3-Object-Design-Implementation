@@ -28,6 +28,7 @@ import smartfm.infrastructure.DataStore;
 public class OrderProcessor {
 
   private final DataStore store;
+  private final IdGenerator customerIds;
   private final IdGenerator orderIds;
   private final IdGenerator invoiceIds;
   private final List<OrderApprovedListener> orderApprovedListeners = new ArrayList<>();
@@ -35,8 +36,23 @@ public class OrderProcessor {
 
   public OrderProcessor(DataStore store) {
     this.store = store;
+    this.customerIds = new IdGenerator("CUS", store.customers());
     this.orderIds = new IdGenerator("ORD", store.orders());
     this.invoiceIds = new IdGenerator("INV", store.invoices());
+  }
+
+  /** Registers a customer through the order-management application boundary. */
+  public Customer registerCustomer(
+      String fullName,
+      String gender,
+      LocalDate dateOfBirth,
+      String phone,
+      String email,
+      String address) {
+    Customer customer = new Customer(
+        customerIds.next(), fullName, gender, dateOfBirth, phone, email, address);
+    store.customers().put(customer.getId(), customer);
+    return customer;
   }
 
   /** Registered by DispatchManager during bootstrap (Observer pattern). */

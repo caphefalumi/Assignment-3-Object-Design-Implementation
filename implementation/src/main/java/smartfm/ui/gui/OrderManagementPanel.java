@@ -37,6 +37,7 @@ import smartfm.domain.order.Order;
  * generates an invoice), rejection with a reason, and cancellation
  * (customer change of mind).
  */
+@SuppressWarnings({"serial", "this-escape"})
 public class OrderManagementPanel extends JPanel {
 
   private static final long serialVersionUID = 1L;

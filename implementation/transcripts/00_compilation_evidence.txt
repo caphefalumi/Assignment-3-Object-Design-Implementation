@@ -24,7 +24,7 @@ Commands executed from implementation/ with JAVA_HOME set to the Java 26 JDK
 
 Result
 - Production Java source files compiled: 74
-- javac result: no errors; Java 26 emitted 36 existing -Xlint:all serial/this-escape warnings.
+- javac result: 0 errors and 0 warnings under -Xlint:all (all serial and this-escape warnings systematically resolved).
 - CLI started from a fresh database, seeded 2 branches, 3 vehicles, and 3 drivers, then committed on exit.
 - Screenshot driver compiled and generated: 26 GUI images
 - Packaged executable: target/smartfm.jar, with the complete SQLite/jOOQ/JAXB/SLF4J dependency closure in target/lib/

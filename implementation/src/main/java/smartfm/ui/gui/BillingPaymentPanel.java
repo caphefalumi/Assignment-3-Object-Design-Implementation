@@ -25,6 +25,7 @@ import smartfm.domain.billing.Receipt;
  * required by the Assignment 3 brief, no real banking transaction is
  * performed; a simulated confirmation message is shown instead.
  */
+@SuppressWarnings({"serial", "this-escape"})
 public class BillingPaymentPanel extends JPanel {
 
   private static final long serialVersionUID = 1L;

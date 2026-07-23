@@ -59,10 +59,10 @@
     lifeline(0); lifeline(1); lifeline(2); lifeline(3)
     edge((0, 1), (1, 1), "->", label: "1: registerCustomer(details)", label-pos: .5)
     edge((1, 1.55), (2, 1.55), "->", label: "2: create and validate Customer", label-pos: .5)
-    edge((1, 2.1), (3, 2.1), "->", label: "3: save()", label-pos: .5)
+    edge((1, 2.1), (3, 2.1), "->", label: "3: stage customer in aggregate", label-pos: .5)
     edge((0, 2.8), (1, 2.8), "->", label: "4: submitOrder(customer, consignments)", label-pos: .5)
     edge((1, 3.35), (2, 3.35), "->", label: "5: create Consignment(s) and Order", label-pos: .5)
-    edge((1, 3.9), (3, 3.9), "->", label: "6: save(); return order id", label-pos: .5)
+    edge((1, 3.9), (3, 3.9), "->", label: "6: stage order; return id", label-pos: .5)
   }
 )
 #let sequence-dispatch() = diagram(
@@ -74,9 +74,9 @@
     box((3, 0), "DataStore / ShipmentTracker")
     lifeline(0); lifeline(1); lifeline(2); lifeline(3)
     edge((0, 1), (1, 1), "->", label: "1: assignShipment(orderId, vehicleId, driverId)", label-pos: .5)
-    edge((1, 1.55), (2, 1.55), "->", label: "2: verify approved / available / same branch", label-pos: .5)
+    edge((1, 1.55), (2, 1.55), "->", label: "2: verify approved / available / branch / capacity", label-pos: .5)
     edge((1, 2.1), (2, 2.1), "->", label: "3: create Shipment; allocate resources", label-pos: .5)
-    edge((1, 2.65), (3, 2.65), "->", label: "4: save()", label-pos: .5)
+    edge((1, 2.65), (3, 2.65), "->", label: "4: stage shipment and resource updates", label-pos: .5)
     edge((1, 3.2), (3, 3.2), "->", label: "5: publish shipmentAssigned(shipment)", label-pos: .5)
   }
 )
@@ -92,7 +92,7 @@
     edge((1, 1.55), (2, 1.55), "->", label: "2: obtain location through ITelemetrySource", label-pos: .5)
     edge((1, 2.1), (3, 2.1), "->", label: "3: request next lifecycle transition", label-pos: .5)
     edge((3, 2.65), (2, 2.65), "->", label: "4: ShipmentState accepts/rejects transition", label-pos: .5)
-    edge((1, 3.2), (3, 3.2), "->", label: "5: persist accepted status and location", label-pos: .5)
+    edge((1, 3.2), (3, 3.2), "->", label: "5: stage accepted status and location", label-pos: .5)
   }
 )
 #let sequence-payment() = diagram(
@@ -107,7 +107,7 @@
     edge((1, 1.55), (2, 1.55), "->", label: "2: validate amount against outstanding balance", label-pos: .5)
     edge((1, 2.1), (2, 2.1), "->", label: "3: create Payment; select strategy", label-pos: .5)
     edge((1, 2.65), (3, 2.65), "->", label: "4: verify (gateway only for card)", label-pos: .5)
-    edge((1, 3.2), (3, 3.2), "->", label: "5: settle, issue Receipt, save()", label-pos: .5)
+    edge((1, 3.2), (3, 3.2), "->", label: "5: settle, issue Receipt, stage aggregate", label-pos: .5)
   }
 )
 
@@ -187,6 +187,67 @@ The detailed design retains Assignment 2's Entity-Control-Boundary separation. D
   caption: [Detailed class-level view: controller-to-domain calls are solid; the operational dependency chain is dashed; red dotted edges identify controller use of the persistence gateway added during implementation.],
 ) <fig-class-model>
 
+#let final-class-model() = diagram(
+  spacing: (2.08cm, .82cm),
+  {
+    box((0, 0), "OrderProcessor", width: 1.9cm, height: .52cm)
+    box((1, 0), "DispatchManager", width: 1.9cm, height: .52cm)
+    box((2, 0), "ShipmentTracker", width: 1.9cm, height: .52cm)
+    box((3, 0), "PaymentProcessor", width: 1.9cm, height: .52cm)
+    box((4, 0), "DataStore\n«infrastructure>", width: 1.9cm, height: .52cm, fill: rgb("#fff4db"))
+
+    box((0, 1), "Customer", width: 1.9cm, height: .52cm)
+    box((1, 1), "Order", width: 1.9cm, height: .52cm)
+    box((2, 1), "ServiceOffering", width: 1.9cm, height: .52cm)
+    box((3, 1), "Branch", width: 1.9cm, height: .52cm)
+    box((4, 1), "Invoice", width: 1.9cm, height: .52cm)
+
+    box((0, 2), "Consignment", width: 1.9cm, height: .52cm)
+    box((1, 2), "Shipment", width: 1.9cm, height: .52cm)
+    box((2, 2), "Vehicle", width: 1.9cm, height: .52cm)
+    box((3, 2), "Driver", width: 1.9cm, height: .52cm)
+    box((4, 2), "Payment", width: 1.9cm, height: .52cm)
+
+    box((0, 3), "Person\nStaffMember", width: 1.9cm, height: .52cm)
+    box((1, 3), "Receipt", width: 1.9cm, height: .52cm)
+    box((2, 3), "Order / Shipment\nInvoice / Payment State", width: 1.9cm, height: .52cm)
+    box((3, 3), "PricingTariff\nPaymentStrategy / Gateway", width: 1.9cm, height: .52cm)
+    box((4, 3), "ITelemetrySource\nManualTelemetrySource", width: 1.9cm, height: .52cm)
+
+    edge((0, 0), (0, 1), "->", stroke: .7pt + rgb("#1a3a5c"))
+    edge((0, 0), (1, 1), "->", stroke: .7pt + rgb("#1a3a5c"))
+    edge((0, 0), (4, 1), "->", stroke: .7pt + rgb("#1a3a5c"))
+    edge((1, 0), (1, 2), "->", stroke: .7pt + rgb("#1a3a5c"))
+    edge((2, 0), (1, 2), "->", stroke: .7pt + rgb("#1a3a5c"))
+    edge((3, 0), (4, 2), "->", stroke: .7pt + rgb("#1a3a5c"))
+    edge((0, 1), (1, 1), "->", stroke: .65pt + rgb("#1a3a5c"))
+    edge((1, 1), (0, 2), "->", stroke: .65pt + rgb("#1a3a5c"))
+    edge((1, 1), (2, 1), "->", stroke: .65pt + rgb("#1a3a5c"))
+    edge((1, 1), (1, 2), "->", stroke: .65pt + rgb("#1a3a5c"))
+    edge((3, 1), (2, 2), "->", stroke: .65pt + rgb("#1a3a5c"))
+    edge((3, 1), (3, 2), "->", stroke: .65pt + rgb("#1a3a5c"))
+    edge((1, 2), (2, 2), "->", stroke: .65pt + rgb("#1a3a5c"))
+    edge((1, 2), (3, 2), "->", stroke: .65pt + rgb("#1a3a5c"))
+    edge((4, 1), (4, 2), "->", stroke: .65pt + rgb("#1a3a5c"))
+    edge((4, 2), (1, 3), "->", stroke: .65pt + rgb("#1a3a5c"))
+    edge((1, 1), (2, 3), "->", stroke: .55pt + rgb("#6d7f8f"), dash: "dashed")
+    edge((1, 2), (2, 3), "->", stroke: .55pt + rgb("#6d7f8f"), dash: "dashed")
+    edge((4, 1), (2, 3), "->", stroke: .55pt + rgb("#6d7f8f"), dash: "dashed")
+    edge((4, 2), (2, 3), "->", stroke: .55pt + rgb("#6d7f8f"), dash: "dashed")
+    edge((2, 1), (3, 3), "->", stroke: .55pt + rgb("#6d7f8f"), dash: "dashed")
+    edge((3, 0), (3, 3), "->", stroke: .55pt + rgb("#6d7f8f"), dash: "dashed")
+    edge((2, 0), (4, 3), "->", stroke: .55pt + rgb("#6d7f8f"), dash: "dashed")
+    edge((0, 0), (4, 0), "->", stroke: .55pt + rgb("#c0392b"), dash: "dotted")
+    edge((1, 0), (4, 0), "->", stroke: .55pt + rgb("#c0392b"), dash: "dotted")
+    edge((2, 0), (4, 0), "->", stroke: .55pt + rgb("#c0392b"), dash: "dotted")
+    edge((3, 0), (4, 0), "->", stroke: .55pt + rgb("#c0392b"), dash: "dotted")
+  }
+)
+#figure(
+  align(center, scale(73%, reflow: true, final-class-model())),
+  caption: [Final implementation class diagram. Each box names an implemented core class or a closely coupled State, Strategy, or Adapter family; solid lines show aggregate/domain relationships, dashed lines show polymorphic dependencies, and red dotted lines show controller use of the persistence boundary. `Report` and the authentication/session service are deliberately excluded because they are outside the selected four-area scope.],
+) <fig-final-class-model>
+
 #heading(level: 2, numbering: none)[2.2 GRASP Controller assignments]
 
 A GRASP Controller should represent either the overall system, a use-case session, or a cohesive service that receives external system events @larman2004uml. SmartFM deliberately assigns one application controller to each coherent operational area, rather than allowing GUI event handlers to construct entities or alter state directly. `Launcher` creates a single `Bootstrap`; `Bootstrap` wires the controllers and observer listeners; and GUI/CLI actions call only their controller's public operations.
@@ -194,10 +255,10 @@ A GRASP Controller should represent either the overall system, a use-case sessio
 #figure(
   styled-table((1.75fr, 2.25fr, 3.0fr, 1.95fr), (
     th[GRASP Controller], th[System events received], th[Delegation and collaboration], th[Why this is the Controller],
-    [`OrderProcessor`], [Register customer; submit, approve, reject, or cancel order], [Creates/coordinates `Customer`, `Consignment`, `Order`, and `Invoice`; publishes order-approved and invoice-created events; saves state.], [Represents the order-management use-case session and keeps UI free of order rules.],
-    [`DispatchManager`], [Assign approved order to vehicle and driver], [Obtains order/resources, checks approval/availability/branch compatibility, creates `Shipment`, then publishes shipment-assigned.], [Represents the dispatcher-facing dispatch use case while retaining the human allocation decision.],
-    [`ShipmentTracker`], [Record pickup, in-transit, delivery, and location events], [Uses telemetry abstraction and `ShipmentState` to validate each transition, then persists the accepted milestone.], [Receives tracking system events and delegates transition legality to the state object.],
-    [`PaymentProcessor`], [Submit cash/card payment], [Checks the invoice balance, selects payment strategy, calls adapter when required, settles payment, creates receipt, and persists.], [Represents the payment use case and stops UI/payment gateway details entering the domain model.],
+    [`OrderProcessor`], [Register customer; submit, approve, reject, or cancel order], [Creates/coordinates `Customer`, `Consignment`, `Order`, and `Invoice`; publishes order-approved and invoice-created events; stages aggregate changes for the boundary to commit.], [Represents the order-management use-case session and keeps UI free of order rules.],
+    [`DispatchManager`], [Assign approved order to vehicle and driver], [Obtains order/resources, checks approval, availability, branch, capacity, licence, and duplicate-assignment constraints; creates `Shipment`, then publishes shipment-assigned.], [Represents the dispatcher-facing dispatch use case while retaining the human allocation decision.],
+    [`ShipmentTracker`], [Record pickup, in-transit, delivery, and location events], [Stages manual telemetry through `ITelemetrySource`, uses `ShipmentState` to validate each transition, and updates the accepted milestone in the shared aggregate.], [Receives tracking system events and delegates transition legality to the state object.],
+    [`PaymentProcessor`], [Submit cash/card payment], [Checks the invoice balance, selects payment strategy, calls adapter when required, settles payment, creates receipt, and updates the shared aggregate.], [Represents the payment use case and stops UI/payment gateway details entering the domain model.],
   )),
   caption: [Explicit GRASP Controller allocation.],
 ) <tbl-grasp-controller>
@@ -240,12 +301,12 @@ The following four diagrams specify the selected implemented use cases. They are
 
 #figure(
   align(center, sequence-order()),
-  caption: [UC-01 / UC-02: customer registration and order submission. The boundary sends each system event to `OrderProcessor`; entity construction/validation and persistence occur behind that GRASP Controller.],
+  caption: [UC-01 / UC-02: customer registration and order submission. The boundary sends each system event to `OrderProcessor`; it creates and validates domain objects, then stages them in the shared aggregate for the UI boundary to commit on a clean exit.],
 ) <fig-seq-order>
 
 #figure(
   align(center, sequence-dispatch()),
-  caption: [UC-03: dispatcher assigns a vehicle and driver to an approved order. `DispatchManager` coordinates the decision and notifies `ShipmentTracker` after successful persistence.],
+  caption: [UC-03: dispatcher assigns a vehicle and driver to an approved order. `DispatchManager` checks the dispatch constraints, updates the shared aggregate, and notifies `ShipmentTracker`; the UI/CLI boundary commits the aggregate on a clean exit.],
 ) <fig-seq-dispatch>
 
 #figure(
@@ -262,7 +323,7 @@ The following four diagrams specify the selected implemented use cases. They are
 
 #heading(level: 3, numbering: none)[2.5.1 Class-level changes and non-changes]
 
-The fourteen core entity classes from Assignment 2 (`Customer`, `Order`, `Consignment`, `Shipment`, `Vehicle`, `Driver`, `Branch`, `ServiceOffering`, `PricingTariff`, `Invoice`, `Payment`, `Receipt`, and the `Person`/`StaffMember` hierarchy) remain in the implemented design with their original information-expert responsibilities. The four State hierarchies and the `IPaymentGateway`, `IPaymentStrategy`, `IPricingStrategy`, and `ITelemetrySource` contracts also remain. The implementation adds only the classes that Assignment 2 explicitly deferred or left abstract: `DataStore`, concrete payment/telemetry adapters, `Bootstrap`, listener interfaces, and boundary classes for the CLI/Swing UI. `Report` remains in the Assignment 2 design but is deliberately deferred; it is not represented as an implemented feature.
+The fourteen core entity classes from Assignment 2 (`Customer`, `Order`, `Consignment`, `Shipment`, `Vehicle`, `Driver`, `Branch`, `ServiceOffering`, `PricingTariff`, `Invoice`, `Payment`, `Receipt`, and the `Person`/`StaffMember` hierarchy) remain in the implemented design with their original information-expert responsibilities. The four State hierarchies and the `IPaymentGateway`, `IPaymentStrategy`, `IPricingStrategy`, and `ITelemetrySource` contracts also remain. The implementation adds only the classes that Assignment 2 explicitly deferred or left abstract: `DataStore`, concrete payment/telemetry adapters, `Bootstrap`, listener interfaces, and boundary classes for the CLI/Swing UI. `Report` remains in the Assignment 2 design but is deliberately deferred; it is not represented as an implemented feature. Likewise, Assignment 2's authentication/session and RBAC workflow is explicitly outside this four-area implementation scope: `StaffMember`, `StaffRole`, and the immutable configuration limits remain as model support only, with no login, account-lockout, or permission-enforcement UI claimed for Assignment 3.
 
 #heading(level: 3, numbering: none)[2.5.2 Responsibilities and collaborators]
 
@@ -270,7 +331,7 @@ The responsibility allocation is preserved: entities own information and local i
 
 #heading(level: 3, numbering: none)[2.5.3 Dynamic aspects: bootstrap and interactions]
 
-`Bootstrap` now has two deterministic paths. On a first launch it seeds branches, vehicles, drivers, and services, then saves them. On later launches `DataStore` reloads that snapshot before controllers are recreated and listeners are wired. This makes startup idempotent across separate runs while retaining Assignment 2's dependency-safe construction order. At runtime, approval persists an order and invoice before notification; dispatch persists a shipment before publishing `shipmentAssigned`; and payment creates a receipt only after payment settlement. The four sequence diagrams in Section 2.4 document these orders explicitly. The scenario changes are therefore justified dynamic refinements, not undocumented deviations from Assignment 2.
+`Bootstrap` now has two deterministic paths. On a first launch it seeds branches, vehicles, drivers, and services in the shared aggregate. On later launches `DataStore` reloads the previously committed snapshot before controllers are recreated and listeners are wired. The GUI/CLI boundary commits the aggregate on a normal exit, making the seeded and transactional state available across separate runs while retaining Assignment 2's dependency-safe construction order. At runtime, approval stages an order and invoice before notifying listeners; dispatch stages a shipment and resource allocation before publishing `shipmentAssigned`; and payment creates a receipt only after payment settlement. The four sequence diagrams in Section 2.4 document these in-memory orders and the boundary commit responsibility explicitly. The scenario changes are therefore justified dynamic refinements, not undocumented deviations from Assignment 2.
 
 #heading(level: 1, numbering: none)[#text("3. Design Quality")]
 
@@ -321,7 +382,7 @@ SmartFM is implemented in Java 26 in a Maven-standard structure. The following m
     th[Design element / sequence diagram], th[Production code], th[Implementation match],
     [Presentation boundary], [`smartfm.ui.Launcher`, `SmartFmConsoleApp`; `smartfm.ui.gui.SmartFmMainFrame` and panels], [GUI is the default entry point; `--cli` selects the transcript-friendly UI. Both obtain one `Bootstrap` through `GuiContext`/startup and call controller methods.],
     [UC-01/UC-02, @fig-seq-order], [`OrderProcessor`, `Customer`, `Consignment`, `Order`, `Invoice`], [`OrderProcessor` registers the customer, creates/validates consignments and orders, approves/rejects/cancels orders, and produces an invoice on approval.],
-    [UC-03, @fig-seq-dispatch], [`DispatchManager`, `Vehicle`, `Driver`, `Shipment`, `ShipmentAssignedListener`], [Dispatch verifies prerequisites, allocates real seeded resources, creates a shipment, persists it, and sends the observer event.],
+    [UC-03, @fig-seq-dispatch], [`DispatchManager`, `Vehicle`, `Driver`, `Shipment`, `ShipmentAssignedListener`], [Dispatch verifies prerequisites, allocates real seeded resources, creates a shipment, updates the shared aggregate, and sends the observer event.],
     [UC-04, @fig-seq-tracking], [`ShipmentTracker`, `ManualTelemetrySource`, `ShipmentState` subclasses], [Tracking events use the adapter interface and state hierarchy; invalid state transitions are rejected.],
     [UC-05, @fig-seq-payment], [`PaymentProcessor`, `IPaymentStrategy`, `SimulatedGatewayAdapter`, `Payment`, `Receipt`], [Payment amount is checked against the invoice before settlement; card verification is behind an adapter and receipt creation follows success.],
     [Persistence / indirection], [`smartfm.infrastructure.DataStore`], [The GUI/CLI startup and shutdown boundary uses the single `DataStore` persistence gateway. It uses jOOQ `3.20.0` with SQLite to initialise the versioned schema and transactionally read or conflict-upsert the aggregate snapshot; domain classes remain storage-independent.],
@@ -336,7 +397,7 @@ SmartFM is implemented in Java 26 in a Maven-standard structure. The following m
     [`pom.xml`], [Maven descriptor: Java `26` release target, jOOQ `3.20.0`, pinned Xerial SQLite JDBC `3.46.1.0`, JAXB/R2DBC/Reactive Streams runtime closure, SLF4J `1.7.36`, JUnit Jupiter `5.10.2` test dependency, and a Shade-plugin executable JAR with `smartfm.ui.Launcher` as the main class.],
     [`src/main/java/smartfm/common/`], [Exceptions, validators, and money formatting.],
     [`src/main/java/smartfm/domain/`], [Six domain sub-packages (`customer`, `order`, `shipment`, `billing`, `fleet`, `catalog`) owning entities, state hierarchies, and strategy/adapter contracts.],
-    [`src/test/java/smartfm/`], [JUnit 5 unit, integration, and E2E test suite (67 automated tests across six domain packages, application controllers, complete business workflows, and SQLite persistence).],
+    [`src/test/java/smartfm/`], [JUnit 5 unit, integration, and E2E test suite (68 automated tests across six domain packages, application controllers, Swing GUI panels, complete business workflows, and SQLite persistence).],
     [`src/main/java/smartfm/application/`], [Four GRASP Controllers, observer interfaces, bootstrap, and ID generation.],
     [`src/main/java/smartfm/infrastructure/`], [The `DataStore` persistence gateway.],
     [`src/main/java/smartfm/ui/`, `src/main/java/smartfm/ui/gui/`], [CLI and Swing presentations over the same controller contracts.],
@@ -353,7 +414,7 @@ SmartFM is implemented in Java 26 in a Maven-standard structure. The following m
 *Using Maven (recommended when available):*
 
 #console(```
-mvn test          # Runs all 55 automated JUnit 5 unit and integration tests
+mvn test          # Runs all 67 automated JUnit 5 unit, integration, and E2E tests
 mvn package       # Compiles and builds the self-contained executable JAR
 java --enable-native-access=ALL-UNNAMED -jar target/smartfm.jar
 java --enable-native-access=ALL-UNNAMED -jar target/smartfm.jar --cli
@@ -387,7 +448,7 @@ Data is stored locally in the embedded SQLite database `data/smartfm.db`. Delete
 
 #figure(
   console(raw(read("implementation/transcripts/00_compilation_evidence.txt"), lang: "text")),
-  caption: [Compilation evidence from a clean Java 26 build: all 74 production source files compile with the pinned SQLite/jOOQ/JAXB classpath and exit code 0. Java 26 reports 36 existing `serial`/`this-escape` lint warnings but no errors.],
+  caption: [Compilation evidence from a clean Java 26 build: all 74 production source files compile cleanly with the pinned SQLite/jOOQ/JAXB classpath, emitting 0 errors and 0 warnings under `-Xlint:all` with exit code 0.],
 ) <fig-compilation>
 
 #heading(level: 3, numbering: none)[GUI execution screenshots]
@@ -437,14 +498,15 @@ To reproduce the complete screenshot set on a machine with JDK 26 and GNU Make, 
 
 Testing combines compilation and static lint analysis, automated unit and integration test suites, scenario-based functional acceptance tests, boundary/negative-path checks, and persistence checks.
 
-*Automated Unit, Integration, and End-to-End Testing.* A comprehensive JUnit 5 test suite (`src/test/java/smartfm/`) contains 67 automated tests executing via `mvn test`. The test packages mirror the production domain sub-packages and validate:
+*Automated Unit, Integration, and End-to-End Testing.* A comprehensive JUnit 5 test suite (`src/test/java/smartfm/`) contains 68 automated tests executing via `mvn test`. The test packages mirror the production domain sub-packages and validate:
 1. *Common Layer*: `MoneyTest` (currency formatting, timestamp rendering) and `ValidatorsTest` (regex email/phone, string length boundaries, non-negative numbers, date constraints, enum mapping).
 2. *Domain Layer*: `smartfm.domain.customer.CustomerTest` (customer validation, order history tracking), `smartfm.domain.order.OrderAndConsignmentTest` (order/consignment weight aggregation, `OrderState` transition guards), `smartfm.domain.shipment.ShipmentAndTelemetryTest` (`ShipmentState` transition guards, manual telemetry adapter), `smartfm.domain.billing.InvoicePaymentAndReceiptTest` (`InvoiceState` and `PaymentState` state machines, receipt issuance, cash/gateway strategies), `smartfm.domain.fleet.FleetAndBranchTest` (branch resource registration, vehicle payload capacity, driver duty states, staff roles), and `smartfm.domain.catalog.ServiceCatalogAndTariffTest` (service offerings, pricing tariff quotes, peak multipliers, system configuration).
 3. *Application Layer*: `OrderProcessorTest` (end-to-end submission and approval event dispatch), `DispatchManagerTest` (resource lookup, shipment creation, fleet status updates), `ShipmentTrackerTest` (tracking updates and automatic resource deallocation on delivery), and `PaymentProcessorTest` (receipt issuance, partial payments, settled invoice locking).
 4. *Infrastructure Layer*: `DataStoreTest` (saving and reloading aggregate snapshots from embedded SQLite database files, verifying state graph integrity).
-5. *End-to-End Workflow Layer*: `SmartFmEndToEndTest` (executes the complete business path from customer registration, multi-consignment order placement, quote calculation, approval, fleet/driver resource allocation, milestone tracking, resource deallocation upon delivery, partial cash & final card payment settlement, to real SQLite database persistence and cold-start system recovery).
+5. *Core E2E Workflow Layer*: `SmartFmEndToEndTest` (executes the complete business path from customer registration, multi-consignment order placement, quote calculation, approval, fleet/driver resource allocation, milestone tracking, resource deallocation upon delivery, partial cash & final card payment settlement, to real SQLite database persistence and cold-start system recovery).
+6. *Swing GUI E2E Layer*: `smartfm.ui.gui.SmartFmGuiEndToEndTest` (executes the full interactive GUI flow on the Event Dispatch Thread: customer registration error & success paths, order creation & approval, fleet dispatch, tracking state machine guards, billing overpayment & settlement, and Swing window shutdown/persistence reload).
 
-All 67 automated tests execute in under 10 seconds and pass with zero failures or errors (`BUILD SUCCESS`).
+All 68 automated tests execute in under 10 seconds and pass with zero failures or errors (`BUILD SUCCESS`).
 
 *Scenario-Based Acceptance Testing.* The five scenarios below exercise every selected use case shown in the sequence diagrams. They are replayable by running the files in `scenarios/` in numerical order after resetting the persistent store. Each transcript is captured from a separate CLI process, proving that persisted data is reread between operations.
 
