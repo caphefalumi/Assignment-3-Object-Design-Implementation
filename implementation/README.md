@@ -28,13 +28,13 @@ Assignment 2 assumed a shared relational database. Assignment 3 implements that 
 pom.xml                                  Maven descriptor; Java 26 and pinned SQLite/jOOQ dependencies
 lib/                                     Pinned local SQLite, jOOQ, JAXB, and SLF4J runtime JARs
 src/main/java/smartfm/common/            Exceptions, validators, Money formatter
-src/main/java/smartfm/domain/            Entities, State hierarchies, Strategy/Adapter contracts
+src/main/java/smartfm/domain/            6 domain sub-packages (customer, order, shipment, billing, fleet, catalog)
 src/main/java/smartfm/application/       Four GRASP Controllers, Observer listeners, Bootstrap
 src/main/java/smartfm/infrastructure/    DataStore: jOOQ-backed SQLite database gateway
 src/main/java/smartfm/ui/                Launcher and CLI
 src/main/java/smartfm/ui/gui/            Swing GUI
 src/main/resources/                      Reserved Maven resource root
-src/test/java/                           Reserved Maven test source root
+src/test/java/                           JUnit 5 unit & integration test suite (55 tests)
 scenarios/                               Scripted CLI inputs for the five scenario flows
 transcripts/                             Compilation and CLI execution evidence
 screenshots/                             Generated GUI evidence images
