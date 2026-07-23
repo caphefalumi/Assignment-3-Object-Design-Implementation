@@ -79,6 +79,8 @@
         <version>3.2.5</version>
       </plugin>
 
+
+
       <!-- Produces an executable jar: java -jar target/smartfm.jar [-gui] -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

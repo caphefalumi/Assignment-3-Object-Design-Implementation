@@ -11,7 +11,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.awt.Dimension;
 import javax.swing.JButton;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JTable;
 import javax.swing.SwingUtilities;
@@ -19,9 +21,12 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import smartfm.common.InvalidCredentialsException;
 import smartfm.common.Validators;
 import smartfm.domain.customer.Customer;
 import smartfm.domain.order.Order;
+import smartfm.ui.ConsoleIO;
+import smartfm.ui.Launcher;
 
 @DisplayName("Comprehensive GUI Component & Edge Case Coverage Tests")
 class SmartFmGuiCoverageTest {
@@ -220,5 +225,59 @@ class SmartFmGuiCoverageTest {
       assertNotNull(frame.tabs());
       assertNotNull(frame.getContext());
     });
+  }
+
+  @Test
+  @DisplayName("Should test ScreenshotCapture tool rendering frame to PNG file")
+  void testScreenshotCapture() throws Exception {
+    Path tempPng = Path.of("target", "test-data", "test-capture.png");
+    Files.deleteIfExists(tempPng);
+
+    onEdt(() -> {
+      try {
+        JFrame dummyFrame = new JFrame("Capture Test");
+        dummyFrame.setSize(new Dimension(400, 300));
+        ScreenshotCapture.capture(dummyFrame, tempPng);
+      } catch (IOException exc) {
+        throw new RuntimeException(exc);
+      }
+    });
+
+    assertTrue(Files.exists(tempPng));
+    assertTrue(Files.size(tempPng) > 0);
+    Files.deleteIfExists(tempPng);
+  }
+
+  @Test
+  @DisplayName("Should test ConsoleIO helper methods and InvalidCredentialsException")
+  void testConsoleIOAndExceptions() {
+    InvalidCredentialsException exc = new InvalidCredentialsException("Failed auth");
+    assertEquals("Failed auth", exc.getMessage());
+
+    String input = "c\nLine Value\ninvalid\n123\n";
+    java.util.Scanner scanner = new java.util.Scanner(input);
+    ConsoleIO io = new ConsoleIO(scanner);
+
+    io.println("Testing println");
+    io.printHeader("Header");
+
+    assertNull(io.readLineOrCancel("Prompt")); // reads "c" -> cancel
+    assertEquals("Line Value", io.readLine("Prompt"));
+
+    // readValidated: first "invalid" triggers exception catch, then "123" succeeds
+    Double validatedNum = io.readValidated("Number", v -> Validators.parsePositiveNumber(v, "Num"));
+    assertEquals(123.0, validatedNum);
+  }
+
+  @Test
+  @DisplayName("Should test Launcher CLI execution path")
+  void testLauncher() throws Exception {
+    java.io.InputStream origIn = System.in;
+    try {
+      System.setIn(new java.io.ByteArrayInputStream("0\n".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+      Launcher.main(new String[]{"--cli"});
+    } finally {
+      System.setIn(origIn);
+    }
   }
 }
