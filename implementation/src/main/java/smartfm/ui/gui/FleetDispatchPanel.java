@@ -1,6 +1,10 @@
 package smartfm.ui.gui;
 
 import java.awt.BorderLayout;
+import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -37,14 +41,20 @@ public class FleetDispatchPanel extends JPanel {
   private final JComboBox<String> vehicleCombo = new JComboBox<>();
   private final JComboBox<String> driverCombo = new JComboBox<>();
   private final ResultBanner banner = new ResultBanner();
+  private final JButton dispatchBtn = UiStyle.primaryButton("Create Shipment");
 
   public FleetDispatchPanel(GuiContext context) {
-    super(new BorderLayout(10, 10));
+    super(new BorderLayout(UiStyle.GAP_MEDIUM, UiStyle.GAP_MEDIUM));
     this.context = context;
+    setBackground(UiStyle.WINDOW_BG);
     setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
 
+    UiStyle.styleTable(approvedOrdersTable);
+
     JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, buildOrdersSection(), buildAssignSection());
-    split.setResizeWeight(0.6);
+    split.setResizeWeight(0.55);
+    split.setBorder(null);
+    split.setBackground(UiStyle.WINDOW_BG);
     add(split, BorderLayout.CENTER);
 
     approvedOrdersTable.getSelectionModel().addListSelectionListener(e -> refreshResourceCombos());
@@ -55,24 +65,40 @@ public class FleetDispatchPanel extends JPanel {
 
   private JPanel buildOrdersSection() {
     JPanel section = new JPanel(new BorderLayout());
-    section.setBorder(BorderFactory.createTitledBorder("Approved Orders Awaiting Dispatch (empty until an order is approved)"));
-    section.add(new JScrollPane(approvedOrdersTable), BorderLayout.CENTER);
+    section.setBackground(UiStyle.CARD_BG);
+    section.setBorder(UiStyle.cardBorder("Approved Orders Awaiting Dispatch (empty until an order is approved)"));
+    JScrollPane scroll = new JScrollPane(approvedOrdersTable);
+    scroll.setBorder(BorderFactory.createLineBorder(UiStyle.CARD_BORDER));
+    section.add(scroll, BorderLayout.CENTER);
     return section;
   }
 
   private JPanel buildAssignSection() {
-    JPanel section = new JPanel(new BorderLayout(6, 6));
-    section.setBorder(BorderFactory.createTitledBorder("Assign Vehicle and Driver"));
+    JPanel section = new JPanel(new BorderLayout(UiStyle.GAP_MEDIUM, UiStyle.GAP_MEDIUM));
+    section.setBackground(UiStyle.CARD_BG);
+    section.setBorder(UiStyle.cardBorder("Assign Vehicle and Driver"));
 
-    JPanel form = new JPanel(new java.awt.GridLayout(0, 1, 4, 4));
-    form.add(labelled("Available vehicle at origin branch:", vehicleCombo));
-    form.add(labelled("Available driver at origin branch:", driverCombo));
+    JPanel form = new JPanel(new GridBagLayout());
+    form.setOpaque(false);
+    GridBagConstraints gbc = new GridBagConstraints();
+    gbc.insets = new Insets(4, 0, 4, 0);
+    gbc.fill = GridBagConstraints.HORIZONTAL;
+    gbc.weightx = 1.0;
+    gbc.gridx = 0;
+    gbc.gridy = 0;
+    form.add(labelled("Available vehicle at origin branch:", vehicleCombo), gbc);
+    gbc.gridy = 1;
+    form.add(labelled("Available driver at origin branch:", driverCombo), gbc);
 
-    JButton dispatchBtn = new JButton("Create Shipment");
     dispatchBtn.addActionListener(e -> onDispatch());
 
-    JPanel south = new JPanel(new BorderLayout());
-    south.add(dispatchBtn, BorderLayout.NORTH);
+    JPanel buttonRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, UiStyle.GAP_MEDIUM, 4));
+    buttonRow.setOpaque(false);
+    buttonRow.add(dispatchBtn);
+
+    JPanel south = new JPanel(new BorderLayout(0, UiStyle.GAP_SMALL));
+    south.setOpaque(false);
+    south.add(buttonRow, BorderLayout.NORTH);
     south.add(banner, BorderLayout.SOUTH);
 
     section.add(form, BorderLayout.NORTH);
@@ -81,8 +107,12 @@ public class FleetDispatchPanel extends JPanel {
   }
 
   private JPanel labelled(String text, JComboBox<String> combo) {
-    JPanel p = new JPanel(new BorderLayout(6, 0));
-    p.add(new JLabel(text), BorderLayout.WEST);
+    JPanel p = new JPanel(new BorderLayout(UiStyle.GAP_SMALL, 0));
+    p.setOpaque(false);
+    JLabel label = new JLabel(text);
+    label.setFont(UiStyle.labelFont());
+    combo.setFont(UiStyle.fieldFont());
+    p.add(label, BorderLayout.WEST);
     p.add(combo, BorderLayout.CENTER);
     return p;
   }

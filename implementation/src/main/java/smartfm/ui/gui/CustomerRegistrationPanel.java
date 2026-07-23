@@ -1,14 +1,18 @@
 package smartfm.ui.gui;
 
 import java.awt.BorderLayout;
-import java.awt.GridLayout;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.time.LocalDate;
 import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import smartfm.common.Validators;
 import smartfm.domain.customer.Customer;
 
@@ -35,43 +39,91 @@ public class CustomerRegistrationPanel extends JPanel {
   private final ResultBanner banner = new ResultBanner();
 
   public CustomerRegistrationPanel(GuiContext context) {
-    super(new BorderLayout(10, 10));
+    super(new BorderLayout(UiStyle.GAP_MEDIUM, UiStyle.GAP_MEDIUM));
     this.context = context;
-    setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+    setBackground(UiStyle.WINDOW_BG);
+    setBorder(BorderFactory.createEmptyBorder(14, 14, 14, 14));
 
-    JPanel form = new JPanel();
-    form.setLayout(new BoxLayout(form, BoxLayout.Y_AXIS));
-    form.add(fullNameField);
-    form.add(labelled("Gender:", genderCombo));
-    form.add(dobField);
-    form.add(phoneField);
-    form.add(emailField);
-    form.add(addressField);
+    JPanel card = new JPanel(new BorderLayout(UiStyle.GAP_MEDIUM, UiStyle.GAP_MEDIUM));
+    card.setBackground(UiStyle.CARD_BG);
+    card.setBorder(UiStyle.cardBorder("Register Customer Account"));
 
-    JButton submit = new JButton("Register Customer");
+    JPanel form = buildForm();
+    JScrollPane scroll = new JScrollPane(form);
+    scroll.setBorder(null);
+    scroll.getVerticalScrollBar().setUnitIncrement(16);
+    scroll.getViewport().setBackground(UiStyle.CARD_BG);
+    card.add(scroll, BorderLayout.CENTER);
+
+    JButton submit = UiStyle.primaryButton("Register Customer");
     submit.addActionListener(e -> onSubmit());
-    JButton clear = new JButton("Clear Form");
+    JButton clear = UiStyle.secondaryButton("Clear Form");
     clear.addActionListener(e -> resetForm());
 
-    JPanel buttons = new JPanel();
-    buttons.add(submit);
+    JPanel buttons = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, UiStyle.GAP_MEDIUM, 0));
+    buttons.setOpaque(false);
     buttons.add(clear);
+    buttons.add(submit);
 
-    add(new javax.swing.JLabel("Register Customer Account"), BorderLayout.NORTH);
-    add(form, BorderLayout.CENTER);
-    JPanel south = new JPanel(new BorderLayout());
+    JPanel south = new JPanel(new BorderLayout(0, UiStyle.GAP_SMALL));
+    south.setOpaque(false);
     south.add(buttons, BorderLayout.NORTH);
     south.add(banner, BorderLayout.SOUTH);
-    add(south, BorderLayout.SOUTH);
+    card.add(south, BorderLayout.SOUTH);
+
+    add(card, BorderLayout.CENTER);
   }
 
-  private JPanel labelled(String label, JComboBox<String> combo) {
-    JPanel p = new JPanel(new GridLayout(1, 2, 6, 0));
-    p.add(new javax.swing.JLabel(label));
-    p.add(combo);
-    JPanel wrapper = new JPanel(new BorderLayout());
-    wrapper.add(p, BorderLayout.NORTH);
-    wrapper.add(Box.createVerticalStrut(14), BorderLayout.SOUTH);
+  private JPanel buildForm() {
+    JPanel form = new JPanel(new GridBagLayout());
+    form.setBackground(UiStyle.CARD_BG);
+    GridBagConstraints gbc = new GridBagConstraints();
+    gbc.insets = new Insets(6, 0, 6, 0);
+    gbc.fill = GridBagConstraints.HORIZONTAL;
+    gbc.gridx = 0;
+    gbc.weightx = 1.0;
+    gbc.gridy = 0;
+
+    addRow(form, gbc, fullNameField);
+    addRow(form, gbc, labelledCombo("Gender:", genderCombo));
+    addRow(form, gbc, dobField);
+    addRow(form, gbc, phoneField);
+    addRow(form, gbc, emailField);
+    addRow(form, gbc, addressField);
+
+    // Trailing filler so short forms don't stretch fields with dead
+    // space; the filler (not the fields) absorbs any extra height.
+    gbc.weighty = 1.0;
+    gbc.fill = GridBagConstraints.BOTH;
+    form.add(new JPanel() {
+      { setOpaque(false); }
+    }, gbc);
+
+    return form;
+  }
+
+  private void addRow(JPanel form, GridBagConstraints gbc, java.awt.Component component) {
+    form.add(component, gbc);
+    gbc.gridy++;
+  }
+
+  private JPanel labelledCombo(String label, JComboBox<String> combo) {
+    JPanel wrapper = new JPanel(new BorderLayout(UiStyle.GAP_SMALL, 2));
+    wrapper.setOpaque(false);
+    JLabel titleLabel = new JLabel(label);
+    titleLabel.setFont(UiStyle.labelFont());
+    combo.setFont(UiStyle.fieldFont());
+    combo.setPreferredSize(new Dimension(combo.getPreferredSize().width, 28));
+    JPanel top = new JPanel(new BorderLayout(UiStyle.GAP_SMALL, 0));
+    top.setOpaque(false);
+    top.add(titleLabel, BorderLayout.WEST);
+    top.add(combo, BorderLayout.CENTER);
+    wrapper.add(top, BorderLayout.NORTH);
+    // Matches the fixed-height error line reserved below every ValidatedField,
+    // so combo rows line up with text-field rows in the same form.
+    JLabel spacer = new JLabel(" ");
+    spacer.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 11));
+    wrapper.add(spacer, BorderLayout.SOUTH);
     return wrapper;
   }
 

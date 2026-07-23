@@ -1,17 +1,23 @@
 package smartfm.ui.gui;
 
 import java.awt.BorderLayout;
-import java.awt.GridLayout;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
@@ -54,13 +60,23 @@ public class OrderManagementPanel extends JPanel {
   private final ValidatedField consignmentDescField = new ValidatedField("Description:");
   private final ValidatedField consignmentWeightField = new ValidatedField("Weight (kg):");
   private final ValidatedField consignmentVolumeField = new ValidatedField("Volume (m3):");
-  private final javax.swing.JCheckBox fragileCheck = new javax.swing.JCheckBox("Fragile");
-  private final javax.swing.JCheckBox coldCheck = new javax.swing.JCheckBox("Requires refrigeration");
+  private final JCheckBox fragileCheck = new JCheckBox("Fragile");
+  private final JCheckBox coldCheck = new JCheckBox("Requires refrigeration");
 
   private final DefaultTableModel consignmentTableModel =
       new DefaultTableModel(new Object[] {"Description", "Weight (kg)", "Volume (m3)", "Fragile", "Refrigerated"}, 0);
   private final JTable consignmentTable = new JTable(consignmentTableModel);
   private final List<Consignment> pendingConsignments = new ArrayList<>();
+
+  // Monotonically increasing across every order placed in this window
+  // session (seeded from however many consignments already exist in
+  // the store, e.g. after reloading a saved database). Consignment ids
+  // must be globally unique because DataStore persists them in one
+  // top-level "consignments" SQLite table shared by all orders; a
+  // counter that reset to 1 for every new order (as this used to do)
+  // collides with a previous order's "CSG-1" as soon as a second order
+  // is submitted in the same session.
+  private int consignmentSequence;
 
   private final ResultBanner orderBanner = new ResultBanner();
 
@@ -70,23 +86,38 @@ public class OrderManagementPanel extends JPanel {
   private final JTextField reasonField = new JTextField(24);
   private final ResultBanner actionBanner = new ResultBanner();
 
+  private final JButton approveBtn = UiStyle.primaryButton("Approve Selected");
+  private final JButton rejectBtn = UiStyle.dangerButton("Reject Selected");
+  private final JButton cancelBtn = UiStyle.secondaryButton("Cancel Selected (change of mind)");
+
   public OrderManagementPanel(GuiContext context) {
-    super(new BorderLayout(10, 10));
+    super(new BorderLayout(UiStyle.GAP_MEDIUM, UiStyle.GAP_MEDIUM));
     this.context = context;
+    setBackground(UiStyle.WINDOW_BG);
     setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
 
-    consignmentTable.setRowHeight(24);
-    consignmentTable.getTableHeader().setPreferredSize(new java.awt.Dimension(0, 26));
-    consignmentTable.setShowGrid(true);
+    UiStyle.styleTable(consignmentTable);
+    UiStyle.styleTable(pendingOrdersTable);
 
-    pendingOrdersTable.setRowHeight(24);
-    pendingOrdersTable.getTableHeader().setPreferredSize(new java.awt.Dimension(0, 26));
-    pendingOrdersTable.setShowGrid(true);
+    JPanel mainContainer = new JPanel();
+    mainContainer.setOpaque(false);
+    mainContainer.setLayout(new BoxLayout(mainContainer, BoxLayout.Y_AXIS));
+    mainContainer.add(buildPlaceOrderSection());
+    mainContainer.add(Box.createVerticalStrut(UiStyle.GAP_MEDIUM));
+    mainContainer.add(buildManageOrdersSection());
 
-    JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, buildPlaceOrderSection(), buildManageOrdersSection());
-    split.setResizeWeight(0.55);
-    split.setDividerLocation(380);
-    add(split, BorderLayout.CENTER);
+    JScrollPane scrollPane = new JScrollPane(mainContainer);
+    scrollPane.setBorder(null);
+    scrollPane.getViewport().setBackground(UiStyle.WINDOW_BG);
+    scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+    add(scrollPane, BorderLayout.CENTER);
+
+    pendingOrdersTable.getSelectionModel().addListSelectionListener(e -> updateActionButtonsEnabled());
+    updateActionButtonsEnabled();
+
+    for (Order order : context.getStore().orders().values()) {
+      consignmentSequence += order.getConsignments().size();
+    }
 
     context.addChangeListener(this::refreshComboBoxes);
     context.addChangeListener(this::refreshPendingOrdersTable);
@@ -99,61 +130,109 @@ public class OrderManagementPanel extends JPanel {
   // ---------------------------------------------------------------
 
   private JPanel buildPlaceOrderSection() {
-    JPanel section = new JPanel(new BorderLayout(6, 6));
-    section.setBorder(BorderFactory.createTitledBorder("Place a Shipment Order"));
+    JPanel section = new JPanel(new BorderLayout(UiStyle.GAP_MEDIUM, UiStyle.GAP_MEDIUM));
+    section.setBackground(UiStyle.CARD_BG);
+    section.setBorder(UiStyle.cardBorder("Place a Shipment Order"));
 
-    // Header grid: 2 columns to prevent vertical crowding
-    JPanel headerGrid = new JPanel(new GridLayout(3, 2, 8, 4));
-    headerGrid.add(labelled("Customer:", customerCombo));
-    headerGrid.add(labelled("Service offering:", serviceCombo));
-    headerGrid.add(labelled("Origin branch:", originCombo));
-    headerGrid.add(labelled("Destination branch:", destinationCombo));
-    headerGrid.add(distanceField);
-    headerGrid.add(pickupDateField);
+    // Header grid: 2 columns, laid out with GridBagLayout so rows keep a
+    // consistent compact height instead of stretching to fill space.
+    JPanel headerGrid = new JPanel(new GridBagLayout());
+    headerGrid.setOpaque(false);
+    GridBagConstraints gbc = new GridBagConstraints();
+    gbc.insets = new Insets(4, 0, 4, UiStyle.GAP_MEDIUM);
+    gbc.fill = GridBagConstraints.HORIZONTAL;
+    gbc.weightx = 0.5;
+    gbc.gridx = 0;
+    gbc.gridy = 0;
+    headerGrid.add(labelled("Customer:", customerCombo), gbc);
+    gbc.gridx = 1;
+    gbc.insets = new Insets(4, 0, 4, 0);
+    headerGrid.add(labelled("Service offering:", serviceCombo), gbc);
+
+    gbc.gridx = 0;
+    gbc.gridy = 1;
+    gbc.insets = new Insets(4, 0, 4, UiStyle.GAP_MEDIUM);
+    headerGrid.add(labelled("Origin branch:", originCombo), gbc);
+    gbc.gridx = 1;
+    gbc.insets = new Insets(4, 0, 4, 0);
+    headerGrid.add(labelled("Destination branch:", destinationCombo), gbc);
+
+    gbc.gridx = 0;
+    gbc.gridy = 2;
+    gbc.insets = new Insets(4, 0, 4, UiStyle.GAP_MEDIUM);
+    headerGrid.add(distanceField, gbc);
+    gbc.gridx = 1;
+    gbc.insets = new Insets(4, 0, 4, 0);
+    headerGrid.add(pickupDateField, gbc);
 
     // Consignment form section
-    JPanel consignmentForm = new JPanel(new BorderLayout(6, 6));
-    consignmentForm.setBorder(BorderFactory.createTitledBorder("Add Consignment Item"));
+    JPanel consignmentForm = new JPanel(new BorderLayout(UiStyle.GAP_SMALL, UiStyle.GAP_SMALL));
+    consignmentForm.setOpaque(false);
+    consignmentForm.setBorder(UiStyle.cardBorder("Add Consignment Item"));
 
-    JPanel consignmentFields = new JPanel(new GridLayout(2, 2, 8, 4));
-    consignmentFields.add(consignmentDescField);
-    consignmentFields.add(consignmentWeightField);
-    consignmentFields.add(consignmentVolumeField);
+    JPanel consignmentFields = new JPanel(new GridBagLayout());
+    consignmentFields.setOpaque(false);
+    GridBagConstraints cgbc = new GridBagConstraints();
+    cgbc.insets = new Insets(4, 0, 4, UiStyle.GAP_MEDIUM);
+    cgbc.fill = GridBagConstraints.HORIZONTAL;
+    cgbc.weightx = 0.5;
+    cgbc.gridx = 0;
+    cgbc.gridy = 0;
+    consignmentFields.add(consignmentDescField, cgbc);
+    cgbc.gridx = 1;
+    cgbc.insets = new Insets(4, 0, 4, 0);
+    consignmentFields.add(consignmentWeightField, cgbc);
 
-    JPanel checks = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 10, 0));
+    cgbc.gridx = 0;
+    cgbc.gridy = 1;
+    cgbc.insets = new Insets(4, 0, 4, UiStyle.GAP_MEDIUM);
+    consignmentFields.add(consignmentVolumeField, cgbc);
+
+    JPanel checks = new JPanel(new FlowLayout(FlowLayout.LEFT, UiStyle.GAP_MEDIUM, 0));
+    checks.setOpaque(false);
+    fragileCheck.setOpaque(false);
+    coldCheck.setOpaque(false);
     checks.add(fragileCheck);
     checks.add(coldCheck);
-    consignmentFields.add(checks);
+    cgbc.gridx = 1;
+    cgbc.insets = new Insets(4, 0, 4, 0);
+    consignmentFields.add(checks, cgbc);
 
-    JButton addConsignment = new JButton("Add Consignment to Order");
+    JButton addConsignment = UiStyle.secondaryButton("Add Consignment to Order");
     addConsignment.addActionListener(e -> onAddConsignment());
 
-    JPanel consignmentBottom = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT));
+    JPanel consignmentBottom = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+    consignmentBottom.setOpaque(false);
     consignmentBottom.add(addConsignment);
 
     consignmentForm.add(consignmentFields, BorderLayout.CENTER);
     consignmentForm.add(consignmentBottom, BorderLayout.SOUTH);
 
-    JPanel formContainer = new JPanel(new BorderLayout(6, 6));
+    JPanel formContainer = new JPanel(new BorderLayout(UiStyle.GAP_MEDIUM, UiStyle.GAP_MEDIUM));
+    formContainer.setOpaque(false);
     formContainer.add(headerGrid, BorderLayout.NORTH);
     formContainer.add(consignmentForm, BorderLayout.CENTER);
 
     // Order table and submit actions
-    JPanel tableAndActions = new JPanel(new BorderLayout(6, 6));
+    JPanel tableAndActions = new JPanel(new BorderLayout(UiStyle.GAP_SMALL, UiStyle.GAP_SMALL));
+    tableAndActions.setOpaque(false);
     JScrollPane consignmentScroll = new JScrollPane(consignmentTable);
-    consignmentScroll.setPreferredSize(new java.awt.Dimension(0, 100));
+    consignmentScroll.setPreferredSize(new Dimension(0, 110));
+    consignmentScroll.setBorder(BorderFactory.createLineBorder(UiStyle.CARD_BORDER));
     tableAndActions.add(consignmentScroll, BorderLayout.CENTER);
 
-    JButton submitOrder = new JButton("Submit Order");
+    JButton submitOrder = UiStyle.primaryButton("Submit Order");
     submitOrder.addActionListener(e -> onSubmitOrder());
-    JButton clearOrder = new JButton("Clear / Cancel");
+    JButton clearOrder = UiStyle.secondaryButton("Clear / Cancel");
     clearOrder.addActionListener(e -> resetOrderForm());
 
-    JPanel buttons = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.CENTER, 10, 4));
-    buttons.add(submitOrder);
+    JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, UiStyle.GAP_MEDIUM, 4));
+    buttons.setOpaque(false);
     buttons.add(clearOrder);
+    buttons.add(submitOrder);
 
-    JPanel south = new JPanel(new BorderLayout());
+    JPanel south = new JPanel(new BorderLayout(0, UiStyle.GAP_SMALL));
+    south.setOpaque(false);
     south.add(buttons, BorderLayout.NORTH);
     south.add(orderBanner, BorderLayout.SOUTH);
 
@@ -165,8 +244,12 @@ public class OrderManagementPanel extends JPanel {
   }
 
   private JPanel labelled(String text, JComboBox<String> combo) {
-    JPanel p = new JPanel(new BorderLayout(6, 0));
-    p.add(new JLabel(text), BorderLayout.WEST);
+    JPanel p = new JPanel(new BorderLayout(UiStyle.GAP_SMALL, 0));
+    p.setOpaque(false);
+    JLabel label = new JLabel(text);
+    label.setFont(UiStyle.labelFont());
+    combo.setFont(UiStyle.fieldFont());
+    p.add(label, BorderLayout.WEST);
     p.add(combo, BorderLayout.CENTER);
     return p;
   }
@@ -179,8 +262,9 @@ public class OrderManagementPanel extends JPanel {
       orderBanner.error("Please correct the highlighted consignment fields.");
       return;
     }
+    consignmentSequence++;
     Consignment consignment = new Consignment(
-        "CSG-" + (pendingConsignments.size() + 1), weight, volume,
+        "CSG-" + consignmentSequence, weight, volume,
         fragileCheck.isSelected(), coldCheck.isSelected(), desc);
     pendingConsignments.add(consignment);
     consignmentTableModel.addRow(new Object[] {
@@ -246,26 +330,34 @@ public class OrderManagementPanel extends JPanel {
   // ---------------------------------------------------------------
 
   private JPanel buildManageOrdersSection() {
-    JPanel section = new JPanel(new BorderLayout(6, 6));
-    section.setBorder(BorderFactory.createTitledBorder("Pending Orders - Approve, Reject, or Cancel"));
+    JPanel section = new JPanel(new BorderLayout(UiStyle.GAP_MEDIUM, UiStyle.GAP_MEDIUM));
+    section.setBackground(UiStyle.CARD_BG);
+    section.setBorder(UiStyle.cardBorder("Pending Orders - Approve, Reject, or Cancel"));
 
     JScrollPane pendingScroll = new JScrollPane(pendingOrdersTable);
-    pendingScroll.setPreferredSize(new java.awt.Dimension(0, 120));
+    pendingScroll.setPreferredSize(new Dimension(0, 130));
+    pendingScroll.setBorder(BorderFactory.createLineBorder(UiStyle.CARD_BORDER));
     section.add(pendingScroll, BorderLayout.CENTER);
 
-    JPanel actions = new JPanel(new BorderLayout(6, 6));
-    JPanel reasonPanel = new JPanel(new BorderLayout(6, 0));
-    reasonPanel.add(new JLabel("Reason (for rejection):"), BorderLayout.WEST);
+    JPanel actions = new JPanel(new BorderLayout(UiStyle.GAP_SMALL, UiStyle.GAP_SMALL));
+    actions.setOpaque(false);
+    JPanel reasonPanel = new JPanel(new BorderLayout(UiStyle.GAP_SMALL, 0));
+    reasonPanel.setOpaque(false);
+    JLabel reasonLabel = new JLabel("Reason (for rejection):");
+    reasonLabel.setFont(UiStyle.labelFont());
+    reasonField.setFont(UiStyle.fieldFont());
+    reasonField.setBorder(BorderFactory.createCompoundBorder(
+        BorderFactory.createLineBorder(new java.awt.Color(0xCBD5E1), 1, true),
+        BorderFactory.createEmptyBorder(5, 8, 5, 8)));
+    reasonPanel.add(reasonLabel, BorderLayout.WEST);
     reasonPanel.add(reasonField, BorderLayout.CENTER);
 
-    JButton approveBtn = new JButton("Approve Selected");
     approveBtn.addActionListener(e -> onApprove());
-    JButton rejectBtn = new JButton("Reject Selected");
     rejectBtn.addActionListener(e -> onReject());
-    JButton cancelBtn = new JButton("Cancel Selected (change of mind)");
     cancelBtn.addActionListener(e -> onCancel());
 
-    JPanel buttons = new JPanel();
+    JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT, UiStyle.GAP_MEDIUM, 4));
+    buttons.setOpaque(false);
     buttons.add(approveBtn);
     buttons.add(rejectBtn);
     buttons.add(cancelBtn);
@@ -276,6 +368,20 @@ public class OrderManagementPanel extends JPanel {
 
     section.add(actions, BorderLayout.SOUTH);
     return section;
+  }
+
+  /**
+   * Approve/reject/cancel only make sense once a pending order row is
+   * selected; disabling them otherwise (rather than only showing an
+   * error banner after the click) makes the required precondition
+   * visible before the user acts, per the brief's emphasis on clear
+   * input guidance.
+   */
+  private void updateActionButtonsEnabled() {
+    boolean hasSelection = selectedOrderId() != null;
+    approveBtn.setEnabled(hasSelection);
+    rejectBtn.setEnabled(hasSelection);
+    cancelBtn.setEnabled(hasSelection);
   }
 
   private String selectedOrderId() {
@@ -372,6 +478,7 @@ public class OrderManagementPanel extends JPanel {
           order.getId(), order.getCustomerId(), Money.format(order.getQuotedAmount()), order.getTotalWeightKg()
       });
     }
+    updateActionButtonsEnabled();
   }
 
   /** Combo box items are rendered as "ID - Name"; controllers need only the ID. */

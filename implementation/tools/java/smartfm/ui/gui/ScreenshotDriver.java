@@ -127,7 +127,7 @@ public final class ScreenshotDriver {
       panel.originCombo().setSelectedItem(findItem(panel.originCombo(), "BR-HCM"));
       panel.destinationCombo().setSelectedItem(findItem(panel.destinationCombo(), "BR-HAN"));
       panel.distanceField().setText("1700");
-      panel.pickupDateField().setText("2026-08-05");
+      panel.pickupDateField().setText("05/08/2026");
     });
 
     // Invalid consignment: negative weight, added to trigger validation.
@@ -154,7 +154,7 @@ public final class ScreenshotDriver {
       panel.originCombo().setSelectedItem(findItem(panel.originCombo(), "BR-HCM"));
       panel.destinationCombo().setSelectedItem(findItem(panel.destinationCombo(), "BR-HAN"));
       panel.distanceField().setText("1700");
-      panel.pickupDateField().setText("2026-08-10");
+      panel.pickupDateField().setText("10/08/2026");
       panel.consignmentDescField().setText("General merchandise pallet for retail restock");
       panel.consignmentWeightField().setText("500");
       panel.consignmentVolumeField().setText("2.0");

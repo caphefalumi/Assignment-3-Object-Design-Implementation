@@ -2,9 +2,12 @@ package smartfm.ui.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Toolkit;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.nio.file.Path;
+import javax.swing.BorderFactory;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JTabbedPane;
@@ -56,6 +59,7 @@ public class SmartFmMainFrame extends JFrame {
     this.billingPanel = new BillingPaymentPanel(context);
 
     this.tabs = new JTabbedPane();
+    tabs.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 13));
     tabs.addTab("Register Customer", customerPanel);
     tabs.addTab("1. Order Management", orderPanel);
     tabs.addTab("2. Fleet Dispatch", dispatchPanel);
@@ -63,13 +67,30 @@ public class SmartFmMainFrame extends JFrame {
     tabs.addTab("4. Billing and Payment", billingPanel);
 
     JLabel statusBar = new JLabel(" SQLite database: " + dataFile.getFileName() + " (saved in data/)");
-    statusBar.setBorder(javax.swing.BorderFactory.createEmptyBorder(4, 8, 4, 8));
+    statusBar.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+    statusBar.setForeground(UiStyle.TEXT_MUTED);
+    statusBar.setBackground(UiStyle.WINDOW_BG);
+    statusBar.setOpaque(true);
+    statusBar.setBorder(BorderFactory.createCompoundBorder(
+        BorderFactory.createMatteBorder(1, 0, 0, 0, UiStyle.CARD_BORDER),
+        BorderFactory.createEmptyBorder(6, 10, 6, 10)));
 
+    getContentPane().setBackground(UiStyle.WINDOW_BG);
     setLayout(new BorderLayout());
     add(tabs, BorderLayout.CENTER);
     add(statusBar, BorderLayout.SOUTH);
 
+    // Size the window relative to the screen so it looks right on both
+    // small laptop displays and large monitors, instead of a single
+    // fixed pixel size. The frame remains user-resizable (see
+    // setResizable below) and every panel inside uses layout managers
+    // that grow/shrink with the available space.
+    Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
+    int width = Math.min(1180, Math.max(960, (int) (screen.width * 0.7)));
+    int height = Math.min(820, Math.max(700, (int) (screen.height * 0.75)));
     setMinimumSize(new Dimension(900, 650));
+    setSize(new Dimension(width, height));
+    setResizable(true);
     setLocationRelativeTo(null);
   }
 

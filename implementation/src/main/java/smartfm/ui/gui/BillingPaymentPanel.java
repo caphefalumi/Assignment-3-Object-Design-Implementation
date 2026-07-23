@@ -1,7 +1,9 @@
 package smartfm.ui.gui;
 
 import java.awt.BorderLayout;
-import java.awt.GridLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -41,12 +43,17 @@ public class BillingPaymentPanel extends JPanel {
   private final ResultBanner banner = new ResultBanner();
 
   public BillingPaymentPanel(GuiContext context) {
-    super(new BorderLayout(10, 10));
+    super(new BorderLayout(UiStyle.GAP_MEDIUM, UiStyle.GAP_MEDIUM));
     this.context = context;
+    setBackground(UiStyle.WINDOW_BG);
     setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
 
+    UiStyle.styleTable(invoicesTable);
+
     JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, buildTableSection(), buildPaySection());
-    split.setResizeWeight(0.6);
+    split.setResizeWeight(0.55);
+    split.setBorder(null);
+    split.setBackground(UiStyle.WINDOW_BG);
     add(split, BorderLayout.CENTER);
 
     context.addChangeListener(this::refreshTable);
@@ -55,27 +62,49 @@ public class BillingPaymentPanel extends JPanel {
 
   private JPanel buildTableSection() {
     JPanel section = new JPanel(new BorderLayout());
-    section.setBorder(BorderFactory.createTitledBorder("Invoices (empty until Business Area 1 approves an order)"));
-    section.add(new JScrollPane(invoicesTable), BorderLayout.CENTER);
+    section.setBackground(UiStyle.CARD_BG);
+    section.setBorder(UiStyle.cardBorder("Invoices (empty until Business Area 1 approves an order)"));
+    JScrollPane scroll = new JScrollPane(invoicesTable);
+    scroll.setBorder(BorderFactory.createLineBorder(UiStyle.CARD_BORDER));
+    section.add(scroll, BorderLayout.CENTER);
     return section;
   }
 
   private JPanel buildPaySection() {
-    JPanel section = new JPanel(new BorderLayout(6, 6));
-    section.setBorder(BorderFactory.createTitledBorder("Submit a Payment"));
+    JPanel section = new JPanel(new BorderLayout(UiStyle.GAP_MEDIUM, UiStyle.GAP_MEDIUM));
+    section.setBackground(UiStyle.CARD_BG);
+    section.setBorder(UiStyle.cardBorder("Submit a Payment"));
 
-    JPanel form = new JPanel(new GridLayout(0, 1, 4, 4));
-    form.add(amountField);
-    JPanel methodPanel = new JPanel(new BorderLayout(6, 0));
-    methodPanel.add(new JLabel("Payment method:"), BorderLayout.WEST);
+    JPanel form = new JPanel(new GridBagLayout());
+    form.setOpaque(false);
+    GridBagConstraints gbc = new GridBagConstraints();
+    gbc.insets = new Insets(4, 0, 4, 0);
+    gbc.fill = GridBagConstraints.HORIZONTAL;
+    gbc.weightx = 1.0;
+    gbc.gridx = 0;
+    gbc.gridy = 0;
+    form.add(amountField, gbc);
+
+    JPanel methodPanel = new JPanel(new BorderLayout(UiStyle.GAP_SMALL, 0));
+    methodPanel.setOpaque(false);
+    JLabel methodLabel = new JLabel("Payment method:");
+    methodLabel.setFont(UiStyle.labelFont());
+    methodCombo.setFont(UiStyle.fieldFont());
+    methodPanel.add(methodLabel, BorderLayout.WEST);
     methodPanel.add(methodCombo, BorderLayout.CENTER);
-    form.add(methodPanel);
+    gbc.gridy = 1;
+    form.add(methodPanel, gbc);
 
-    JButton payBtn = new JButton("Submit Payment");
+    JButton payBtn = UiStyle.primaryButton("Submit Payment");
     payBtn.addActionListener(e -> onSubmitPayment());
 
-    JPanel south = new JPanel(new BorderLayout());
-    south.add(payBtn, BorderLayout.NORTH);
+    JPanel buttonRow = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, UiStyle.GAP_MEDIUM, 4));
+    buttonRow.setOpaque(false);
+    buttonRow.add(payBtn);
+
+    JPanel south = new JPanel(new BorderLayout(0, UiStyle.GAP_SMALL));
+    south.setOpaque(false);
+    south.add(buttonRow, BorderLayout.NORTH);
     south.add(banner, BorderLayout.SOUTH);
 
     section.add(form, BorderLayout.NORTH);

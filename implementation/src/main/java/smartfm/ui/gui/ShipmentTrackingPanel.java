@@ -1,9 +1,9 @@
 package smartfm.ui.gui;
 
 import java.awt.BorderLayout;
+import java.awt.FlowLayout;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
@@ -34,12 +34,17 @@ public class ShipmentTrackingPanel extends JPanel {
   private final ResultBanner banner = new ResultBanner();
 
   public ShipmentTrackingPanel(GuiContext context) {
-    super(new BorderLayout(10, 10));
+    super(new BorderLayout(UiStyle.GAP_MEDIUM, UiStyle.GAP_MEDIUM));
     this.context = context;
+    setBackground(UiStyle.WINDOW_BG);
     setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
 
+    UiStyle.styleTable(shipmentsTable);
+
     JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, buildTableSection(), buildActionSection());
-    split.setResizeWeight(0.6);
+    split.setResizeWeight(0.55);
+    split.setBorder(null);
+    split.setBackground(UiStyle.WINDOW_BG);
     add(split, BorderLayout.CENTER);
 
     context.addChangeListener(this::refreshTable);
@@ -48,30 +53,36 @@ public class ShipmentTrackingPanel extends JPanel {
 
   private JPanel buildTableSection() {
     JPanel section = new JPanel(new BorderLayout());
-    section.setBorder(BorderFactory.createTitledBorder("Shipments (empty until Business Area 2 dispatches an order)"));
-    section.add(new JScrollPane(shipmentsTable), BorderLayout.CENTER);
+    section.setBackground(UiStyle.CARD_BG);
+    section.setBorder(UiStyle.cardBorder("Shipments (empty until Business Area 2 dispatches an order)"));
+    JScrollPane scroll = new JScrollPane(shipmentsTable);
+    scroll.setBorder(BorderFactory.createLineBorder(UiStyle.CARD_BORDER));
+    section.add(scroll, BorderLayout.CENTER);
     return section;
   }
 
   private JPanel buildActionSection() {
-    JPanel section = new JPanel(new BorderLayout(6, 6));
-    section.setBorder(BorderFactory.createTitledBorder("Update Selected Shipment"));
+    JPanel section = new JPanel(new BorderLayout(UiStyle.GAP_SMALL, UiStyle.GAP_SMALL));
+    section.setBackground(UiStyle.CARD_BG);
+    section.setBorder(UiStyle.cardBorder("Update Selected Shipment"));
 
     section.add(locationField, BorderLayout.NORTH);
 
-    JButton pickupBtn = new JButton("Confirm Pickup");
+    JButton pickupBtn = UiStyle.primaryButton("Confirm Pickup");
     pickupBtn.addActionListener(e -> apply(context.getShipmentTracker()::confirmPickup));
-    JButton transitBtn = new JButton("Confirm In Transit");
+    JButton transitBtn = UiStyle.primaryButton("Confirm In Transit");
     transitBtn.addActionListener(e -> apply(context.getShipmentTracker()::confirmInTransit));
-    JButton deliverBtn = new JButton("Confirm Delivery");
+    JButton deliverBtn = UiStyle.primaryButton("Confirm Delivery");
     deliverBtn.addActionListener(e -> apply(context.getShipmentTracker()::confirmDelivery));
 
-    JPanel buttons = new JPanel();
+    JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT, UiStyle.GAP_MEDIUM, 4));
+    buttons.setOpaque(false);
     buttons.add(pickupBtn);
     buttons.add(transitBtn);
     buttons.add(deliverBtn);
 
-    JPanel south = new JPanel(new BorderLayout());
+    JPanel south = new JPanel(new BorderLayout(0, UiStyle.GAP_SMALL));
+    south.setOpaque(false);
     south.add(buttons, BorderLayout.NORTH);
     south.add(banner, BorderLayout.SOUTH);
 
