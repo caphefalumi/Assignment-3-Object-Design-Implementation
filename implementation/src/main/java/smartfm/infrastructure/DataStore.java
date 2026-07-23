@@ -59,7 +59,7 @@ import smartfm.domain.shipment.Shipment;
 public final class DataStore implements Serializable {
 
   private static final long serialVersionUID = 1L;
-  private static final int SCHEMA_VERSION = 1;
+  private static final int SCHEMA_VERSION = 2;
   private static final String SQLITE_DRIVER = "org.sqlite.JDBC";
 
   private static final Table<Record> SCHEMA_METADATA = table(name("schema_metadata"));
@@ -206,9 +206,12 @@ public final class DataStore implements Serializable {
       return;
     }
     if (storedVersion != SCHEMA_VERSION) {
-      throw new IllegalStateException(
-          "Unsupported SmartFM SQLite schema version " + storedVersion
-              + "; expected " + SCHEMA_VERSION + ".");
+      context.deleteFrom(STORE_SNAPSHOT).execute();
+      context.update(SCHEMA_METADATA)
+          .set(SCHEMA_VERSION_FIELD, SCHEMA_VERSION)
+          .where(METADATA_ID.eq(1))
+          .execute();
+      return;
     }
   }
 
@@ -248,24 +251,7 @@ public final class DataStore implements Serializable {
   }
 
   private static DataStore deserialize(byte[] payload) {
-    try (ObjectInputStream input = new ObjectInputStream(new ByteArrayInputStream(payload)) {
-      @Override
-      protected Class<?> resolveClass(java.io.ObjectStreamClass desc) throws IOException, ClassNotFoundException {
-        String name = desc.getName();
-        if (name.startsWith("smartfm.domain.") && name.indexOf('.', 15) < 0) {
-          String simpleName = name.substring(15);
-          String newName = remapDomainClass(simpleName);
-          if (newName != null) {
-            try {
-              return Class.forName(newName, false, Thread.currentThread().getContextClassLoader());
-            } catch (ClassNotFoundException ignored) {
-              // Fall back to default resolution
-            }
-          }
-        }
-        return super.resolveClass(desc);
-      }
-    }) {
+    try (ObjectInputStream input = new ObjectInputStream(new ByteArrayInputStream(payload))) {
       Object value = input.readObject();
       if (value instanceof DataStore) {
         return (DataStore) value;
@@ -273,72 +259,6 @@ public final class DataStore implements Serializable {
       return new DataStore();
     } catch (Exception exception) {
       return new DataStore();
-    }
-  }
-
-  private static String remapDomainClass(String simpleName) {
-    switch (simpleName) {
-      case "Customer":
-      case "CustomerStatus":
-        return "smartfm.domain.customer." + simpleName;
-
-      case "Order":
-      case "Consignment":
-      case "OrderState":
-      case "OrderSubmittedState":
-      case "OrderApprovedState":
-      case "OrderCancelledState":
-      case "OrderRejectedState":
-        return "smartfm.domain.order." + simpleName;
-
-      case "Shipment":
-      case "ShipmentState":
-      case "ShipmentAssignedState":
-      case "ShipmentPickedUpState":
-      case "ShipmentInTransitState":
-      case "ShipmentDeliveredState":
-      case "ITelemetrySource":
-      case "ManualTelemetrySource":
-        return "smartfm.domain.shipment." + simpleName;
-
-      case "Invoice":
-      case "InvoiceState":
-      case "InvoiceUnpaidState":
-      case "InvoicePartiallyPaidState":
-      case "InvoicePaidState":
-      case "Payment":
-      case "PaymentState":
-      case "PaymentPendingState":
-      case "PaymentVerifiedState":
-      case "PaymentSettledState":
-      case "PaymentFailedState":
-      case "PaymentMethod":
-      case "Receipt":
-      case "IPaymentStrategy":
-      case "CashPaymentStrategy":
-      case "GatewayPaymentStrategy":
-      case "IPaymentGateway":
-      case "SimulatedGatewayAdapter":
-        return "smartfm.domain.billing." + simpleName;
-
-      case "Person":
-      case "StaffMember":
-      case "StaffRole":
-      case "Driver":
-      case "DutyState":
-      case "Branch":
-      case "Vehicle":
-      case "VehicleStatus":
-        return "smartfm.domain.fleet." + simpleName;
-
-      case "ServiceOffering":
-      case "PricingTariff":
-      case "IPricingStrategy":
-      case "SystemConfiguration":
-        return "smartfm.domain.catalog." + simpleName;
-
-      default:
-        return null;
     }
   }
 }

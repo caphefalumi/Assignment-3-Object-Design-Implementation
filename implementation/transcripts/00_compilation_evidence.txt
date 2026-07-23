@@ -29,7 +29,7 @@ Result
 - Screenshot driver compiled and generated: 26 GUI images
 - Packaged executable: target/smartfm.jar, with the complete SQLite/jOOQ/JAXB/SLF4J dependency closure in target/lib/
 - Packaged JAR launched the CLI and reopened the persisted state: 2 branches, 3 vehicles, 3 drivers, and 2 orders.
-- jOOQ schema query: tables=[schema_metadata, store_snapshot]; schema=1; payload_bytes=6844
+- jOOQ schema query: tables=[schema_metadata, store_snapshot]; schema=2; payload_bytes=6844
 - DataStore source scan: no PreparedStatement, ResultSet, Statement, or raw SQLite DDL/DML statements remain.
 - SQLite database header: SQLite format 3
 - Typst report: asm3.pdf compiled successfully and the required report headings were present.
