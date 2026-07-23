@@ -397,7 +397,7 @@ SmartFM is implemented in Java 26 in a Maven-standard structure. The following m
     [`pom.xml`], [Maven descriptor: Java `26` release target, jOOQ `3.20.0`, pinned Xerial SQLite JDBC `3.46.1.0`, JAXB/R2DBC/Reactive Streams runtime closure, SLF4J `1.7.36`, JUnit Jupiter `5.10.2` test dependency, and a Shade-plugin executable JAR with `smartfm.ui.Launcher` as the main class.],
     [`src/main/java/smartfm/common/`], [Exceptions, validators, and money formatting.],
     [`src/main/java/smartfm/domain/`], [Six domain sub-packages (`customer`, `order`, `shipment`, `billing`, `fleet`, `catalog`) owning entities, state hierarchies, and strategy/adapter contracts.],
-    [`src/test/java/smartfm/`], [JUnit 5 unit, integration, and E2E test suite (68 automated tests across six domain packages, application controllers, Swing GUI panels, complete business workflows, and SQLite persistence).],
+    [`src/test/java/smartfm/`], [JUnit 5 unit, integration, and E2E test suite (70 automated tests across six domain packages, application controllers, Swing GUI panels, real-time auto-persistence, complete business workflows, and SQLite persistence).],
     [`src/main/java/smartfm/application/`], [Four GRASP Controllers, observer interfaces, bootstrap, and ID generation.],
     [`src/main/java/smartfm/infrastructure/`], [The `DataStore` persistence gateway.],
     [`src/main/java/smartfm/ui/`, `src/main/java/smartfm/ui/gui/`], [CLI and Swing presentations over the same controller contracts.],
@@ -498,15 +498,16 @@ To reproduce the complete screenshot set on a machine with JDK 26 and GNU Make, 
 
 Testing combines compilation and static lint analysis, automated unit and integration test suites, scenario-based functional acceptance tests, boundary/negative-path checks, and persistence checks.
 
-*Automated Unit, Integration, and End-to-End Testing.* A comprehensive JUnit 5 test suite (`src/test/java/smartfm/`) contains 68 automated tests executing via `mvn test`. The test packages mirror the production domain sub-packages and validate:
+*Automated Unit, Integration, and End-to-End Testing.* A comprehensive JUnit 5 test suite (`src/test/java/smartfm/`) contains 70 automated tests executing via `mvn test`. The test packages mirror the production domain sub-packages and validate:
 1. *Common Layer*: `MoneyTest` (currency formatting, timestamp rendering) and `ValidatorsTest` (regex email/phone, string length boundaries, non-negative numbers, date constraints, enum mapping).
 2. *Domain Layer*: `smartfm.domain.customer.CustomerTest` (customer validation, order history tracking), `smartfm.domain.order.OrderAndConsignmentTest` (order/consignment weight aggregation, `OrderState` transition guards), `smartfm.domain.shipment.ShipmentAndTelemetryTest` (`ShipmentState` transition guards, manual telemetry adapter), `smartfm.domain.billing.InvoicePaymentAndReceiptTest` (`InvoiceState` and `PaymentState` state machines, receipt issuance, cash/gateway strategies), `smartfm.domain.fleet.FleetAndBranchTest` (branch resource registration, vehicle payload capacity, driver duty states, staff roles), and `smartfm.domain.catalog.ServiceCatalogAndTariffTest` (service offerings, pricing tariff quotes, peak multipliers, system configuration).
 3. *Application Layer*: `OrderProcessorTest` (end-to-end submission and approval event dispatch), `DispatchManagerTest` (resource lookup, shipment creation, fleet status updates), `ShipmentTrackerTest` (tracking updates and automatic resource deallocation on delivery), and `PaymentProcessorTest` (receipt issuance, partial payments, settled invoice locking).
 4. *Infrastructure Layer*: `DataStoreTest` (saving and reloading aggregate snapshots from embedded SQLite database files, verifying state graph integrity).
 5. *Core E2E Workflow Layer*: `SmartFmEndToEndTest` (executes the complete business path from customer registration, multi-consignment order placement, quote calculation, approval, fleet/driver resource allocation, milestone tracking, resource deallocation upon delivery, partial cash & final card payment settlement, to real SQLite database persistence and cold-start system recovery).
 6. *Swing GUI E2E Layer*: `smartfm.ui.gui.SmartFmGuiEndToEndTest` (executes the full interactive GUI flow on the Event Dispatch Thread: customer registration error & success paths, order creation & approval, fleet dispatch, tracking state machine guards, billing overpayment & settlement, and Swing window shutdown/persistence reload).
+7. *GUI Real-Time Persistence Layer*: `smartfm.ui.gui.GuiContextAndPersistenceTest` (validates immediate real-time auto-save to SQLite upon UI state mutation, 2-column order form layout rendering, and direct disk-file state verification without window closure).
 
-All 68 automated tests execute in under 10 seconds and pass with zero failures or errors (`BUILD SUCCESS`).
+All 70 automated tests execute in under 10 seconds and pass with zero failures or errors (`BUILD SUCCESS`).
 
 *Scenario-Based Acceptance Testing.* The five scenarios below exercise every selected use case shown in the sequence diagrams. They are replayable by running the files in `scenarios/` in numerical order after resetting the persistent store. Each transcript is captured from a separate CLI process, proving that persisted data is reread between operations.
 

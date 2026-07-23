@@ -34,7 +34,7 @@ src/main/java/smartfm/infrastructure/    DataStore: jOOQ-backed SQLite database 
 src/main/java/smartfm/ui/                Launcher and CLI
 src/main/java/smartfm/ui/gui/            Swing GUI
 src/main/resources/                      Reserved Maven resource root
-src/test/java/                           JUnit 5 unit, integration & Swing GUI E2E test suite (68 tests)
+src/test/java/                           JUnit 5 unit, integration, auto-save & Swing GUI E2E test suite (70 tests)
 scenarios/                               Scripted CLI inputs for the five scenario flows
 transcripts/                             Compilation and CLI execution evidence
 screenshots/                             Generated GUI evidence images
