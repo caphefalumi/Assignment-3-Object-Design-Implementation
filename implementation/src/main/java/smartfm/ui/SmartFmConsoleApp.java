@@ -163,7 +163,7 @@ public final class SmartFmConsoleApp {
       return;
     }
     String gender = io.readLine("Gender");
-    LocalDate dob = io.readValidated("Date of birth (YYYY-MM-DD)",
+    LocalDate dob = io.readValidated("Date of birth (DD/MM/YYYY)",
         v -> Validators.requirePastOrTodayDate(v, "Date of birth"));
     if (dob == null) {
       io.println("Registration cancelled.");
@@ -230,7 +230,7 @@ public final class SmartFmConsoleApp {
       io.println("Order placement cancelled.");
       return;
     }
-    LocalDate pickupDate = io.readValidated("Requested pickup date (YYYY-MM-DD, today or later)",
+    LocalDate pickupDate = io.readValidated("Requested pickup date (DD/MM/YYYY, today or later)",
         v -> Validators.requireTodayOrFuture(v, "Pickup date"));
     if (pickupDate == null) {
       io.println("Order placement cancelled.");
@@ -307,7 +307,7 @@ public final class SmartFmConsoleApp {
       Invoice invoice = bootstrap.getOrderProcessor().approveOrder(orderId);
       save();
       io.println("Success: order " + orderId + " approved. Invoice " + invoice.getId()
-          + " generated for " + Money.format(invoice.getTotalAmount()) + " VND, due " + invoice.getDueDate() + ".");
+          + " generated for " + Money.format(invoice.getTotalAmount()) + " VND, due " + Validators.formatDate(invoice.getDueDate()) + ".");
       io.println("(Observer notification: DispatchManager and PaymentProcessor were notified automatically.)");
     } catch (InvalidDataException exc) {
       io.println("  [Rejected] " + exc.getMessage());

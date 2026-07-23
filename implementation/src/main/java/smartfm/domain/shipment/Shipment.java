@@ -2,6 +2,7 @@ package smartfm.domain.shipment;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import smartfm.common.InvalidDataException;
 import smartfm.common.Validators;
 
 /**
@@ -72,6 +73,21 @@ public class Shipment implements Serializable {
 
   public void deliver() {
     state.deliver(this);
+  }
+
+  /** Restores a lifecycle state read by the normalized persistence gateway. */
+  public void restoreState(String persistedState) {
+    if (persistedState == null || persistedState.equals("Assigned")) {
+      state = new ShipmentAssignedState();
+    } else if (persistedState.equals("Picked Up")) {
+      state = new ShipmentPickedUpState();
+    } else if (persistedState.equals("In Transit")) {
+      state = new ShipmentInTransitState();
+    } else if (persistedState.equals("Delivered")) {
+      state = new ShipmentDeliveredState();
+    } else {
+      throw new InvalidDataException("Unknown persisted shipment state: " + persistedState);
+    }
   }
 
   public boolean isDelivered() {

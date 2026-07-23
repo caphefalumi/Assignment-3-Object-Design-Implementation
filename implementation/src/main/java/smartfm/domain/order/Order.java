@@ -133,6 +133,22 @@ public class Order implements Serializable {
     state.cancel(this);
   }
 
+  /** Restores a lifecycle state read by the normalized persistence gateway. */
+  public void restoreState(String persistedState) {
+    if (persistedState == null || persistedState.equals("Submitted")) {
+      state = new OrderSubmittedState();
+    } else if (persistedState.equals("Approved")) {
+      state = new OrderApprovedState();
+    } else if (persistedState.equals("Cancelled")) {
+      state = new OrderCancelledState();
+    } else if (persistedState.startsWith("Rejected (")) {
+      state = new OrderRejectedState(
+          persistedState.substring("Rejected (".length(), persistedState.length() - 1));
+    } else {
+      throw new InvalidDataException("Unknown persisted order state: " + persistedState);
+    }
+  }
+
   public boolean isApproved() {
     return state instanceof OrderApprovedState;
   }

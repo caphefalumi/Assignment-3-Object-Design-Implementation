@@ -28,7 +28,7 @@ public class CustomerRegistrationPanel extends JPanel {
 
   private final ValidatedField fullNameField = new ValidatedField("Full name:");
   private final JComboBox<String> genderCombo = new JComboBox<>(new String[] {"Female", "Male", "Other"});
-  private final ValidatedField dobField = new ValidatedField("Date of birth (YYYY-MM-DD):");
+  private final ValidatedField dobField = new ValidatedField("Date of birth (DD/MM/YYYY):");
   private final ValidatedField phoneField = new ValidatedField("Phone number:");
   private final ValidatedField emailField = new ValidatedField("Email address:");
   private final ValidatedField addressField = new ValidatedField("Address:");

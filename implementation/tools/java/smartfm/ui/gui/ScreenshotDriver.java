@@ -83,7 +83,7 @@ public final class ScreenshotDriver {
     // Invalid input: bad phone number and bad email, submitted to trigger validation.
     onEdt(() -> {
       panel.fullNameField().setText("Nguyen Thi Mai");
-      panel.dobField().setText("1995-04-10");
+      panel.dobField().setText("10/04/1995");
       panel.phoneField().setText("abc");
       panel.emailField().setText("not-an-email");
       panel.addressField().setText("120 Nguyen Trai, District 5, Ho Chi Minh City");
@@ -102,7 +102,7 @@ public final class ScreenshotDriver {
     // Second customer, used later by the order/dispatch/billing scenarios.
     onEdt(() -> {
       panel.fullNameField().setText("Tran Van Long");
-      panel.dobField().setText("1993-11-02");
+      panel.dobField().setText("02/11/1993");
       panel.phoneField().setText("+84-93-4445566");
       panel.emailField().setText("long.tran@winmart.vn");
       panel.addressField().setText("88 Ly Thuong Kiet, Cau Giay, Hanoi");

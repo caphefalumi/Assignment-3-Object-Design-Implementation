@@ -17,6 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import smartfm.common.Validators;
 import smartfm.domain.customer.Customer;
 import smartfm.domain.order.Order;
 import smartfm.infrastructure.DataStore;
@@ -67,7 +68,7 @@ class GuiContextAndPersistenceTest {
     CustomerRegistrationPanel customerPanel = frame.customerPanel();
     onEdt(() -> {
       customerPanel.fullNameField().setText("AutoSave Customer");
-      customerPanel.dobField().setText("1990-01-01");
+      customerPanel.dobField().setText("10/04/1990");
       customerPanel.phoneField().setText("+84901234567");
       customerPanel.emailField().setText("autosave@example.com");
       customerPanel.addressField().setText("456 AutoSave Way");
@@ -104,7 +105,7 @@ class GuiContextAndPersistenceTest {
       orderPanel.originCombo().setSelectedIndex(0);
       orderPanel.destinationCombo().setSelectedIndex(1);
       orderPanel.distanceField().setText("1200");
-      orderPanel.pickupDateField().setText(LocalDate.now().plusDays(1).toString());
+      orderPanel.pickupDateField().setText(Validators.formatDate(LocalDate.now().plusDays(1)));
 
       orderPanel.consignmentDescField().setText("Electronic Components");
       orderPanel.consignmentWeightField().setText("150");

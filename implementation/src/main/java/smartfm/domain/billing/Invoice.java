@@ -90,6 +90,21 @@ public class Invoice implements Serializable {
     return state instanceof InvoicePaidState;
   }
 
+  /** Restores persisted billing state and payment links after a relational load. */
+  public void restoreState(String persistedState, double persistedOutstandingBalance,
+      List<String> persistedPaymentIds) {
+    this.outstandingBalance = Math.max(0.0, persistedOutstandingBalance);
+    this.paymentIds.clear();
+    this.paymentIds.addAll(persistedPaymentIds);
+    if ("Paid".equals(persistedState)) {
+      state = new InvoicePaidState();
+    } else if ("Partially Paid".equals(persistedState)) {
+      state = new InvoicePartiallyPaidState();
+    } else {
+      state = new InvoiceUnpaidState();
+    }
+  }
+
   public List<String> getPaymentIds() {
     return Collections.unmodifiableList(paymentIds);
   }

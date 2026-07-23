@@ -9,18 +9,16 @@ SmartFM is a **Java 26** desktop application for the Smart Fleet Management Syst
 
 Both a Swing GUI (`smartfm.ui.gui`) and a CLI (`smartfm.ui.SmartFmConsoleApp`) call the same application/domain controllers.
 
-## SQLite persistence with jOOQ
+## SQLite persistence
 
-Assignment 2 assumed a shared relational database. Assignment 3 implements that boundary with embedded **SQLite** and the **jOOQ SQL DSL**:
+Assignment 2 assumed a shared relational database. Assignment 3 implements that boundary with embedded **SQLite** and normalized tables:
 
 - Database: `data/smartfm.db`
-- SQL DSL: jOOQ `3.20.0`
 - JDBC driver: Xerial SQLite JDBC `3.46.1.0`
-- jOOQ runtime closure: R2DBC SPI `1.0.0.RELEASE`, Reactive Streams `1.0.3`, Jakarta XML Bind API `4.0.1`, and Jakarta Activation API `2.1.2`
-- Supporting logging API: SLF4J API and no-op binding `1.7.36`
-- Schema: `schema_metadata` records the schema version and `store_snapshot` stores the SmartFM aggregate snapshot transactionally.
+- Supporting runtime libraries: JAXB, R2DBC/Reactive Streams, SLF4J API and no-op binding `1.7.36`
+- Schema: `schema_metadata` records the schema version; normalized tables persist branches, people/resources, catalogue, orders/consignments, shipments, invoices/payments, receipts, and their association links.
 
-`DataStore` remains the single infrastructure facade used by application startup and shutdown. It uses jOOQ's typed SQLite DSL for `CREATE TABLE IF NOT EXISTS`, schema-version reads/inserts, snapshot reads, and conflict-upsert writes; the only direct JDBC usage is acquiring the SQLite connection for jOOQ. Domain classes and controllers remain independent of jOOQ, JDBC, and SQL. SQLite is embedded: no database server, account, or network connection is needed. The old `data/smartfm-store.dat` serialization file is not read or deleted automatically.
+`DataStore` remains the single infrastructure facade used by application startup and shutdown. It uses SQLite JDBC transactions and prepared SQL statements to create the version-3 normalized schema, replace the aggregate rows atomically, and reconstruct the domain graph on startup. Domain classes and controllers remain independent of JDBC and SQL. SQLite is embedded: no database server, account, or network connection is needed. The application accepts only the current normalized schema; reset the database if an older schema is encountered.
 
 ## Project layout
 
@@ -30,7 +28,7 @@ lib/                                     Pinned local SQLite, jOOQ, JAXB, and SL
 src/main/java/smartfm/common/            Exceptions, validators, Money formatter
 src/main/java/smartfm/domain/            6 domain sub-packages (customer, order, shipment, billing, fleet, catalog)
 src/main/java/smartfm/application/       Four GRASP Controllers, Observer listeners, Bootstrap
-src/main/java/smartfm/infrastructure/    DataStore: jOOQ-backed SQLite database gateway
+src/main/java/smartfm/infrastructure/    DataStore: normalized SQLite database gateway
 src/main/java/smartfm/ui/                Launcher and CLI
 src/main/java/smartfm/ui/gui/            Swing GUI
 src/main/resources/                      Reserved Maven resource root
@@ -143,7 +141,7 @@ The GUI is the default. Pass `--cli` for the repeatable textual interface.
 make reset
 ```
 
-This deletes `data/smartfm.db` and any SQLite `-wal`/`-shm` sidecars, then recompiles on the next build. A fresh startup seeds two branches, three vehicles, three drivers, and three service offerings. It intentionally does **not** delete the legacy `smartfm-store.dat` file.
+This deletes `data/smartfm.db` and any SQLite `-wal`/`-shm` sidecars, then recompiles on the next build. A fresh startup seeds two branches, three vehicles, three drivers, and three service offerings.
 
 ## Replaying CLI scenarios
 
@@ -173,4 +171,4 @@ Scenarios 01–05 must be run in order against the same SQLite database so later
 make screenshots
 ```
 
-The command resets only the local SQLite demonstration database, compiles the application/tool, generates the screenshots, saves the final database snapshot, and exits automatically.
+The command resets only the local SQLite demonstration database, compiles the application/tool, generates the screenshots, saves the final normalized database state, and exits automatically.

@@ -84,15 +84,27 @@ class ValidatorsTest {
     LocalDate tomorrow = today.plusDays(1);
     LocalDate yesterday = today.minusDays(1);
 
-    assertEquals(today, Validators.requireValidDate(today.toString(), "Date"));
-    assertThrows(InvalidDataException.class, () -> Validators.requireValidDate("invalid-date", "Date"));
+    assertEquals(today, Validators.requireValidDate(Validators.formatDate(today), "Date"));
+    assertThrows(InvalidDataException.class,
+        () -> Validators.requireValidDate("invalid-date", "Date"));
 
-    assertDoesNotThrow(() -> Validators.requireTodayOrFuture(today.toString(), "Date"));
-    assertDoesNotThrow(() -> Validators.requireTodayOrFuture(tomorrow.toString(), "Date"));
-    assertThrows(InvalidDataException.class, () -> Validators.requireTodayOrFuture(yesterday.toString(), "Date"));
+    assertEquals(today, Validators.requirePastOrTodayDate(
+        Validators.formatDateOfBirth(today), "Date"));
+    assertEquals("10/04/1995", Validators.formatDateOfBirth(LocalDate.of(1995, 4, 10)));
+    assertThrows(InvalidDataException.class,
+        () -> Validators.requirePastOrTodayDate("invalid-date", "Date"));
+    assertThrows(InvalidDataException.class,
+        () -> Validators.requirePastOrTodayDate("31/02/1995", "Date"));
 
-    assertDoesNotThrow(() -> Validators.requirePastOrTodayDate(today.toString(), "Date"));
-    assertDoesNotThrow(() -> Validators.requirePastOrTodayDate(yesterday.toString(), "Date"));
-    assertThrows(InvalidDataException.class, () -> Validators.requirePastOrTodayDate(tomorrow.toString(), "Date"));
+    assertDoesNotThrow(() -> Validators.requireTodayOrFuture(Validators.formatDate(today), "Date"));
+    assertDoesNotThrow(() -> Validators.requireTodayOrFuture(Validators.formatDate(tomorrow), "Date"));
+    assertThrows(InvalidDataException.class, () -> Validators.requireTodayOrFuture(Validators.formatDate(yesterday), "Date"));
+
+    assertDoesNotThrow(() -> Validators.requirePastOrTodayDate(
+        Validators.formatDateOfBirth(today), "Date"));
+    assertDoesNotThrow(() -> Validators.requirePastOrTodayDate(
+        Validators.formatDateOfBirth(yesterday), "Date"));
+    assertThrows(InvalidDataException.class, () -> Validators.requirePastOrTodayDate(
+        Validators.formatDateOfBirth(tomorrow), "Date"));
   }
 }

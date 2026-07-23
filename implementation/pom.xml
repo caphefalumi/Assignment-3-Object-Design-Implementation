@@ -30,7 +30,7 @@
       <artifactId>sqlite-jdbc</artifactId>
       <version>3.46.1.0</version>
     </dependency>
-    <!-- jOOQ is the typed SQL DSL that manages SQLite DDL and snapshot DML. -->
+    <!-- Pinned jOOQ dependency retained for the project's SQL/design dependency set. DataStore uses JDBC prepared statements for normalized SQLite persistence. -->
     <dependency>
       <groupId>org.jooq</groupId>
       <artifactId>jooq</artifactId>

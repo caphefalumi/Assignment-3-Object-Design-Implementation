@@ -1,5 +1,5 @@
 # SmartFM - Assignment 3 Makefile
-# Requires a Java 26+ JDK and the pinned SQLite/jOOQ/JAXB runtime JARs under lib/.
+# Requires a Java 26+ JDK and the pinned SQLite/JDBC/JAXB runtime JARs under lib/.
 # Windows recipes are verified with GNU Make 4.4.1 and PowerShell.
 
 JAVAC          = javac
@@ -36,6 +36,8 @@ all: compile
 
 ifeq ($(OS),Windows_NT)
 
+SHELL = cmd.exe
+
 DEPS_CP = $(SQLITE_JAR);$(JOOQ_JAR);$(R2DBC_SPI_JAR);$(REACTIVE_STREAMS_JAR);$(JAXB_API_JAR);$(ACTIVATION_API_JAR);$(SLF4J_API_JAR);$(SLF4J_NOP_JAR)
 
 compile:
@@ -48,12 +50,12 @@ compile:
 	@if not exist "$(SLF4J_API_JAR)" (echo Missing pinned dependency: $(SLF4J_API_JAR) & exit /b 1)
 	@if not exist "$(SLF4J_NOP_JAR)" (echo Missing pinned dependency: $(SLF4J_NOP_JAR) & exit /b 1)
 	@if not exist "$(OUT_DIR)" mkdir "$(OUT_DIR)"
-	@powershell -NoProfile -Command "$$sources = Get-ChildItem -Recurse -Filter *.java '$(SRC_DIR)' | ForEach-Object { $$_.FullName }; & $(JAVAC) -cp '$(DEPS_CP)' -d '$(OUT_DIR)' -encoding UTF-8 -Xlint:all $$sources; if ($$LASTEXITCODE -ne 0) { exit $$LASTEXITCODE }; Write-Output ('Compiled ' + $$sources.Count + ' source files to $(OUT_DIR) with SQLite/jOOQ')"
+	@powershell -NoProfile -Command "$$sources = Get-ChildItem -Recurse -Filter *.java '$(SRC_DIR)' | ForEach-Object { $$_.FullName }; & $(JAVAC) -cp '$(DEPS_CP)' -d '$(OUT_DIR)' -encoding UTF-8 -Xlint:all $$sources; if ($$LASTEXITCODE -ne 0) { exit $$LASTEXITCODE }; Write-Output ('Compiled ' + $$sources.Count + ' source files to $(OUT_DIR) with SQLite/JDBC')"
 
 jar: compile
 	@powershell -NoProfile -Command "New-Item -ItemType Directory -Force -Path 'target/lib' | Out-Null; Copy-Item -Force '$(SQLITE_JAR)', '$(JOOQ_JAR)', '$(R2DBC_SPI_JAR)', '$(REACTIVE_STREAMS_JAR)', '$(JAXB_API_JAR)', '$(ACTIVATION_API_JAR)', '$(SLF4J_API_JAR)', '$(SLF4J_NOP_JAR)' -Destination 'target/lib'; Set-Content -Encoding Ascii -Path 'target/MANIFEST.MF' -Value @('Manifest-Version: 1.0', 'Main-Class: $(MAIN)', 'Class-Path: lib/$(SQLITE_NAME) lib/$(JOOQ_NAME) lib/$(R2DBC_SPI_NAME) lib/$(REACTIVE_STREAMS_NAME) lib/$(JAXB_API_NAME) lib/$(ACTIVATION_API_NAME) lib/$(SLF4J_API_NAME) lib/$(SLF4J_NOP_NAME)', '')"
 	$(JAR) cfm "$(JAR_FILE)" "target/MANIFEST.MF" -C "$(OUT_DIR)" .
-	@echo Built $(JAR_FILE) with its SQLite/jOOQ runtime libraries in target\lib
+	@echo Built $(JAR_FILE) with its SQLite/JDBC runtime libraries in target\lib
 
 run: compile
 	$(JAVA) -cp "$(OUT_DIR);$(DEPS_CP)" $(MAIN)
@@ -84,10 +86,10 @@ SOURCES = $(shell find $(SRC_DIR) -name "*.java")
 DEPS_CP = $(SQLITE_JAR):$(JOOQ_JAR):$(R2DBC_SPI_JAR):$(REACTIVE_STREAMS_JAR):$(JAXB_API_JAR):$(ACTIVATION_API_JAR):$(SLF4J_API_JAR):$(SLF4J_NOP_JAR)
 
 compile: $(SOURCES)
-	@test -f "$(SQLITE_JAR)" && test -f "$(JOOQ_JAR)" && test -f "$(R2DBC_SPI_JAR)" && test -f "$(REACTIVE_STREAMS_JAR)" && test -f "$(JAXB_API_JAR)" && test -f "$(ACTIVATION_API_JAR)" && test -f "$(SLF4J_API_JAR)" && test -f "$(SLF4J_NOP_JAR)" || (echo "Missing pinned SQLite/jOOQ runtime dependency under lib/" && exit 1)
+	@test -f "$(SQLITE_JAR)" && test -f "$(JOOQ_JAR)" && test -f "$(R2DBC_SPI_JAR)" && test -f "$(REACTIVE_STREAMS_JAR)" && test -f "$(JAXB_API_JAR)" && test -f "$(ACTIVATION_API_JAR)" && test -f "$(SLF4J_API_JAR)" && test -f "$(SLF4J_NOP_JAR)" || (echo "Missing pinned SQLite/JDBC runtime dependency under lib/" && exit 1)
 	@mkdir -p "$(OUT_DIR)"
 	$(JAVAC) -cp "$(DEPS_CP)" -d "$(OUT_DIR)" -encoding UTF-8 -Xlint:all $(SOURCES)
-	@echo "Compiled $$(echo $(SOURCES) | wc -w) source files to $(OUT_DIR) with SQLite/jOOQ"
+	@echo "Compiled $$(echo $(SOURCES) | wc -w) source files to $(OUT_DIR) with SQLite/JDBC"
 
 jar: compile
 	@mkdir -p "$(TARGET_LIB)"
@@ -101,7 +103,7 @@ jar: compile
 	@cp "$(SLF4J_NOP_JAR)" "$(TARGET_LIB)/$(SLF4J_NOP_NAME)"
 	@printf 'Manifest-Version: 1.0\nMain-Class: $(MAIN)\nClass-Path: lib/$(SQLITE_NAME) lib/$(JOOQ_NAME) lib/$(R2DBC_SPI_NAME) lib/$(REACTIVE_STREAMS_NAME) lib/$(JAXB_API_NAME) lib/$(ACTIVATION_API_NAME) lib/$(SLF4J_API_NAME) lib/$(SLF4J_NOP_NAME)\n\n' > target/MANIFEST.MF
 	$(JAR) cfm "$(JAR_FILE)" target/MANIFEST.MF -C "$(OUT_DIR)" .
-	@echo "Built $(JAR_FILE) with its SQLite/jOOQ runtime libraries in $(TARGET_LIB)"
+	@echo "Built $(JAR_FILE) with its SQLite/JDBC runtime libraries in $(TARGET_LIB)"
 
 run: compile
 	$(JAVA) -cp "$(OUT_DIR):$(DEPS_CP)" $(MAIN)

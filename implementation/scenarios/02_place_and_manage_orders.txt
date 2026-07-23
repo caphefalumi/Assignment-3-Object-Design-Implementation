@@ -5,7 +5,7 @@ SVC-CLD
 BR-HCM
 BR-HAN
 1700
-2026-08-05
+05/08/2026
 Frozen seafood consignment for WinMart Hanoi
 -300
 300
@@ -20,7 +20,7 @@ SVC-STD
 BR-HCM
 BR-HAN
 1700
-2026-08-10
+10/08/2026
 General merchandise pallet for retail restock
 500
 2.0
@@ -34,7 +34,7 @@ SVC-EXP
 BR-HCM
 BR-HAN
 1700
-2026-08-06
+06/08/2026
 Urgent documents and small parcel
 20
 0.5

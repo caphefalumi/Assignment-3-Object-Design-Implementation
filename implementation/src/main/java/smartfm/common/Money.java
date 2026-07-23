@@ -19,7 +19,7 @@ public final class Money {
       ThreadLocal.withInitial(() -> new DecimalFormat("#,##0.00"));
 
   private static final DateTimeFormatter TIMESTAMP_FORMAT =
-      DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+      DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
 
   private Money() {}
 

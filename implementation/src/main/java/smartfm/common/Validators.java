@@ -1,7 +1,9 @@
 package smartfm.common;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
 import java.util.Arrays;
 
 /**
@@ -16,6 +18,9 @@ import java.util.Arrays;
  * their own data rather than relying on a single global validator).
  */
 public final class Validators {
+
+  private static final DateTimeFormatter DATE_FORMAT =
+      DateTimeFormatter.ofPattern("dd/MM/uuuu").withResolverStyle(ResolverStyle.STRICT);
 
   private Validators() {}
 
@@ -90,18 +95,40 @@ public final class Validators {
   public static LocalDate requireValidDate(String raw, String fieldName) {
     String trimmed = requireNonBlank(raw, fieldName, 10);
     try {
-      return LocalDate.parse(trimmed);
+      return LocalDate.parse(trimmed, DATE_FORMAT);
     } catch (DateTimeParseException exc) {
-      throw new InvalidDataException(fieldName + " must be a valid date in YYYY-MM-DD format.");
+      throw new InvalidDataException(fieldName + " must be a valid date in DD/MM/YYYY format.");
     }
   }
 
   public static LocalDate requirePastOrTodayDate(String raw, String fieldName) {
-    LocalDate parsed = requireValidDate(raw, fieldName);
+    String trimmed = requireNonBlank(raw, fieldName, 10);
+    final LocalDate parsed;
+    try {
+      parsed = LocalDate.parse(trimmed, DATE_FORMAT);
+    } catch (DateTimeParseException exc) {
+      throw new InvalidDataException(fieldName + " must be a valid date in DD/MM/YYYY format.");
+    }
     if (parsed.isAfter(LocalDate.now())) {
       throw new InvalidDataException(fieldName + " cannot be in the future.");
     }
     return parsed;
+  }
+
+  /** Formats a date for user-facing output in DD/MM/YYYY format. */
+  public static String formatDate(LocalDate value) {
+    if (value == null) {
+      return "";
+    }
+    return DATE_FORMAT.format(value);
+  }
+
+  /** Formats a date of birth for user-facing output. */
+  public static String formatDateOfBirth(LocalDate value) {
+    if (value == null) {
+      throw new InvalidDataException("Date of birth is required.");
+    }
+    return DATE_FORMAT.format(value);
   }
 
   public static <T extends Enum<T>> T requireEnum(String raw, Class<T> enumType, String fieldName) {

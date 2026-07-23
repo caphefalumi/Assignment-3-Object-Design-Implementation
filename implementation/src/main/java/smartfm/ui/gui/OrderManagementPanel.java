@@ -49,7 +49,7 @@ public class OrderManagementPanel extends JPanel {
   private final JComboBox<String> originCombo = new JComboBox<>();
   private final JComboBox<String> destinationCombo = new JComboBox<>();
   private final ValidatedField distanceField = new ValidatedField("Distance (km):");
-  private final ValidatedField pickupDateField = new ValidatedField("Pickup date (YYYY-MM-DD):");
+  private final ValidatedField pickupDateField = new ValidatedField("Pickup date (DD/MM/YYYY):");
 
   private final ValidatedField consignmentDescField = new ValidatedField("Description:");
   private final ValidatedField consignmentWeightField = new ValidatedField("Weight (kg):");
@@ -75,8 +75,17 @@ public class OrderManagementPanel extends JPanel {
     this.context = context;
     setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
 
+    consignmentTable.setRowHeight(24);
+    consignmentTable.getTableHeader().setPreferredSize(new java.awt.Dimension(0, 26));
+    consignmentTable.setShowGrid(true);
+
+    pendingOrdersTable.setRowHeight(24);
+    pendingOrdersTable.getTableHeader().setPreferredSize(new java.awt.Dimension(0, 26));
+    pendingOrdersTable.setShowGrid(true);
+
     JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, buildPlaceOrderSection(), buildManageOrdersSection());
     split.setResizeWeight(0.55);
+    split.setDividerLocation(380);
     add(split, BorderLayout.CENTER);
 
     context.addChangeListener(this::refreshComboBoxes);
@@ -131,7 +140,9 @@ public class OrderManagementPanel extends JPanel {
 
     // Order table and submit actions
     JPanel tableAndActions = new JPanel(new BorderLayout(6, 6));
-    tableAndActions.add(new JScrollPane(consignmentTable), BorderLayout.CENTER);
+    JScrollPane consignmentScroll = new JScrollPane(consignmentTable);
+    consignmentScroll.setPreferredSize(new java.awt.Dimension(0, 100));
+    tableAndActions.add(consignmentScroll, BorderLayout.CENTER);
 
     JButton submitOrder = new JButton("Submit Order");
     submitOrder.addActionListener(e -> onSubmitOrder());
@@ -209,20 +220,24 @@ public class OrderManagementPanel extends JPanel {
       Order order = context.getOrderProcessor().submitOrder(
           customerId, serviceId, originId, destinationId, distance, pickupDate,
           new ArrayList<>(pendingConsignments));
+      context.notifyChanged();
+      clearOrderFormFields();
       orderBanner.success("order " + order.getId() + " submitted. Estimated quote: "
           + Money.format(order.getQuotedAmount()) + " VND. Status: " + order.getStateName() + ".");
-      context.notifyChanged();
-      resetOrderForm();
     } catch (InvalidDataException exc) {
       orderBanner.error(exc.getMessage());
     }
   }
 
-  private void resetOrderForm() {
+  private void clearOrderFormFields() {
     distanceField.reset();
     pickupDateField.reset();
     pendingConsignments.clear();
     consignmentTableModel.setRowCount(0);
+  }
+
+  private void resetOrderForm() {
+    clearOrderFormFields();
     orderBanner.neutral("Form cleared. Ready for a new order.");
   }
 
@@ -234,7 +249,9 @@ public class OrderManagementPanel extends JPanel {
     JPanel section = new JPanel(new BorderLayout(6, 6));
     section.setBorder(BorderFactory.createTitledBorder("Pending Orders - Approve, Reject, or Cancel"));
 
-    section.add(new JScrollPane(pendingOrdersTable), BorderLayout.CENTER);
+    JScrollPane pendingScroll = new JScrollPane(pendingOrdersTable);
+    pendingScroll.setPreferredSize(new java.awt.Dimension(0, 120));
+    section.add(pendingScroll, BorderLayout.CENTER);
 
     JPanel actions = new JPanel(new BorderLayout(6, 6));
     JPanel reasonPanel = new JPanel(new BorderLayout(6, 0));
@@ -278,7 +295,7 @@ public class OrderManagementPanel extends JPanel {
     try {
       Invoice invoice = context.getOrderProcessor().approveOrder(orderId);
       actionBanner.success("order " + orderId + " approved. Invoice " + invoice.getId()
-          + " generated for " + Money.format(invoice.getTotalAmount()) + " VND, due " + invoice.getDueDate()
+          + " generated for " + Money.format(invoice.getTotalAmount()) + " VND, due " + Validators.formatDate(invoice.getDueDate())
           + ". (DispatchManager and PaymentProcessor notified automatically.)");
       context.notifyChanged();
     } catch (InvalidDataException exc) {
@@ -342,6 +359,9 @@ public class OrderManagementPanel extends JPanel {
     for (Branch b : context.getStore().branches().values()) {
       originCombo.addItem(b.getId() + " - " + b.getName());
       destinationCombo.addItem(b.getId() + " - " + b.getName());
+    }
+    if (destinationCombo.getItemCount() > 1) {
+      destinationCombo.setSelectedIndex(1);
     }
   }
 

@@ -18,6 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import smartfm.common.Validators;
 import smartfm.domain.billing.Invoice;
 import smartfm.domain.billing.PaymentMethod;
 import smartfm.domain.customer.Customer;
@@ -76,7 +77,7 @@ class SmartFmGuiEndToEndTest {
 
       // Attempt invalid input
       customerPanel.fullNameField().setText("GUI Customer");
-      customerPanel.dobField().setText("1995-05-20");
+      customerPanel.dobField().setText("20/05/1995");
       customerPanel.phoneField().setText("invalid-phone");
       customerPanel.emailField().setText("not-an-email");
       customerPanel.addressField().setText("123 GUI Street");
@@ -111,7 +112,7 @@ class SmartFmGuiEndToEndTest {
       orderPanel.originCombo().setSelectedIndex(0);   // BR-HCM
       orderPanel.destinationCombo().setSelectedIndex(1);// BR-HAN
       orderPanel.distanceField().setText("1700");
-      orderPanel.pickupDateField().setText(LocalDate.now().plusDays(2).toString());
+      orderPanel.pickupDateField().setText(Validators.formatDate(LocalDate.now().plusDays(2)));
 
       // Attempt invalid negative consignment weight
       orderPanel.consignmentDescField().setText("Frozen Seafood Pallet");

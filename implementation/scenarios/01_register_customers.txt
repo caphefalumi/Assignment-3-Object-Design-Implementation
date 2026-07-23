@@ -1,7 +1,7 @@
 5
 Nguyen Thi Mai
 Female
-1995-04-10
+10/04/1995
 abc
 +84-91-2223344
 not-an-email
@@ -10,7 +10,7 @@ mai.nguyen@coopmart.vn
 5
 Tran Van Long
 Male
-1993-11-02
+02/11/1993
 +84-93-4445566
 long.tran@winmart.vn
 88 Ly Thuong Kiet, Cau Giay, Hanoi

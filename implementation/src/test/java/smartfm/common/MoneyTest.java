@@ -20,10 +20,10 @@ class MoneyTest {
   }
 
   @Test
-  @DisplayName("Should format LocalDateTime into yyyy-MM-dd HH:mm:ss string")
+  @DisplayName("Should format LocalDateTime into dd/MM/yyyy HH:mm:ss string")
   void testFormatTimestamp() {
     LocalDateTime timestamp = LocalDateTime.of(2026, 7, 22, 14, 30, 45);
     String formatted = Money.formatTimestamp(timestamp);
-    assertEquals("2026-07-22 14:30:45", formatted);
+    assertEquals("22/07/2026 14:30:45", formatted);
   }
 }

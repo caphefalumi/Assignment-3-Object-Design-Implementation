@@ -2,6 +2,7 @@ package smartfm.domain.billing;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import smartfm.common.InvalidDataException;
 import smartfm.common.Validators;
 
 /**
@@ -71,6 +72,22 @@ public class Payment implements Serializable {
 
   public void settle() {
     state.settle(this);
+  }
+
+  /** Restores a lifecycle state read by the normalized persistence gateway. */
+  public void restoreState(String persistedState) {
+    if (persistedState == null || persistedState.equals("Pending")) {
+      state = new PaymentPendingState();
+    } else if (persistedState.equals("Verified")) {
+      state = new PaymentVerifiedState();
+    } else if (persistedState.equals("Settled")) {
+      state = new PaymentSettledState();
+    } else if (persistedState.startsWith("Failed (")) {
+      state = new PaymentFailedState(
+          persistedState.substring("Failed (".length(), persistedState.length() - 1));
+    } else {
+      throw new InvalidDataException("Unknown persisted payment state: " + persistedState);
+    }
   }
 
   public boolean isSettled() {
