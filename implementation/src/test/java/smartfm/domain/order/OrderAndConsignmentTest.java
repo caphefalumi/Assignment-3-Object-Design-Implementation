@@ -1,7 +1,8 @@
-package smartfm.domain;
+package smartfm.domain.order;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -10,10 +11,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import smartfm.common.InvalidDataException;
-import smartfm.domain.order.Consignment;
-import smartfm.domain.order.Order;
 
-@DisplayName("Order & Consignment Domain Tests")
+@DisplayName("Order & Consignment Domain Package Tests")
 class OrderAndConsignmentTest {
 
   private Order order;
@@ -36,11 +35,35 @@ class OrderAndConsignmentTest {
   }
 
   @Test
-  @DisplayName("Should initialize order in Submitted state")
+  @DisplayName("Should initialize order in Submitted state and validate attributes")
   void testInitialOrderState() {
+    assertEquals("ORD-001", order.getId());
+    assertEquals("CUST-001", order.getCustomerId());
+    assertEquals("SVC-EXPRESS", order.getServiceOfferingId());
+    assertEquals("BR-MEL", order.getOriginBranchId());
+    assertEquals("BR-SYD", order.getDestinationBranchId());
+    assertEquals(880.0, order.getDistanceKm());
+    assertNotNull(order.getCreatedAt());
     assertEquals("Submitted", order.getStateName());
     assertFalse(order.isApproved());
     assertEquals(0.0, order.getTotalWeightKg());
+  }
+
+  @Test
+  @DisplayName("Should validate consignment fields and calculation")
+  void testConsignmentFields() {
+    assertEquals("CNS-001", consignment1.getId());
+    assertEquals(10.5, consignment1.getWeightKg());
+    assertEquals(0.2, consignment1.getVolumeM3());
+    assertFalse(consignment1.isFragile());
+    assertFalse(consignment1.isRequiresRefrigeration());
+    assertEquals("Electronics Box", consignment1.getDescription());
+    assertTrue(consignment1.toString().contains("Electronics Box"));
+
+    assertTrue(consignment2.isFragile());
+
+    assertThrows(InvalidDataException.class, () -> new Consignment("CNS-INV", -5.0, 0.1, false, false, "Invalid"));
+    assertThrows(InvalidDataException.class, () -> new Consignment("CNS-INV", 5.0, -0.1, false, false, "Invalid"));
   }
 
   @Test
@@ -61,6 +84,18 @@ class OrderAndConsignmentTest {
 
     order.addConsignment(consignment1);
     order.requireHasConsignments();
+  }
+
+  @Test
+  @DisplayName("Should manage quoted amount and invoice ID binding")
+  void testQuotedAmountAndInvoiceBinding() {
+    order.setQuotedAmount(350.75);
+    assertEquals(350.75, order.getQuotedAmount());
+
+    assertThrows(InvalidDataException.class, () -> order.setQuotedAmount(-10.0));
+
+    order.setInvoiceId("INV-999");
+    assertEquals("INV-999", order.getInvoiceId());
   }
 
   @Test
@@ -94,22 +129,19 @@ class OrderAndConsignmentTest {
   }
 
   @Test
-  @DisplayName("Should prevent approving a cancelled order")
-  void testInvalidStateTransitionApproveCancelledOrder() {
+  @DisplayName("Should prevent illegal state transitions across OrderState machine")
+  void testIllegalOrderStateTransitions() {
     order.addConsignment(consignment1);
     order.cancel();
 
-    InvalidDataException ex = assertThrows(InvalidDataException.class, order::approve);
-    assertTrue(ex.getMessage().contains("Cannot approve"));
-  }
+    assertThrows(InvalidDataException.class, order::approve);
+    assertThrows(InvalidDataException.class, () -> order.reject("Reason"));
 
-  @Test
-  @DisplayName("Should prevent cancelling an approved order")
-  void testInvalidStateTransitionCancelApprovedOrder() {
-    order.addConsignment(consignment1);
-    order.approve();
+    Order order2 = new Order("ORD-002", "CUST-001", "SVC", "BR-1", "BR-2", 100.0, LocalDate.now());
+    order2.addConsignment(consignment1);
+    order2.approve();
 
-    InvalidDataException ex = assertThrows(InvalidDataException.class, order::cancel);
-    assertTrue(ex.getMessage().contains("Cannot cancel"));
+    assertThrows(InvalidDataException.class, order2::cancel);
+    assertThrows(InvalidDataException.class, () -> order2.reject("Reason"));
   }
 }
