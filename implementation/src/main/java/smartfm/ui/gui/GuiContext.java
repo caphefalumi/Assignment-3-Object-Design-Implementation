@@ -41,6 +41,7 @@ public final class GuiContext {
     this.store = DataStore.loadFrom(dataFile);
     this.bootstrap = new Bootstrap(store);
     this.bootstrap.run();
+    this.store.saveTo(dataFile);
   }
 
   public DataStore getStore() {
@@ -67,8 +68,9 @@ public final class GuiContext {
     changeListeners.add(listener);
   }
 
-  /** Called by any panel after a successful mutation, so other panels can refresh their views. */
+  /** Called by any panel after a successful mutation, so other panels can refresh their views and persist changes to SQLite. */
   public void notifyChanged() {
+    save();
     for (Runnable listener : changeListeners) {
       listener.run();
     }

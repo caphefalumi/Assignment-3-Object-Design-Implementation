@@ -57,6 +57,11 @@ public final class SmartFmConsoleApp {
     this.store = DataStore.loadFrom(DATA_FILE);
     this.bootstrap = new Bootstrap(store);
     this.bootstrap.run();
+    this.save();
+  }
+
+  private void save() {
+    store.saveTo(DATA_FILE);
   }
 
   public static void main(String[] args) {
@@ -182,6 +187,7 @@ public final class SmartFmConsoleApp {
 
     Customer customer = bootstrap.getOrderProcessor().registerCustomer(
         fullName, gender, dob, phone, email, address);
+    save();
     io.println("Success: customer account " + customer.getId() + " (" + fullName + ") created.");
   }
 
@@ -268,6 +274,7 @@ public final class SmartFmConsoleApp {
     try {
       Order order = bootstrap.getOrderProcessor().submitOrder(
           customerId, serviceId, originId, destinationId, distance, pickupDate, consignments);
+      save();
       io.println("Success: order " + order.getId() + " submitted. Estimated quote: "
           + Money.format(order.getQuotedAmount()) + " VND. Status: " + order.getStateName() + ".");
     } catch (InvalidDataException exc) {
@@ -298,6 +305,7 @@ public final class SmartFmConsoleApp {
     }
     try {
       Invoice invoice = bootstrap.getOrderProcessor().approveOrder(orderId);
+      save();
       io.println("Success: order " + orderId + " approved. Invoice " + invoice.getId()
           + " generated for " + Money.format(invoice.getTotalAmount()) + " VND, due " + invoice.getDueDate() + ".");
       io.println("(Observer notification: DispatchManager and PaymentProcessor were notified automatically.)");
@@ -321,6 +329,7 @@ public final class SmartFmConsoleApp {
     }
     try {
       bootstrap.getOrderProcessor().rejectOrder(orderId, reason);
+      save();
       io.println("Success: order " + orderId + " rejected. Reason recorded: " + reason);
     } catch (InvalidDataException exc) {
       io.println("  [Rejected] " + exc.getMessage());
@@ -337,6 +346,7 @@ public final class SmartFmConsoleApp {
     }
     try {
       bootstrap.getOrderProcessor().cancelOrder(orderId);
+      save();
       io.println("Success: order " + orderId + " cancelled at the customer's request.");
     } catch (InvalidDataException exc) {
       io.println("  [Rejected] " + exc.getMessage());
@@ -404,6 +414,7 @@ public final class SmartFmConsoleApp {
 
     try {
       Shipment shipment = bootstrap.getDispatchManager().assignShipment(orderId, vehicleId, driverId);
+      save();
       io.println("Success: shipment " + shipment.getId() + " created for order " + orderId
           + ". Status: " + shipment.getStateName() + ".");
       io.println("(Observer notification: ShipmentTracker was notified automatically.)");
@@ -473,6 +484,7 @@ public final class SmartFmConsoleApp {
     }
     try {
       transition.apply(shipmentId, location);
+      save();
       Shipment shipment = store.shipments().get(shipmentId);
       io.println("Success: shipment " + shipmentId + " is now '" + shipment.getStateName()
           + "' at " + shipment.getLastKnownLocation() + ".");
@@ -540,6 +552,7 @@ public final class SmartFmConsoleApp {
     }
     try {
       Receipt receipt = bootstrap.getPaymentProcessor().submitPayment(invoiceId, amount, method);
+      save();
       io.println("Success: payment processed. As per the Assignment 3 simplification, "
           + "no real banking transaction was executed - this is a simulated confirmation only.");
       io.println("Receipt " + receipt.getId() + " issued for " + Money.format(receipt.getAmountSettled())

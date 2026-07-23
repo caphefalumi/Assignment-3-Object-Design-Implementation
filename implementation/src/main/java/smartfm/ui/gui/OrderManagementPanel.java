@@ -91,38 +91,54 @@ public class OrderManagementPanel extends JPanel {
 
   private JPanel buildPlaceOrderSection() {
     JPanel section = new JPanel(new BorderLayout(6, 6));
-    section.setBorder(BorderFactory.createTitledBorder("Place a Shipment Order (empty form below)"));
+    section.setBorder(BorderFactory.createTitledBorder("Place a Shipment Order"));
 
-    JPanel top = new JPanel(new GridLayout(0, 1, 4, 4));
-    top.add(labelled("Customer:", customerCombo));
-    top.add(labelled("Service offering:", serviceCombo));
-    top.add(labelled("Origin branch:", originCombo));
-    top.add(labelled("Destination branch:", destinationCombo));
-    top.add(distanceField);
-    top.add(pickupDateField);
+    // Header grid: 2 columns to prevent vertical crowding
+    JPanel headerGrid = new JPanel(new GridLayout(3, 2, 8, 4));
+    headerGrid.add(labelled("Customer:", customerCombo));
+    headerGrid.add(labelled("Service offering:", serviceCombo));
+    headerGrid.add(labelled("Origin branch:", originCombo));
+    headerGrid.add(labelled("Destination branch:", destinationCombo));
+    headerGrid.add(distanceField);
+    headerGrid.add(pickupDateField);
 
-    JPanel consignmentForm = new JPanel(new GridLayout(0, 1, 4, 4));
-    consignmentForm.setBorder(BorderFactory.createTitledBorder("Add Consignment"));
-    consignmentForm.add(consignmentDescField);
-    consignmentForm.add(consignmentWeightField);
-    consignmentForm.add(consignmentVolumeField);
-    JPanel checks = new JPanel();
+    // Consignment form section
+    JPanel consignmentForm = new JPanel(new BorderLayout(6, 6));
+    consignmentForm.setBorder(BorderFactory.createTitledBorder("Add Consignment Item"));
+
+    JPanel consignmentFields = new JPanel(new GridLayout(2, 2, 8, 4));
+    consignmentFields.add(consignmentDescField);
+    consignmentFields.add(consignmentWeightField);
+    consignmentFields.add(consignmentVolumeField);
+
+    JPanel checks = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 10, 0));
     checks.add(fragileCheck);
     checks.add(coldCheck);
-    consignmentForm.add(checks);
+    consignmentFields.add(checks);
+
     JButton addConsignment = new JButton("Add Consignment to Order");
     addConsignment.addActionListener(e -> onAddConsignment());
-    consignmentForm.add(addConsignment);
 
-    JPanel middle = new JPanel(new BorderLayout(6, 6));
-    middle.add(top, BorderLayout.NORTH);
-    middle.add(consignmentForm, BorderLayout.CENTER);
+    JPanel consignmentBottom = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT));
+    consignmentBottom.add(addConsignment);
+
+    consignmentForm.add(consignmentFields, BorderLayout.CENTER);
+    consignmentForm.add(consignmentBottom, BorderLayout.SOUTH);
+
+    JPanel formContainer = new JPanel(new BorderLayout(6, 6));
+    formContainer.add(headerGrid, BorderLayout.NORTH);
+    formContainer.add(consignmentForm, BorderLayout.CENTER);
+
+    // Order table and submit actions
+    JPanel tableAndActions = new JPanel(new BorderLayout(6, 6));
+    tableAndActions.add(new JScrollPane(consignmentTable), BorderLayout.CENTER);
 
     JButton submitOrder = new JButton("Submit Order");
     submitOrder.addActionListener(e -> onSubmitOrder());
     JButton clearOrder = new JButton("Clear / Cancel");
     clearOrder.addActionListener(e -> resetOrderForm());
-    JPanel buttons = new JPanel();
+
+    JPanel buttons = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.CENTER, 10, 4));
     buttons.add(submitOrder);
     buttons.add(clearOrder);
 
@@ -130,9 +146,10 @@ public class OrderManagementPanel extends JPanel {
     south.add(buttons, BorderLayout.NORTH);
     south.add(orderBanner, BorderLayout.SOUTH);
 
-    section.add(middle, BorderLayout.NORTH);
-    section.add(new JScrollPane(consignmentTable), BorderLayout.CENTER);
-    section.add(south, BorderLayout.SOUTH);
+    tableAndActions.add(south, BorderLayout.SOUTH);
+
+    section.add(formContainer, BorderLayout.NORTH);
+    section.add(tableAndActions, BorderLayout.CENTER);
     return section;
   }
 
