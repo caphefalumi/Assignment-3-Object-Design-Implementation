@@ -335,7 +335,8 @@ SmartFM is implemented in Java 26 in a Maven-standard structure. The following m
     th[Project path], th[Purpose],
     [`pom.xml`], [Maven descriptor: Java `26` release target, jOOQ `3.20.0`, pinned Xerial SQLite JDBC `3.46.1.0`, JAXB/R2DBC/Reactive Streams runtime closure, SLF4J `1.7.36`, JUnit Jupiter `5.10.2` test dependency, and a Shade-plugin executable JAR with `smartfm.ui.Launcher` as the main class.],
     [`src/main/java/smartfm/common/`], [Exceptions, validators, and money formatting.],
-    [`src/main/java/smartfm/domain/`], [Entities, state hierarchies, and strategy/adapter contracts.],
+    [`src/main/java/smartfm/domain/`], [Six domain sub-packages (`customer`, `order`, `shipment`, `billing`, `fleet`, `catalog`) owning entities, state hierarchies, and strategy/adapter contracts.],
+    [`src/test/java/smartfm/`], [JUnit 5 unit and integration test suite (55 automated tests covering domain logic, state machines, application controllers, and SQLite persistence).],
     [`src/main/java/smartfm/application/`], [Four GRASP Controllers, observer interfaces, bootstrap, and ID generation.],
     [`src/main/java/smartfm/infrastructure/`], [The `DataStore` persistence gateway.],
     [`src/main/java/smartfm/ui/`, `src/main/java/smartfm/ui/gui/`], [CLI and Swing presentations over the same controller contracts.],
@@ -352,7 +353,8 @@ SmartFM is implemented in Java 26 in a Maven-standard structure. The following m
 *Using Maven (recommended when available):*
 
 #console(```
-mvn package
+mvn test          # Runs all 55 automated JUnit 5 unit and integration tests
+mvn package       # Compiles and builds the self-contained executable JAR
 java --enable-native-access=ALL-UNNAMED -jar target/smartfm.jar
 java --enable-native-access=ALL-UNNAMED -jar target/smartfm.jar --cli
 ```) 
@@ -433,7 +435,17 @@ To reproduce the complete screenshot set on a machine with JDK 26 and GNU Make, 
 
 #heading(level: 2, numbering: none)[4.3 Testing]
 
-Testing combines compilation with warning checks, scenario-based functional tests, boundary/negative-path tests, and persistence checks. The five scenarios below exercise every selected use case shown in the sequence diagrams. They are replayable by running the files in `scenarios/` in numerical order after resetting the persistent store. Each transcript is captured from a separate CLI process, proving that persisted data is reread between operations.
+Testing combines compilation and static lint analysis, automated unit and integration test suites, scenario-based functional acceptance tests, boundary/negative-path checks, and persistence checks.
+
+*Automated Unit and Integration Testing.* A comprehensive JUnit 5 test suite (`src/test/java/smartfm/`) contains 55 automated tests executing via `mvn test`. The suite validates:
+1. *Common Layer*: `MoneyTest` (currency formatting, timestamp rendering) and `ValidatorsTest` (regex email/phone, string length boundaries, non-negative numbers, date constraints, enum mapping).
+2. *Domain Layer*: `OrderAndConsignmentTest` (order creation, weight aggregation, state transitions and illegal state transition rejection), `CustomerTest` (order history recording, status updates), `PricingTariffTest` (quote calculations and peak period multipliers), `PaymentAndInvoiceTest` (invoice state machine `Unpaid` -> `Partially Paid` -> `Paid`, overpayment protection, cash/gateway strategies), and `ShipmentAndFleetTest` (shipment milestones `Assigned` -> `Picked Up` -> `In Transit` -> `Delivered`, illegal milestone jump protection, driver duty states, and vehicle status management).
+3. *Application Layer*: `OrderProcessorTest` (end-to-end submission and approval event dispatch), `DispatchManagerTest` (resource lookup, shipment creation, fleet status updates), `ShipmentTrackerTest` (tracking updates and automatic resource deallocation on delivery), and `PaymentProcessorTest` (receipt issuance, partial payments, settled invoice locking).
+4. *Infrastructure Layer*: `DataStoreTest` (saving and reloading aggregate snapshots from embedded SQLite database files, verifying state graph integrity).
+
+All 55 automated tests execute in under 15 seconds and pass with zero failures or errors (`BUILD SUCCESS`).
+
+*Scenario-Based Acceptance Testing.* The five scenarios below exercise every selected use case shown in the sequence diagrams. They are replayable by running the files in `scenarios/` in numerical order after resetting the persistent store. Each transcript is captured from a separate CLI process, proving that persisted data is reread between operations.
 
 #figure(
   styled-table((1.05fr, 2.35fr, 3.05fr, 2.3fr), (
