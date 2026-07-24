@@ -118,7 +118,7 @@
 
 The Smart Fleet Management System (SmartFM) handles customer registration, order placement, dispatch, shipment tracking, billing, payment, and receipt generation. Assignment 2 defined the system's high-level design, CRC responsibilities, lifecycle states, and design patterns. This report presents the running Java 26 implementation built from that design and evaluates the architectural decisions made during development.
 
-The report is organized as follows: Section 1 outlines revisions to Assignment 2; Section 2 details the class design and sequence diagrams; Section 3 evaluates design quality; Section 4 summarizes lessons learned; Section 5 details the architectural style; and Section 6 provides code mappings, build instructions, test results, and execution evidence. The full Assignment 2 submission is attached in Appendix A.
+The report is organized as follows: Section 1 outlines revisions to Assignment 2; Section 2 details the class design, sequence diagrams, and architecture styles; Section 3 evaluates design quality and lessons learned; and Section 4 provides code mappings, build instructions, execution screenshots, and test results. The full Assignment 2 submission is attached in Appendix A.
 
 The implemented system covers four core operational areas: Order Management, Fleet Dispatch, Shipment Tracking, and Billing and Payment. Both a Swing graphical user interface (GUI) and a command-line interface (CLI) run on top of the same application controllers. The GUI serves as the primary interface, while the CLI provides repeatable scenario scripts for verification.
 
@@ -356,7 +356,7 @@ When saving, `DataStore` atomically updates the normalized aggregate tables. Whe
 
 #heading(level: 2, numbering: none)[2.4 Selected use-case sequence diagrams]
 
-The four sequence diagrams below illustrate the core implemented use cases. Each diagram shows the exact controller methods invoked by the GUI and CLI boundaries. Section 6.1 maps these interactions directly to source code, and Section 6.3 provides execution evidence for each flow.
+The four sequence diagrams below illustrate the core implemented use cases. Each diagram shows the exact controller methods invoked by the GUI and CLI boundaries. Section 4.1 maps these interactions directly to source code, and Section 4.3 provides execution evidence for each flow.
 
 #figure(
   align(center, sequence-order()),
@@ -402,6 +402,23 @@ On the first launch, `DataStore` runs a transaction to create all database table
 
 Data persistence happens automatically during runtime. UI and CLI actions save aggregate changes to SQLite after state mutations and upon exit. During order approval, the system updates the order and invoice before notifying listeners. Dispatch updates shipment and resource allocations before firing `shipmentAssigned`. Payments generate a receipt only after successful settlement. These interactions correspond directly to the sequence diagrams in Section 2.4.
 
+#heading(level: 2, numbering: none)[2.6 Architecture style(s)]
+
+SmartFM combines a Layered Architecture Style for structural organization with an Event-Driven Architecture Style for subsystem communication.
+
+The system consists of four primary components:
+1. *Presentation:* `SmartFmConsoleApp`, `SmartFmMainFrame`, and Swing panels.
+2. *Order and Billing:* `OrderProcessor`, `PaymentProcessor`, and associated domain entities.
+3. *Fleet and Dispatch:* `DispatchManager`, `ShipmentTracker`, and associated domain entities.
+4. *Persistence:* `DataStore` database gateway.
+
+Communication relies on two connector types. Downward calls execute synchronously: UI views call controller methods, controllers coordinate domain entities, and controllers invoke `DataStore`. Event connectors operate within the application layer: order approval, invoice creation, and shipment assignment publish events through narrow listener interfaces. This allows subsystems to interact without tight coupling.
+
+Three architectural rules enforce this design:
+1. Domain classes never import presentation or application packages.
+2. `DataStore` is accessed exclusively through controllers.
+3. Event publishers depend on listener interfaces rather than concrete subscriber classes.
+
 #heading(level: 1, numbering: none)[#text("3. Design Quality")]
 
 #heading(level: 2, numbering: none)[3.1 Good aspects of the Assignment 2 design]
@@ -434,7 +451,7 @@ Finally, Assignment 2 stated that `ServiceOffering` delegated to `IPricingStrate
 
 The Assignment 2 design required moderate interpretation during coding. Core domain entities, State transitions, and controller roles were clearly defined and implemented directly. Interpretation was mainly needed for UI field validation, SQLite persistence, adapter implementations, and manual dispatch workflows. Table 1 and Section 2.5 document these choices.
 
-#heading(level: 1, numbering: none)[#text("4. Lessons Learnt")]
+#heading(level: 2, numbering: none)[3.5 Lessons learnt]
 
 First, state transitions and operational workflows must be fully specified before writing code. Detailed State tables prevented logic errors during implementation, whereas ambiguous observer callbacks required manual resolution.
 
@@ -446,26 +463,9 @@ Fourth, modern runtimes require early test automation and environment configurat
 
 Future object-oriented designs should specify basic persistence contracts and UI sketches early. Observer relationships should distinguish human notifications from automated actions, and pattern connections should be verified before coding starts.
 
-#heading(level: 1, numbering: none)[#text("5. Architecture Style(s)")]
+#heading(level: 1, numbering: none)[#text("4. Implementation and Testing")]
 
-SmartFM combines a Layered Architecture Style for structural organization with an Event-Driven Architecture Style for subsystem communication.
-
-The system consists of four primary components:
-1. *Presentation:* `SmartFmConsoleApp`, `SmartFmMainFrame`, and Swing panels.
-2. *Order and Billing:* `OrderProcessor`, `PaymentProcessor`, and associated domain entities.
-3. *Fleet and Dispatch:* `DispatchManager`, `ShipmentTracker`, and associated domain entities.
-4. *Persistence:* `DataStore` database gateway.
-
-Communication relies on two connector types. Downward calls execute synchronously: UI views call controller methods, controllers coordinate domain entities, and controllers invoke `DataStore`. Event connectors operate within the application layer: order approval, invoice creation, and shipment assignment publish events through narrow listener interfaces. This allows subsystems to interact without tight coupling.
-
-Three architectural rules enforce this design:
-1. Domain classes never import presentation or application packages.
-2. `DataStore` is accessed exclusively through controllers.
-3. Event publishers depend on listener interfaces rather than concrete subscriber classes.
-
-#heading(level: 1, numbering: none)[#text("6. Implementation and Testing")]
-
-#heading(level: 2, numbering: none)[6.1 Mapping design to code]
+#heading(level: 2, numbering: none)[4.1 Mapping design to code]
 
 SmartFM is implemented in Java 26 using a standard Maven project layout. The design elements and sequence diagrams map directly to the source code.
 
@@ -527,7 +527,7 @@ SmartFM is implemented in Java 26 using a standard Maven project layout. The des
   caption: [Standard project layout and package organisation.],
 ) <tbl-project-layout>
 
-#heading(level: 2, numbering: none)[6.2 Compilation and Execution]
+#heading(level: 2, numbering: none)[4.2 Compilation and Execution]
 
 *Prerequisites:* Building and running the application requires JDK 26. SQLite is embedded, so no external database or network configuration is needed. All required library JARs are declared in `pom.xml` and stored in `implementation/lib/`. Running on Java 26 requires `--enable-native-access=ALL-UNNAMED` for SQLite JDBC native library loading. Execute commands from the `implementation/` directory using one of the methods below.
 
@@ -601,7 +601,7 @@ The screenshots below were generated by running `tools/java/smartfm/ui/gui/Scree
 
 To regenerate all screenshots on a machine with JDK 26 and GNU Make, run `make screenshots` inside `implementation/`. The driver resets demonstration data, executes the test scenarios, saves the screenshots, and exits.
 
-#heading(level: 2, numbering: none)[6.3 Testing]
+#heading(level: 2, numbering: none)[4.3 Testing]
 
 System testing includes compiler linting, automated unit and integration tests, scenario-based acceptance testing, and persistence verification.
 
