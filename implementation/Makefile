@@ -30,7 +30,7 @@ ACTIVATION_API_NAME = jakarta.activation-api-2.1.2.jar
 SLF4J_API_NAME = slf4j-api-1.7.36.jar
 SLF4J_NOP_NAME = slf4j-nop-1.7.36.jar
 
-.PHONY: all compile jar run run-cli tools screenshots clean reset
+.PHONY: all compile jar exe run run-cli tools screenshots clean reset
 
 all: compile
 
@@ -56,6 +56,11 @@ jar: compile
 	@powershell -NoProfile -Command "New-Item -ItemType Directory -Force -Path 'target/lib' | Out-Null; Copy-Item -Force '$(SQLITE_JAR)', '$(JOOQ_JAR)', '$(R2DBC_SPI_JAR)', '$(REACTIVE_STREAMS_JAR)', '$(JAXB_API_JAR)', '$(ACTIVATION_API_JAR)', '$(SLF4J_API_JAR)', '$(SLF4J_NOP_JAR)' -Destination 'target/lib'; Set-Content -Encoding Ascii -Path 'target/MANIFEST.MF' -Value @('Manifest-Version: 1.0', 'Main-Class: $(MAIN)', 'Class-Path: lib/$(SQLITE_NAME) lib/$(JOOQ_NAME) lib/$(R2DBC_SPI_NAME) lib/$(REACTIVE_STREAMS_NAME) lib/$(JAXB_API_NAME) lib/$(ACTIVATION_API_NAME) lib/$(SLF4J_API_NAME) lib/$(SLF4J_NOP_NAME)', '')"
 	$(JAR) cfm "$(JAR_FILE)" "target/MANIFEST.MF" -C "$(OUT_DIR)" .
 	@echo Built $(JAR_FILE) with its SQLite/JDBC runtime libraries in target\lib
+
+exe: jar
+	@if exist "target\dist" rmdir /s /q "target\dist"
+	jpackage --type app-image --name SmartFM --input target --main-jar smartfm.jar --main-class $(MAIN) --java-options "--enable-native-access=ALL-UNNAMED" --dest target/dist
+	@echo Built Windows native executable to target\dist\SmartFM\SmartFM.exe
 
 run: compile
 	$(JAVA) -cp "$(OUT_DIR);$(DEPS_CP)" $(MAIN)
@@ -104,6 +109,11 @@ jar: compile
 	@printf 'Manifest-Version: 1.0\nMain-Class: $(MAIN)\nClass-Path: lib/$(SQLITE_NAME) lib/$(JOOQ_NAME) lib/$(R2DBC_SPI_NAME) lib/$(REACTIVE_STREAMS_NAME) lib/$(JAXB_API_NAME) lib/$(ACTIVATION_API_NAME) lib/$(SLF4J_API_NAME) lib/$(SLF4J_NOP_NAME)\n\n' > target/MANIFEST.MF
 	$(JAR) cfm "$(JAR_FILE)" target/MANIFEST.MF -C "$(OUT_DIR)" .
 	@echo "Built $(JAR_FILE) with its SQLite/JDBC runtime libraries in $(TARGET_LIB)"
+
+exe: jar
+	@rm -rf target/dist
+	jpackage --type app-image --name SmartFM --input target --main-jar smartfm.jar --main-class $(MAIN) --java-options "--enable-native-access=ALL-UNNAMED" --dest target/dist
+	@echo "Built native executable app-image to target/dist/SmartFM"
 
 run: compile
 	$(JAVA) -cp "$(OUT_DIR):$(DEPS_CP)" $(MAIN)
