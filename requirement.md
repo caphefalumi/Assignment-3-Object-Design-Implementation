@@ -82,4 +82,36 @@ The submission is in electronic form only. An electronic copy of your solution m
 
 1. **The source code and executable code** of your solution must be packaged in a single ZIP or RAR file (or equivalent), and
 2. **The remaining parts** (see the marking guidelines above, i.e., excluding the source code and executable code) are in a single pdf document, including your assignment 2 submission as an appendix. In preparing these parts of your submission, you need to organize/structure your submission according to the marking guidelines/sheet, and answer the relevant aspects as stipulated in the marking guidelines/sheet specifically (and in the assignment specification, in general). For example, for the second part (detailed object oriented design), you need to include the final class diagram capturing your final detailed OO design (in readable form, when printed), and provide the change details and justifications for the class level, the responsibility level and the dynamic aspects (bootstrap and scenarios), with corresponding headings. Screen shots or a video can be used as the evidence of compilation and correct execution.
+
+---
+
+### Report Structure & Additional Guidance:
+
+# Body 
+- include the following main sections: 
+
+(1) Summary of Design Revision: discuss briefly using a table, what changes you made to your revised Assignment 2, based on the feedbacks that you received
+
+(2) Detailed design
+(3) Design Quality
+(4) Implementation and Testing
+  4.1: Mapping design to code
+  4.2: Compilation and Execution: explains clearly how someone else (e.g. a classmate not in your team) can setup and run your source code. Use suitable screenshots to illustrate.
+  4.3: Testing
+
+# Other essential sections as required 
+
+- Title page, TOC, Introduction, Conclusion, References, Appendices
+
+References
+You may find the Craig Larman's book (in the reading list and available on Oreily) a very useful (practical) resource for UML design and implementation. It has a project example on product sales. 
+
+Craig Larman book (3rd edition): Applying UML and Patterns: An Introduction to Object-Oriented Analysis and Design and Iterative Development
+
+Chapters 8-12, 17-20
+Modular OO design & coding that incorporates UI
+In particular, I would point you to a design method, named GRASP, that is described in the Larman's book (Chapter 17), explaining how to conduct the detailed OO design process that would incorporate UI components:
+
+the Controller pattern in GRASP explains how to construct design with UI (using sequence diagram)
+your code project needs to specify sequence diagrams for all the selected use cases and then implement the code to match the sequence diagrams logic.
 ---
