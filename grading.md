@@ -10,5 +10,4 @@
 | **(IV) Architecture Style(s)** | Missing: 0; Bad: 2; OK: 4; Good: 6; Very Good: 8; Excellent: 10 | 10 | | |
 | **(V) Implementation** | **Source code quality**, including use of suitable coding standard:<br>low -> 5; medium -> 10; good -> 15; very good -> 17; excellent -> 20 | 20 | | |
 | **(VI) Implementation** | **Compilation and execution:**<br>- Explicit evidence of compilation -> 5<br>- Illustration of home screen -> 1<br>- Illustration of successful data input -> 9<br>- Validate inputs and process inputs -> 5<br>- Illustration of sample outputs -> 5<br>- Exit and test screens -> 5<br><br>*NOTE: 4 or more scenarios may be needed for demonstrating the business areas implemented!* | 30 | | |
-| **Meeting the requirements of the assignment specification (deductions)** | - Cover sheet signed (penalty up to 5 points)<br>- Work sheet (contribution and collaboration document) completed and signed (otherwise, penalty up to 10 marks)<br>- Assignment 2 attached (otherwise, no reference basis for discussion; penalty up to 60 points, ie, 0 for parts I, II and III above)<br>- Others | -xx | | |
 | **Total** | | **120** | | |

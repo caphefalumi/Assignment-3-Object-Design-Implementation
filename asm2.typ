@@ -1826,7 +1826,7 @@ The complete Software Requirements Specification (SRS) developed in Assignment 1
 #colbreak()
 
 
-#for page-num in range(1, 32) {
+#for page-num in range(1, 13) {
   place(top + left, dx: -50pt, dy: -55pt, image("asm1.pdf", page: page-num, width: 21.59cm, height: 27.94cm))
   colbreak()
 }

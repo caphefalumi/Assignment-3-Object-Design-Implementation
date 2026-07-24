@@ -118,7 +118,7 @@
 
 The Smart Fleet Management System (SmartFM) manages the commercial and operational path from customer registration and order placement through resource dispatch, shipment tracking, invoicing, payment, and receipt issuance. Assignment 2 produced the high-level Entity-Control-Boundary design, CRC responsibilities, lifecycle states, and patterns. This Assignment 3 report converts that design into a detailed, running Java 26 system and evaluates the design decisions exposed by implementation.
 
-The report deliberately follows the required assessment structure. Section 1 records revisions to Assignment 2; Section 2 provides the detailed design and the selected use-case sequence diagrams; Section 3 evaluates design quality; Section 4 details the system architecture style; and Section 5 maps the design to code, gives reproducible compilation/execution instructions, and presents the tests and execution evidence. The complete Assignment 2 document is attached in the appendix so that every comparison can be checked.
+The report deliberately follows the required assessment structure. Section 1 records revisions to Assignment 2; Section 2 provides the detailed design and the selected use-case sequence diagrams; Section 3 evaluates design quality; Section 4 presents the lessons learnt; Section 5 details the system architecture style; and Section 6 maps the design to code, gives reproducible compilation/execution instructions, and presents the tests and execution evidence. The complete Assignment 2 document is attached in the appendix so that every comparison can be checked.
 
 The implemented scope comprises four connected business areas: Order Management, Fleet Dispatch, Shipment Tracking, and Billing and Payment. Both a Swing graphical interface and a repeatable command-line interface (CLI) invoke the same controller/domain logic. The GUI is the normal application entry point; the CLI is retained because it provides precise, reproducible scenario transcripts.
 
@@ -189,49 +189,126 @@ The detailed design retains Assignment 2's Entity-Control-Boundary separation. D
   caption: [Detailed class-level view: controller-to-domain calls are solid; the operational dependency chain is dashed; red dotted edges identify controller use of the persistence gateway added during implementation.],
 ) <fig-class-model>
 
+#let uml-box(pos, name, stereotype: none, attributes: (), methods: (), width: 3.1cm, fill: rgb("#f0f4f8")) = node(
+  pos,
+  rect(
+    width: width, stroke: .65pt + rgb("#1a3a5c"), radius: 2pt, fill: fill, inset: 0pt,
+    stack(
+      dir: ttb,
+      rect(width: 100%, fill: rgb("#1a3a5c"), inset: (x: 2pt, y: 2.2pt), radius: (top: 2pt))[
+        #align(center)[
+          #if stereotype != none [#text(size: 4.5pt, fill: white, font: "Consolas")[«#stereotype»\ ]]
+          #text(size: 5.5pt, weight: "bold", fill: white)[#name]
+        ]
+      ],
+      if attributes.len() > 0 [
+        #rect(width: 100%, stroke: (bottom: .35pt + rgb("#1a3a5c")), inset: (x: 2.5pt, y: 1.5pt))[
+          #align(left)[
+            #set text(size: 4.2pt, font: "Consolas")
+            #for attr in attributes [ #attr \ ]
+          ]
+        ]
+      ],
+      if methods.len() > 0 [
+        #rect(width: 100%, stroke: none, inset: (x: 2.5pt, y: 1.5pt))[
+          #align(left)[
+            #set text(size: 4.2pt, font: "Consolas")
+            #for m in methods [ #m \ ]
+          ]
+        ]
+      ]
+    )
+  ),
+  stroke: none, fill: none
+)
+
 #let final-class-model() = diagram(
-  spacing: (2.08cm, .82cm),
+  spacing: (2.3cm, 1.1cm),
   {
-    box((0, 0), "OrderProcessor", width: 1.9cm, height: .52cm)
-    box((1, 0), "DispatchManager", width: 1.9cm, height: .52cm)
-    box((2, 0), "ShipmentTracker", width: 1.9cm, height: .52cm)
-    box((3, 0), "PaymentProcessor", width: 1.9cm, height: .52cm)
-    box((4, 0), "DataStore\n«infrastructure>", width: 1.9cm, height: .52cm, fill: rgb("#fff4db"))
+    // Row 0: Controllers & Infrastructure
+    uml-box((0, 0), "OrderProcessor", stereotype: "controller",
+      attributes: ("- store: DataStore", "- listeners: List"),
+      methods: ("+ registerCustomer(...)", "+ submitOrder(...)", "+ approveOrder(id)"))
+    uml-box((1, 0), "DispatchManager", stereotype: "controller",
+      attributes: ("- store: DataStore"),
+      methods: ("+ assignShipment(...)", "+ onOrderApproved(...)"))
+    uml-box((2, 0), "ShipmentTracker", stereotype: "controller",
+      attributes: ("- store: DataStore", "- telemetry: ITelemetrySource"),
+      methods: ("+ recordMilestone(...)", "+ recordDelivery(...)"))
+    uml-box((3, 0), "PaymentProcessor", stereotype: "controller",
+      attributes: ("- store: DataStore", "- gateway: IPaymentGateway"),
+      methods: ("+ submitPayment(...)"))
+    uml-box((4, 0), "DataStore", stereotype: "infrastructure", fill: rgb("#fff4db"),
+      attributes: ("- conn: Connection", "- version: int = 3"),
+      methods: ("+ load()", "+ save()", "+ customers()", "+ orders()"))
 
-    box((0, 1), "Customer", width: 1.9cm, height: .52cm)
-    box((1, 1), "Order", width: 1.9cm, height: .52cm)
-    box((2, 1), "ServiceOffering", width: 1.9cm, height: .52cm)
-    box((3, 1), "Branch", width: 1.9cm, height: .52cm)
-    box((4, 1), "Invoice", width: 1.9cm, height: .52cm)
+    // Row 1: Core Domain Entities
+    uml-box((0, 1), "Customer",
+      attributes: ("- id: String", "- fullName: String", "- phone: String"),
+      methods: ("+ recordOrder(id)"))
+    uml-box((1, 1), "Order",
+      attributes: ("- id: String", "- state: OrderState", "- quotedAmount: double"),
+      methods: ("+ approve()", "+ cancel()", "+ addConsignment(...)"))
+    uml-box((2, 1), "ServiceOffering",
+      attributes: ("- id: String", "- name: String", "- tariffId: String"),
+      methods: ("+ isAvailableAt(branchId)"))
+    uml-box((3, 1), "Branch",
+      attributes: ("- id: String", "- name: String", "- city: String"),
+      methods: ("+ addVehicle(...)", "+ addDriver(...)"))
+    uml-box((4, 1), "Invoice",
+      attributes: ("- id: String", "- amount: double", "- state: InvoiceState"),
+      methods: ("+ recordPayment(...)", "+ isSettled()"))
 
-    box((0, 2), "Consignment", width: 1.9cm, height: .52cm)
-    box((1, 2), "Shipment", width: 1.9cm, height: .52cm)
-    box((2, 2), "Vehicle", width: 1.9cm, height: .52cm)
-    box((3, 2), "Driver", width: 1.9cm, height: .52cm)
-    box((4, 2), "Payment", width: 1.9cm, height: .52cm)
+    // Row 2: Secondary Domain & Resources
+    uml-box((0, 2), "Consignment",
+      attributes: ("- id: String", "- weightKg: double", "- desc: String"),
+      methods: ("+ getWeightKg()"))
+    uml-box((1, 2), "Shipment",
+      attributes: ("- id: String", "- state: ShipmentState", "- location: String"),
+      methods: ("+ pickup()", "+ deliver()", "+ updateLocation(...)"))
+    uml-box((2, 2), "Vehicle",
+      attributes: ("- id: String", "- capacityKg: double", "- status: String"),
+      methods: ("+ assignToShipment()"))
+    uml-box((3, 2), "Driver",
+      attributes: ("- licenseNo: String", "- dutyState: DutyState"),
+      methods: ("+ setDutyState(...)"))
+    uml-box((4, 2), "Payment",
+      attributes: ("- id: String", "- amount: double", "- state: PaymentState"),
+      methods: ("+ settle()"))
 
-    box((0, 3), "Person\nStaffMember", width: 1.9cm, height: .52cm)
-    box((1, 3), "Receipt", width: 1.9cm, height: .52cm)
-    box((2, 3), "Order / Shipment\nInvoice / Payment State", width: 1.9cm, height: .52cm)
-    box((3, 3), "PricingTariff\nPaymentStrategy / Gateway", width: 1.9cm, height: .52cm)
-    box((4, 3), "ITelemetrySource\nManualTelemetrySource", width: 1.9cm, height: .52cm)
+    // Row 3: Support, Abstractions & Governance
+    uml-box((0, 3), "Person / StaffMember", stereotype: "abstract",
+      attributes: ("- id: String", "- fullName: String", "- role: StaffRole"),
+      methods: ("+ getRole()"))
+    uml-box((1, 3), "Receipt",
+      attributes: ("- id: String", "- paymentId: String", "- issuedAt: DateTime"),
+      methods: ("+ getFormattedReceipt()"))
+    uml-box((2, 3), "OrderState / ShipmentState", stereotype: "abstract",
+      attributes: ("- stateName: String"),
+      methods: ("+ approve()", "+ pickup()", "+ deliver()"))
+    uml-box((3, 3), "PricingTariff / IPricingStrategy", stereotype: "strategy",
+      attributes: ("- baseRate: double", "- kmRate: double"),
+      methods: ("+ calculateQuote(...)"))
+    uml-box((4, 3), "ITelemetrySource / Adapter", stereotype: "adapter",
+      attributes: ("- locations: Map"),
+      methods: ("+ recordMilestone()", "+ getLatestCoordinates()"))
 
-    edge((0, 0), (0, 1), "->", stroke: .7pt + rgb("#1a3a5c"))
-    edge((0, 0), (1, 1), "->", stroke: .7pt + rgb("#1a3a5c"))
-    edge((0, 0), (4, 1), "->", stroke: .7pt + rgb("#1a3a5c"))
-    edge((1, 0), (1, 2), "->", stroke: .7pt + rgb("#1a3a5c"))
-    edge((2, 0), (1, 2), "->", stroke: .7pt + rgb("#1a3a5c"))
-    edge((3, 0), (4, 2), "->", stroke: .7pt + rgb("#1a3a5c"))
-    edge((0, 1), (1, 1), "->", stroke: .65pt + rgb("#1a3a5c"))
-    edge((1, 1), (0, 2), "->", stroke: .65pt + rgb("#1a3a5c"))
-    edge((1, 1), (2, 1), "->", stroke: .65pt + rgb("#1a3a5c"))
-    edge((1, 1), (1, 2), "->", stroke: .65pt + rgb("#1a3a5c"))
-    edge((3, 1), (2, 2), "->", stroke: .65pt + rgb("#1a3a5c"))
-    edge((3, 1), (3, 2), "->", stroke: .65pt + rgb("#1a3a5c"))
-    edge((1, 2), (2, 2), "->", stroke: .65pt + rgb("#1a3a5c"))
-    edge((1, 2), (3, 2), "->", stroke: .65pt + rgb("#1a3a5c"))
-    edge((4, 1), (4, 2), "->", stroke: .65pt + rgb("#1a3a5c"))
-    edge((4, 2), (1, 3), "->", stroke: .65pt + rgb("#1a3a5c"))
+    // Connections with labels and multiplicities
+    edge((0, 0), (0, 1), "->", label: "1", label-pos: .2, stroke: .7pt + rgb("#1a3a5c"))
+    edge((0, 0), (1, 1), "->", label: "1", label-pos: .2, stroke: .7pt + rgb("#1a3a5c"))
+    edge((1, 0), (1, 2), "->", label: "1", label-pos: .2, stroke: .7pt + rgb("#1a3a5c"))
+    edge((2, 0), (1, 2), "->", label: "1", label-pos: .2, stroke: .7pt + rgb("#1a3a5c"))
+    edge((3, 0), (4, 2), "->", label: "1", label-pos: .2, stroke: .7pt + rgb("#1a3a5c"))
+    edge((0, 1), (1, 1), "->", label: "1..*", label-pos: .8, stroke: .65pt + rgb("#1a3a5c"))
+    edge((1, 1), (0, 2), "->", label: "1..*", label-pos: .8, stroke: .65pt + rgb("#1a3a5c"))
+    edge((1, 1), (2, 1), "->", label: "1", label-pos: .8, stroke: .65pt + rgb("#1a3a5c"))
+    edge((1, 1), (1, 2), "->", label: "0..1", label-pos: .8, stroke: .65pt + rgb("#1a3a5c"))
+    edge((3, 1), (2, 2), "->", label: "1..*", label-pos: .8, stroke: .65pt + rgb("#1a3a5c"))
+    edge((3, 1), (3, 2), "->", label: "1..*", label-pos: .8, stroke: .65pt + rgb("#1a3a5c"))
+    edge((1, 2), (2, 2), "->", label: "1", label-pos: .8, stroke: .65pt + rgb("#1a3a5c"))
+    edge((1, 2), (3, 2), "->", label: "1", label-pos: .8, stroke: .65pt + rgb("#1a3a5c"))
+    edge((4, 1), (4, 2), "->", label: "1..*", label-pos: .8, stroke: .65pt + rgb("#1a3a5c"))
+    edge((4, 2), (1, 3), "->", label: "1", label-pos: .8, stroke: .65pt + rgb("#1a3a5c"))
     edge((1, 1), (2, 3), "->", stroke: .55pt + rgb("#6d7f8f"), dash: "dashed")
     edge((1, 2), (2, 3), "->", stroke: .55pt + rgb("#6d7f8f"), dash: "dashed")
     edge((4, 1), (2, 3), "->", stroke: .55pt + rgb("#6d7f8f"), dash: "dashed")
@@ -306,7 +383,7 @@ SQLite now supplies full relational storage. The schema supports direct SQL insp
 
 #heading(level: 2, numbering: none)[2.4 Selected use-case sequence diagrams]
 
-The following four diagrams specify the selected implemented use cases. They are not merely illustrative: the controller operation named at each diagram entry is the operation invoked by both presentation layers, and the code mapping is given in Section 5.1. Together they specify all selected use cases used for the end-to-end execution evidence in Section 5.3.
+The following four diagrams specify the selected implemented use cases. They are not merely illustrative: the controller operation named at each diagram entry is the operation invoked by both presentation layers, and the code mapping is given in Section 6.1. Together they specify all selected use cases used for the end-to-end execution evidence in Section 6.3.
 
 #figure(
   align(center, sequence-order()),
@@ -378,7 +455,7 @@ A fourth weakness is that Assignment 2 claimed `ServiceOffering` delegates to `I
 
 The initial design required a low-to-moderate amount of interpretation. Entity responsibilities, State transitions, and the four major controller roles were sufficiently precise to implement directly. Interpretation was required at the UI boundary (field order, inline errors, clear/cancel actions), infrastructure boundary (file persistence and first-run bootstrap), concrete Adapter behaviour, and the dispatch-observer ambiguity. The revision table and Section 2.5 make each interpretation traceable, so the final implementation does not hide an assumption behind code.
 
-#heading(level: 2, numbering: none)[3.5 Lessons learnt]
+#heading(level: 1, numbering: none)[#text("4. Lessons Learnt")]
 
 The most important lesson is that state machines and human/automatic decisions should be specified before coding. State tables avoided later rework; in contrast, the dispatch ambiguity required interpretation.
 
@@ -388,7 +465,7 @@ A third lesson is that claimed design patterns must be wired end-to-end to be me
 
 Future high-level OO designs should include a small persistence contract and a UI interaction sketch even if technology choices remain open. They should also label each observer relationship as either “notify a human decision-maker” or “automate a reaction”, include the bootstrap/restart path as a first-class dynamic scenario, and validate all claimed pattern wiring before implementation begins.
 
-#heading(level: 1, numbering: none)[#text("4. Architecture Style(s)")]
+#heading(level: 1, numbering: none)[#text("5. Architecture Style(s)")]
 
 SmartFM uses a *layered architecture* with an *event-driven application/control layer*. Its architectural components are larger than individual classes: (1) the Presentation component (`SmartFmConsoleApp`, `SmartFmMainFrame`, and panels), (2) the Order and Billing component (`OrderProcessor`, `PaymentProcessor`, and their aggregates), (3) the Fleet and Dispatch component (`DispatchManager`, `ShipmentTracker`, and their aggregates), and (4) the Persistence component (`DataStore`).
 
@@ -396,9 +473,9 @@ Two connector types are used. Direct method-call connectors run downward: UI bou
 
 Three constraints preserve the architecture. First, domain classes do not import presentation or application classes. Second, `DataStore` is held by controllers, never by domain entities. Third, listener lists are typed to abstractions such as `OrderApprovedListener`, not `DispatchManager` or `PaymentProcessor`. This gives a replaceable Swing/CLI boundary, persistence indirection, and low cross-component coupling.
 
-#heading(level: 1, numbering: none)[#text("5. Implementation and Testing")]
+#heading(level: 1, numbering: none)[#text("6. Implementation and Testing")]
 
-#heading(level: 2, numbering: none)[5.1 Mapping design to code]
+#heading(level: 2, numbering: none)[6.1 Mapping design to code]
 
 SmartFM is implemented in Java 26 in a Maven-standard structure. The following mapping demonstrates that the classes and calls in the selected sequence diagrams match code rather than a separate conceptual design.
 
@@ -450,17 +527,17 @@ SmartFM is implemented in Java 26 in a Maven-standard structure. The following m
     [`pom.xml`], [Maven descriptor: Java `26` release target, pinned Xerial SQLite JDBC `3.46.1.0`, supplied JAXB/R2DBC/Reactive Streams runtime closure, SLF4J `1.7.36`, JUnit Jupiter `5.10.2` test dependency, and a Shade-plugin executable JAR with `smartfm.ui.Launcher` as the main class.],
     [`src/main/java/smartfm/common/`], [Exceptions, validators, and money formatting.],
     [`src/main/java/smartfm/domain/`], [Six domain sub-packages (`customer`, `order`, `shipment`, `billing`, `fleet`, `catalog`) owning entities, state hierarchies, and strategy/adapter contracts.],
-    [`src/test/java/smartfm/`], [JUnit 5 unit, integration, and E2E test suite (76 automated tests across 16 test classes in six domain packages, application controllers, Swing GUI panels, real-time auto-persistence, complete business workflows, and SQLite persistence).],
+    [`src/test/java/smartfm/`], [JUnit 5 unit, integration, and E2E test suite (76 automated tests across 17 test classes in six domain packages, application controllers, Swing GUI panels, real-time auto-persistence, complete business workflows, and SQLite persistence).],
     [`src/main/java/smartfm/application/`], [Four GRASP Controllers, observer interfaces, bootstrap, and ID generation.],
     [`src/main/java/smartfm/infrastructure/`], [The `DataStore` persistence gateway.],
     [`src/main/java/smartfm/ui/`, `src/main/java/smartfm/ui/gui/`], [CLI and Swing presentations over the same controller contracts.],
-    [`scenarios/`, `transcripts/`], [Repeatable CLI input scripts and captured execution output used in Section 5.3.],
+    [`scenarios/`, `transcripts/`], [Repeatable CLI input scripts and captured execution output used in Section 6.3.],
     [`tools/java/`], [Development-only GUI screenshot driver; not packaged with the application.],
   )),
   caption: [Industry-standard project layout and source-code organisation.],
 ) <tbl-project-layout>
 
-#heading(level: 2, numbering: none)[5.2 Compilation and Execution]
+#heading(level: 2, numbering: none)[6.2 Compilation and Execution]
 
 *Prerequisites.* A marker or classmate needs a Java Development Kit (JDK) 26. SQLite is embedded, so no database server, account, or network service is required. The application requires jOOQ `3.20.0`, the pinned SQLite JDBC `3.46.1.0`, R2DBC/Reactive Streams, JAXB/Activation, and SLF4J `1.7.36` runtime libraries. They are declared in `pom.xml` and included under `implementation/lib/` for the Makefile/plain-JDK paths. Java 26 requires `--enable-native-access=ALL-UNNAMED` whenever the SQLite JDBC driver loads its embedded native library. In a terminal opened at `implementation/`, use one of the following reproducible paths.
 
@@ -547,7 +624,7 @@ The following screenshots were generated by the real Swing application through `
 
 To reproduce the complete screenshot set on a machine with JDK 26 and GNU Make, run `make screenshots` from `implementation/`. The driver resets only the local demonstration data, runs its finite scenario sequence, saves the images, and exits automatically.
 
-#heading(level: 2, numbering: none)[5.3 Testing]
+#heading(level: 2, numbering: none)[6.3 Testing]
 
 Testing combines compilation and static lint analysis, automated unit and integration test suites, scenario-based functional acceptance tests, boundary/negative-path checks, and persistence checks.
 
@@ -559,6 +636,7 @@ Testing combines compilation and static lint analysis, automated unit and integr
 5. *Core E2E Workflow Layer*: `SmartFmEndToEndTest` (executes the complete business path from customer registration, multi-consignment order placement, quote calculation, approval, fleet/driver resource allocation, milestone tracking, resource deallocation upon delivery, partial cash & final card payment settlement, to real SQLite database persistence and cold-start system recovery).
 6. *Swing GUI E2E Layer*: `smartfm.ui.gui.SmartFmGuiEndToEndTest` (executes the full interactive GUI flow on the Event Dispatch Thread: customer registration error & success paths, order creation & approval, fleet dispatch, tracking state machine guards, billing overpayment & settlement, and Swing window shutdown/persistence reload).
 7. *GUI Real-Time Persistence Layer*: `smartfm.ui.gui.GuiContextAndPersistenceTest` (validates immediate real-time auto-save to SQLite upon UI state mutation, 2-column order form layout rendering, and direct disk-file state verification without window closure).
+8. *Interactive Component Coverage Layer*: `smartfm.ui.gui.SmartFmGuiCoverageTest` (exercises CLI/GUI console boundaries, prompt helper parsing, and edge-case panel component handlers across all 17 test classes).
 
 All 76 automated tests execute in under 10 seconds and pass with zero failures or errors (`BUILD SUCCESS`).
 
