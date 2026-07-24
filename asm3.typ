@@ -128,16 +128,16 @@ Because no formal marker feedback was provided, Table 1 records revisions made d
 
 #figure(
   styled-table((1.55fr, 2.25fr, 3.35fr, 2.0fr), (
-    th[Review input / Assignment 2 basis], th[Finding during review or implementation], th[Revision made for Assignment 3], th[Effect and status],
-    [A2 Assumption A1 deferred the data access layer], [The conceptual model did not specify how state survives program restart.], [`smartfm.infrastructure.DataStore` was added as one persistence gateway using SQLite. Its versioned normalized schema stores branches, people and resources, catalogue, orders/consignments, shipments, invoices/payments, receipts, and association links in `data/smartfm.db`; the GUI/CLI boundary commits the rows on a clean exit while entities remain storage-independent.], [Required implementation detail added; the domain layer remains persistence-agnostic.],
-    [A2 intentionally excluded boundary/UI classes], [A UI was mandatory for a usable application, but A2 did not define input sequencing or field-level errors.], [Added CLI boundary classes and Swing GUI panels. Both validate user data and delegate to the same controllers; no business rule is duplicated in the GUI.], [New presentation layer; stable domain/application responsibilities unchanged.],
-    [A2 bootstrap subscribed `DispatchManager` to order approval], [Automatic allocation would contradict the business requirement that a dispatcher selects an appropriate vehicle and driver.], [The listener registration remains, but `assignShipment(orderId, vehicleId, driverId)` is an explicit human decision.], [Ambiguity resolved without introducing automatic resource assignment.],
-    [A2 State-pattern lifecycle tables], [State transitions needed machine-enforced guards rather than only documentation.], [Concrete Order, Shipment, Invoice, and Payment state hierarchies reject illegal transitions with `InvalidDataException`.], [Lifecycle integrity is executable and tested.],
-    [A2 Adapter interfaces only], [A running system needed concrete substitutes for GPS and card verification.], [Added `ManualTelemetrySource` and `SimulatedGatewayAdapter` behind the existing interfaces.], [External concerns remain replaceable and no real bank/GPS connection is required.],
-    [A2 observer relations described narratively], [Narrative callbacks risk concrete controller coupling.], [Added narrow listener interfaces: `OrderApprovedListener`, `InvoiceCreatedListener`, and `ShipmentAssignedListener`.], [Publishers depend on listener abstractions, preserving low coupling.],
-    [A2 covered a wider conceptual scope], [Reporting is independent of the four connected operational areas and could not be completed to the same standard within this iteration.], [`Report` remains designed but is explicitly deferred. Customer, order, dispatch, tracking, billing, and payment form a complete executable chain.], [Scope decision is visible; no stub is represented as implemented.],
-    [A2 preserved the SRS Invoice–Payment 1-to-1 assumption], [The SRS (Assignment 1 §3.1) stated each Invoice is settled by exactly one Payment. Partial-payment scenarios require multiple Payments per Invoice.], [The relationship was refined to 1-to-Many: Invoice holds a list of Payment IDs, and `InvoicePartiallyPaidState` manages balance tracking. A Payment is still settled exactly once, but an Invoice may have several Payments applied against it.], [Business rule corrected; partial-payment workflows (cash + card) are now supported and tested.],
-    [A2 preserved the SRS ServiceOffering–Branch many-to-many as a conceptual relationship only], [The conceptual many-to-many was described in Assignment 1 (§3.1) and Assignment 2 but never enforced in the design. During implementation, `Branch.registerServiceOffering()` was added to record which service tiers a branch offers.], [`Branch.registerServiceOffering()` records availability, but the Order submission path does not yet validate that the selected `ServiceOffering` is registered at the selected origin `Branch`. This validation requires UI changes across the four areas and is deferred.], [Known gap; documented in Section 3.2.],
+    th[Review input / Assignment 2 basis], th[Finding during review], th[Revision made for Assignment 3], th[Effect and status],
+    [A2 Assumption A1 deferred data access], [Conceptual model lacked persistence mechanism.], [Added `smartfm.infrastructure.DataStore` gateway using SQLite (`data/smartfm.db`).], [Domain layer remains persistence-agnostic.],
+    [A2 excluded boundary/UI classes], [A working UI was required to process inputs.], [Added Swing GUI panels and CLI boundary classes that delegate to controllers.], [Presentation added without duplicating business rules.],
+    [A2 subscribed `DispatchManager` to order approval], [Automatic assignment contradicted human dispatcher requirement.], [Retained event notification but required explicit `assignShipment(...)` call.], [Resolved ambiguity; resource assignment remains manual.],
+    [A2 lifecycle state tables], [State rules required programmatic enforcement.], [Built concrete State classes for Order, Shipment, Invoice, and Payment.], [Illegal state transitions throw `InvalidDataException`.],
+    [A2 adapter interfaces], [System needed testable concrete adapters.], [Added `ManualTelemetrySource` and `SimulatedGatewayAdapter`.], [External integrations remain replaceable.],
+    [A2 narrative observer descriptions], [Callbacks risked concrete controller coupling.], [Defined narrow interfaces (`OrderApprovedListener`, `InvoiceCreatedListener`, `ShipmentAssignedListener`).], [Maintained low coupling between application controllers.],
+    [A2 wide conceptual scope], [Reporting was independent of the four core areas.], [Deferred `Report` class while completing the main operational flow.], [Scope kept focused on four required business areas.],
+    [A2 Invoice–Payment 1-to-1 assumption], [Partial payments require multiple payments per invoice.], [Updated relationship to 1-to-Many with `InvoicePartiallyPaidState`.], [Supported partial cash/card payment scenarios.],
+    [A2 ServiceOffering–Branch conceptual link], [Branch availability check was not enforced during order entry.], [Added `Branch.registerServiceOffering()`; origin branch check deferred.], [Documented as a minor scope boundary in Section 3.2.],
   )),
   caption: [Summary of design revisions from Assignment 2 to Assignment 3 based on implementation reviews.],
 ) <tbl-revision-summary>
@@ -160,34 +160,7 @@ The detailed design maintains the Entity-Control-Boundary structure established 
   caption: [Layered package design and responsibility allocation.],
 ) <tbl-layered-design>
 
-#let class-model() = diagram(
-  spacing: (2.25cm, 1.22cm),
-  {
-    box((0, 0), "OrderProcessor\n«Controller>", width: 2.6cm)
-    box((1, 0), "DispatchManager\n«Controller>", width: 2.6cm)
-    box((2, 0), "ShipmentTracker\n«Controller>", width: 2.6cm)
-    box((3, 0), "PaymentProcessor\n«Controller>", width: 2.6cm)
-    box((0, 1), "Customer\nOrder + Consignment")
-    box((1, 1), "Vehicle + Driver\nShipment")
-    box((2, 1), "ShipmentState\nITelemetrySource")
-    box((3, 1), "Invoice + Payment\nReceipt")
-    box((1.5, 2), "DataStore\n«repository / infrastructure>", width: 3.15cm, fill: rgb("#fff4db"))
-    edge((0, 0), (0, 1), "->", stroke: .8pt + rgb("#1a3a5c"))
-    edge((1, 0), (1, 1), "->", stroke: .8pt + rgb("#1a3a5c"))
-    edge((2, 0), (2, 1), "->", stroke: .8pt + rgb("#1a3a5c"))
-    edge((3, 0), (3, 1), "->", stroke: .8pt + rgb("#1a3a5c"))
-    edge((0, 1), (1, 1), "->", stroke: .65pt + rgb("#1a3a5c"), dash: "dashed")
-    edge((1, 1), (2, 1), "->", stroke: .65pt + rgb("#1a3a5c"), dash: "dashed")
-    edge((0, 0), (1.5, 2), "->", stroke: .7pt + rgb("#c0392b"), dash: "dotted")
-    edge((1, 0), (1.5, 2), "->", stroke: .7pt + rgb("#c0392b"), dash: "dotted")
-    edge((2, 0), (1.5, 2), "->", stroke: .7pt + rgb("#c0392b"), dash: "dotted")
-    edge((3, 0), (1.5, 2), "->", stroke: .7pt + rgb("#c0392b"), dash: "dotted")
-  }
-)
-#figure(
-  align(center, class-model()),
-  caption: [Detailed class-level view: controller-to-domain calls are solid; the operational dependency chain is dashed; red dotted edges identify controller use of the persistence gateway added during implementation.],
-) <fig-class-model>
+
 
 #let uml-box(pos, name, stereotype: none, attributes: (), methods: (), width: 3.1cm, fill: rgb("#f0f4f8")) = node(
   pos,
@@ -334,10 +307,10 @@ In GRASP, a Controller handles incoming system events for a use-case session or 
 #figure(
   styled-table((1.75fr, 2.25fr, 3.0fr, 1.95fr), (
     th[GRASP Controller], th[System events received], th[Delegation and collaboration], th[Why this is the Controller],
-    [`OrderProcessor`], [Register customer; submit, approve, reject, or cancel order], [Creates/coordinates `Customer`, `Consignment`, `Order`, and `Invoice`; publishes order-approved and invoice-created events; stages aggregate changes for the boundary to commit.], [Represents the order-management use-case session and keeps UI free of order rules.],
-    [`DispatchManager`], [Assign approved order to vehicle and driver], [Obtains order/resources, checks approval, availability, branch, capacity, license, and duplicate-assignment constraints; creates `Shipment`, then publishes shipment-assigned.], [Represents the dispatcher-facing dispatch use case while retaining the human allocation decision.],
-    [`ShipmentTracker`], [Record pickup, in-transit, delivery, and location events], [Stages manual telemetry through `ITelemetrySource`, uses `ShipmentState` to validate each transition, and updates the accepted milestone in the shared aggregate.], [Receives tracking system events and delegates transition legality to the state object.],
-    [`PaymentProcessor`], [Submit cash/card payment], [Checks the invoice balance, selects payment strategy, calls adapter when required, settles payment, creates receipt, and updates the shared aggregate.], [Represents the payment use case and stops UI/payment gateway details entering the domain model.],
+    [`OrderProcessor`], [Register customer; submit, approve, reject, or cancel order], [Coordinates `Customer`, `Consignment`, `Order`, and `Invoice`; fires order/invoice events.], [Represents the order-management use-case session; keeps UI free of domain rules.],
+    [`DispatchManager`], [Assign approved order to vehicle and driver], [Checks resource availability and capacity, creates `Shipment`, and notifies tracking.], [Represents the dispatcher-facing dispatch use case; retains human decision.],
+    [`ShipmentTracker`], [Record pickup, in-transit, delivery, and location events], [Delegates state transitions to `ShipmentState` and records telemetry milestones.], [Receives tracking events and delegates transition legality to the state object.],
+    [`PaymentProcessor`], [Submit cash/card payment], [Validates balances, invokes payment strategy/adapter, settles invoices, and issues receipts.], [Represents payment processing; keeps gateway details out of domain models.],
   )),
   caption: [Explicit GRASP Controller allocation.],
 ) <tbl-grasp-controller>
@@ -351,10 +324,10 @@ The State pattern enforces valid entity lifecycle transitions. Orders move from 
     th[Pattern / GRASP principle], th[Concrete implementation], th[Reason and resulting constraint],
     [State], [`OrderState`, `ShipmentState`, `InvoiceState`, `PaymentState` hierarchies], [Moves rules out of large conditional controllers. Each state accepts only its legal next operation.],
     [Observer], [Listener interfaces for order approval, invoice creation, and shipment assignment], [Coordinates operational areas without a publisher referring to a concrete subscriber class.],
-    [Strategy], [`IPaymentStrategy` (cash vs gateway); `IPricingStrategy` / `PricingTariff` interface available for future use], [`PaymentProcessor` supports cash and gateway/card processing through `IPaymentStrategy` without changing controller logic. The `IPricingStrategy` interface is defined and `PricingTariff` implements it, but `ServiceOffering` does not currently delegate to it—`OrderProcessor` selects the tariff directly. This gap is documented in Section 3.2.],
+    [Strategy], [`IPaymentStrategy` (cash vs gateway); `IPricingStrategy` / `PricingTariff`], [`PaymentProcessor` delegates cash and card processing through `IPaymentStrategy`. `IPricingStrategy` remains available for future pricing extensions (Section 3.2).],
     [Adapter / Protected Variations], [`SimulatedGatewayAdapter`, `ManualTelemetrySource`], [External systems are accessed through stable interfaces, allowing replacement with real integrations later.],
-    [Creator / Information Expert], [Controllers create aggregates for their use cases; entities/states own their own data/transition knowledge], [Construction occurs where inputs and lifecycle context are available; invariant checks occur where knowledge resides.],
-    [Indirection / Low Coupling], [`DataStore` and listener interfaces], [Controllers do not expose JDBC/SQL or concrete cross-controller dependencies to the UI/domain layers.],
+    [Creator / Information Expert], [Controllers create aggregates; entities/states own transition knowledge], [Construction occurs where inputs are available; invariant checks occur where knowledge resides.],
+    [Indirection / Low Coupling], [`DataStore` and listener interfaces], [Controllers do not expose JDBC/SQL or concrete cross-controller dependencies to UI/domain layers.],
   )),
   caption: [Patterns and GRASP principles realised by the detailed design.],
 ) <tbl-pattern-grasp>
@@ -364,23 +337,22 @@ The State pattern enforces valid entity lifecycle transitions. Orders move from 
 `DataStore` serves as the persistence gateway, fulfilling Assumption A1 from Assignment 2 while keeping domain models independent of database logic. It connects to the embedded SQLite database (`data/smartfm.db`) using the pinned Xerial JDBC driver. All database operations use prepared statements within explicit transactions.
 
 When saving, `DataStore` atomically updates the normalized aggregate tables. When loading, it reconstructs domain objects, relationships, and state hierarchies in dependency order. The system enforces schema version 3 and rejects incompatible database versions, requiring a database reset if an older schema is detected.
+
 #figure(
   styled-table((2.25fr, 3.4fr, 3.25fr), (
     th[SQLite table group], th[Representative columns / keys], th[Responsibility],
-    [`schema_metadata`], [`id`, `schema_version`], [Records the current SmartFM schema version and rejects incompatible databases so the normalized schema is never silently mixed with an older format.],
-    [`branches`], [`id`, `name`, `city`, `contact_phone`], [Stores operational branches.],
-    [`customers`, `staff_members`, `drivers`], [Person details, status/role, branch, licence and duty fields], [Stores customers and workforce resources, including driver-specific attributes.],
-    [`vehicles`], [`id`, `branch_id`, capacities, `status`], [Stores fleet resources and current utilisation state.],
-    [`service_offerings`, `pricing_tariffs`], [Service/tariff IDs, descriptions, rates and multipliers], [Stores the commercial catalogue and pricing strategy data.],
-    [`branch_*`, `customers_orders`], [Branch/resource/catalogue and customer/order association keys plus positions], [Preserves aggregate links and collection order.],
-    [`orders`, `consignments`, `order_consignments`], [Order IDs, route/date/quote/state; cargo fields; foreign keys], [Stores order management data and its one-to-many cargo relationship.],
-    [`shipments`], [`order_id`, `vehicle_id`, `driver_id`, `state_name`, location], [Stores dispatch assignments, tracking state, and latest telemetry location.],
-    [`invoices`, `payments`, `invoice_payments`, `receipts`], [Billing IDs, amounts, dates, methods, states and foreign keys], [Stores billing/payment history and immutable receipt records.],
+    [`schema_metadata`], [`id`, `schema_version`], [Stores current schema version (v3) to prevent incompatible loads.],
+    [`branches`], [`id`, `name`, `city`, `contact_phone`], [Stores operational branch locations.],
+    [`customers`, `staff_members`, `drivers`], [Person details, status/role, branch, licence and duty fields], [Stores customer records and staff/driver details.],
+    [`vehicles`], [`id`, `branch_id`, capacities, `status`], [Stores fleet vehicle capacities and availability states.],
+    [`service_offerings`, `pricing_tariffs`], [Service/tariff IDs, descriptions, rates and multipliers], [Stores service catalogue and pricing rate parameters.],
+    [`branch_*`, `customers_orders`], [Branch/resource/catalogue and customer/order association keys], [Stores aggregate association links and collection ordering.],
+    [`orders`, `consignments`, `order_consignments`], [Order IDs, route/date/quote/state; cargo fields; foreign keys], [Stores order attributes, routes, and cargo relationships.],
+    [`shipments`], [`order_id`, `vehicle_id`, `driver_id`, `state_name`, location], [Stores dispatch assignments, state names, and current locations.],
+    [`invoices`, `payments`, `invoice_payments`, `receipts`], [Billing IDs, amounts, dates, methods, states and foreign keys], [Stores billing balances, payment history, and receipt records.],
   )),
   caption: [Normalized SQLite schema owned exclusively by `DataStore`; all writes occur in one transaction and all foreign-key relationships are enabled.],
 ) <tbl-sqlite-schema>
-
-SQLite now supplies full relational storage. The schema supports direct SQL inspection of operational entities, foreign-key relationships, atomic replacement of the in-memory aggregate, schema versioning, and deterministic reconstruction of the domain graph. Only the current normalized schema is supported; an older database must be reset before use.
 
 #heading(level: 2, numbering: none)[2.4 Selected use-case sequence diagrams]
 
@@ -504,13 +476,13 @@ SmartFM is implemented in Java 26 using a standard Maven project layout. The des
 #figure(
   styled-table((2.0fr, 2.65fr, 3.8fr), (
     th[Design element / sequence diagram], th[Production code], th[Implementation match],
-    [Presentation boundary], [`smartfm.ui.Launcher`, `SmartFmConsoleApp`; `smartfm.ui.gui.SmartFmMainFrame` and panels], [GUI is the default entry point; `--cli` selects the transcript-friendly UI. Both obtain one `Bootstrap` through `GuiContext`/startup and call controller methods.],
-    [UC-01/UC-02, @fig-seq-order], [`OrderProcessor`, `Customer`, `Consignment`, `Order`, `Invoice`], [`OrderProcessor` registers the customer, creates/validates consignments and orders, approves/rejects/cancels orders, and produces an invoice on approval.],
-    [UC-03, @fig-seq-dispatch], [`DispatchManager`, `Vehicle`, `Driver`, `Shipment`, `ShipmentAssignedListener`], [Dispatch verifies prerequisites, allocates real seeded resources, creates a shipment, updates the shared aggregate, and sends the observer event.],
-    [UC-04, @fig-seq-tracking], [`ShipmentTracker`, `ManualTelemetrySource`, `ShipmentState` subclasses], [Tracking events use the adapter interface and state hierarchy; invalid state transitions are rejected.],
-    [UC-05, @fig-seq-payment], [`PaymentProcessor`, `IPaymentStrategy` (`CashPaymentStrategy`, `GatewayPaymentStrategy`), `SimulatedGatewayAdapter`, `Payment`, `Receipt`], [Payment amount is checked against the invoice before settlement; the strategy pattern routes cash vs card processing; card verification is behind an adapter and receipt creation follows success. Note: `IPricingStrategy` is defined and `PricingTariff` implements it, but pricing is invoked directly by `OrderProcessor` rather than delegated through `ServiceOffering`.],
-    [Persistence / indirection], [`smartfm.infrastructure.DataStore`], [The GUI/CLI startup and shutdown boundary uses the single `DataStore` persistence gateway. It uses SQLite JDBC with a versioned normalized schema and transactionally replaces/reloads the aggregate rows; domain classes remain storage-independent.],
-    [Bootstrap / observer wiring], [`Bootstrap`, listener interfaces, `IdGenerator`], [Creates seeded reference data for a new store, constructs controllers on every launch, and registers listeners in dependency-safe order.],
+    [Presentation boundary], [`smartfm.ui.Launcher`, `SmartFmConsoleApp`, GUI panels], [GUI and CLI obtain `Bootstrap` on startup and invoke controller operations.],
+    [UC-01/UC-02, @fig-seq-order], [`OrderProcessor`, `Customer`, `Consignment`, `Order`, `Invoice`], [`OrderProcessor` registers customers, calculates quotes, handles approval/cancellation, and generates invoices.],
+    [UC-03, @fig-seq-dispatch], [`DispatchManager`, `Vehicle`, `Driver`, `Shipment`], [`DispatchManager` checks resource prerequisites, creates shipments, and fires assignment events.],
+    [UC-04, @fig-seq-tracking], [`ShipmentTracker`, `ManualTelemetrySource`, `ShipmentState`], [`ShipmentTracker` delegates state updates to `ShipmentState` subclasses and records telemetry.],
+    [UC-05, @fig-seq-payment], [`PaymentProcessor`, `IPaymentStrategy`, `SimulatedGatewayAdapter`], [`PaymentProcessor` validates balances, delegates cash/card strategies, invokes adapter, and generates receipts.],
+    [Persistence / indirection], [`smartfm.infrastructure.DataStore`], [`DataStore` manages SQLite JDBC operations inside atomic transactions.],
+    [Bootstrap / observer wiring], [`Bootstrap`, listener interfaces, `IdGenerator`], [Seeds initial database records and wires listener interfaces in dependency-safe order.],
   )),
   caption: [Traceability from detailed design and selected sequence diagrams to Java source.],
 ) <tbl-design-code-map>
@@ -542,55 +514,42 @@ SmartFM is implemented in Java 26 using a standard Maven project layout. The des
 #figure(
   styled-table((2.7fr, 6.0fr), (
     th[Project path], th[Purpose],
-    [`pom.xml`], [Maven descriptor: Java `26` release target, pinned Xerial SQLite JDBC `3.46.1.0`, supplied JAXB/R2DBC/Reactive Streams runtime closure, SLF4J `1.7.36`, JUnit Jupiter `5.10.2` test dependency, and a Shade-plugin executable JAR with `smartfm.ui.Launcher` as the main class.],
-    [`src/main/java/smartfm/common/`], [Exceptions, validators, and money formatting.],
-    [`src/main/java/smartfm/domain/`], [Six domain sub-packages (`customer`, `order`, `shipment`, `billing`, `fleet`, `catalog`) owning entities, state hierarchies, and strategy/adapter contracts.],
-    [`src/test/java/smartfm/`], [JUnit 5 unit, integration, and E2E test suite (76 automated tests across 17 test classes in six domain packages, application controllers, Swing GUI panels, real-time auto-persistence, complete business workflows, and SQLite persistence).],
+    [`pom.xml`], [Maven descriptor: Java `26` release target, pinned dependencies, SLF4J, JUnit Jupiter, and executable shaded JAR.],
+    [`src/main/java/smartfm/common/`], [Shared utility classes: money formatting, regex validators, and domain exceptions.],
+    [`src/main/java/smartfm/domain/`], [Six domain sub-packages owning entities, lifecycle state hierarchies, and strategy/adapter contracts.],
+    [`src/test/java/smartfm/`], [JUnit 5 unit, integration, and E2E test suite covering all layers.],
     [`src/main/java/smartfm/application/`], [Four GRASP Controllers, observer interfaces, bootstrap, and ID generation.],
-    [`src/main/java/smartfm/infrastructure/`], [The `DataStore` persistence gateway.],
-    [`src/main/java/smartfm/ui/`, `src/main/java/smartfm/ui/gui/`], [CLI and Swing presentations over the same controller contracts.],
-    [`scenarios/`, `transcripts/`], [Repeatable CLI input scripts and captured execution output used in Section 6.3.],
-    [`tools/java/`], [Development-only GUI screenshot driver; not packaged with the application.],
+    [`src/main/java/smartfm/infrastructure/`], [The `DataStore` SQLite persistence gateway.],
+    [`src/main/java/smartfm/ui/`, `src/main/java/smartfm/ui/gui/`], [CLI and Swing presentation layers over application controllers.],
+    [`scenarios/`], [Repeatable CLI input scripts for scenario testing.],
+    [`tools/java/`], [GUI screenshot automation driver.],
   )),
-  caption: [Industry-standard project layout and source-code organisation.],
+  caption: [Standard project layout and package organisation.],
 ) <tbl-project-layout>
 
 #heading(level: 2, numbering: none)[6.2 Compilation and Execution]
 
 *Prerequisites:* Building and running the application requires JDK 26. SQLite is embedded, so no external database or network configuration is needed. All required library JARs are declared in `pom.xml` and stored in `implementation/lib/`. Running on Java 26 requires `--enable-native-access=ALL-UNNAMED` for SQLite JDBC native library loading. Execute commands from the `implementation/` directory using one of the methods below.
 
-*Using Maven (recommended when available):*
+*Using Maven (recommended):*
 
 #console(```
-mvn test          # Runs all 76 automated JUnit 5 unit, integration, and E2E tests
+mvn test          # Runs all 76 automated JUnit 5 tests
 mvn package       # Compiles and builds the self-contained executable JAR
 java --enable-native-access=ALL-UNNAMED -jar target/smartfm.jar
 java --enable-native-access=ALL-UNNAMED -jar target/smartfm.jar --cli
 ```) 
 
-Maven uses the `maven.compiler.release` value `26`, downloads the pinned dependencies, compiles the project, and uses the Shade plugin to create a self-contained executable JAR. The second command launches the GUI; the third launches the CLI.
-
-*Using the supplied Makefile (verified on Windows GNU Make 4.4.1):*
+*Using Makefile:*
 
 #console(```
-make compile      # 75 classes with -Xlint:all and SQLite/JDBC
-make run          # graphical interface; native access is supplied automatically
-make run-cli      # textual interface; native access is supplied automatically
-make jar          # target/smartfm.jar plus target/lib/ runtime JARs
-```) 
+make compile      # Compiles Java sources with -Xlint:all
+make run          # Launches GUI interface
+make run-cli      # Launches CLI interface
+make jar          # Builds target/smartfm.jar
+```)
 
-The Makefile has native Windows and POSIX recipes. For the Makefile JAR, retain `target/lib/` next to `target/smartfm.jar`, because its manifest references the pinned SQLite/jOOQ/JAXB/SLF4J runtime libraries.
 
-*Plain `javac` fallback (PowerShell):*
-
-#console(```
-$deps = "lib/sqlite-jdbc-3.46.1.0.jar;lib/jooq-3.20.0.jar;lib/r2dbc-spi-1.0.0.RELEASE.jar;lib/reactive-streams-1.0.3.jar;lib/jakarta.xml.bind-api-4.0.1.jar;lib/jakarta.activation-api-2.1.2.jar;lib/slf4j-api-1.7.36.jar;lib/slf4j-nop-1.7.36.jar"
-New-Item -ItemType Directory -Force target/classes | Out-Null
-$sources = Get-ChildItem -Recurse -Filter *.java src/main/java | ForEach-Object { $_.FullName }
-javac --release 26 -cp $deps -d target/classes -encoding UTF-8 -Xlint:all $sources
-java --enable-native-access=ALL-UNNAMED -cp "target/classes;$deps" smartfm.ui.Launcher
-java --enable-native-access=ALL-UNNAMED -cp "target/classes;$deps" smartfm.ui.Launcher --cli
-```) 
 
 Data is stored locally in the embedded SQLite database `data/smartfm.db`. Delete this database and any `-wal`/`-shm` sidecar files (or run `make reset`) to return to the seeded state: two branches, three vehicles, three drivers, and three service offerings. No external database server, credentials, or network service is required.
 
@@ -658,56 +617,21 @@ System testing includes compiler linting, automated unit and integration tests, 
 
 All 76 automated tests complete in under 5 seconds with zero failures.
 
-*Scenario-Based Acceptance Testing.* The five scenarios below exercise every selected use case shown in the sequence diagrams. They are replayable by running the files in `scenarios/` in numerical order after resetting the persistent store. Each transcript is captured from a separate CLI process, proving that persisted data is reread between operations.
+*Scenario-Based Acceptance Testing:* The five scenarios below exercise the core use cases. Each scenario validates both correct and invalid inputs, state transitions, and persistence.
 
 #figure(
-  styled-table((1.05fr, 2.35fr, 3.05fr, 2.3fr), (
-    th[Scenario], th[User entry and options], th[Validation / change path], th[Completion evidence],
-    [01 Customer], [Open *Register Customer*; enter name, gender, date of birth (`dd/MM/yyyy`), phone, email, and address; select *Register Customer*.], [Enter `abc` and `not-an-email`, observe inline errors, correct both in place, and resubmit.], [Customer `CUS-0001` is created; @fig-gui-empty-validation and @fig-gui-input-change.],
-    [02 Order], [Open *Order Management*; select customer/service/origin/destination; enter distance/date and consignment values; add then submit. Dispatcher may approve/reject; customer may cancel.], [Negative weight is rejected. A separate submitted order is selected and cancelled to demonstrate change of mind.], [Approval creates invoice `INV-0001`; cancellation appears in @fig-gui-input-change.],
-    [03 Dispatch], [Open *Fleet Dispatch*; select an approved order, choose available vehicle/driver, then select *Create Shipment*.], [Attempting the action without a selected order is rejected; valid compatible resources are then selected.], [`SHP-0001` is created and tracking is notified; @fig-gui-dispatch-tracking-validation.],
-    [04 Tracking], [Open *Shipment Tracking*; select `SHP-0001`, enter a location, then choose Pickup, In Transit, or Delivery.], [Delivery from Assigned is rejected; the user then selects the legal Pickup -> In Transit -> Delivery sequence.], [Delivered status and final location are shown in @fig-gui-completion.],
-    [05 Payment], [Open *Billing and Payment*; select outstanding invoice; enter amount; select Cash or Card; select *Submit Payment*.], [An amount above the outstanding balance is rejected. A partial cash payment and final card payment are then submitted.], [Simulated processing produces receipts and a Paid invoice; @fig-gui-completion.],
+  styled-table((1.1fr, 1.8fr, 2.7fr, 3.1fr), (
+    th[Scenario], th[Use Case / Area], th[User Entry & Verification Path], th[Evidence & Outcome],
+    [01 Customer], [Customer Registration (UC-01)], [Enter details. Invalid phone/email is rejected; valid input creates customer record.], [Customer `CUS-0001` created (@fig-gui-empty-validation, @fig-gui-input-change).],
+    [02 Order], [Order Management (UC-02)], [Select customer/route. Negative cargo weight is rejected; submitted order can be cancelled or approved.], [Approval creates invoice `INV-0001` (@fig-gui-input-change).],
+    [03 Dispatch], [Fleet Dispatch (UC-03)], [Select approved order and compatible vehicle/driver. Missing order selection is rejected.], [Shipment `SHP-0001` created (@fig-gui-dispatch-tracking-validation).],
+    [04 Tracking], [Shipment Tracking (UC-04)], [Record milestones. Delivery before pickup is rejected by State pattern; sequential progress succeeds.], [Delivered state achieved (@fig-gui-completion).],
+    [05 Payment], [Billing & Payment (UC-05)], [Select invoice and amount. Overpayment is rejected; partial cash deposit and card settlement succeed.], [Receipt issued, invoice Paid (@fig-gui-completion).],
   )),
-  caption: [Scenario instructions, user options, validation paths, and completion outcomes.],
-) <tbl-scenario-instructions>
+  caption: [Scenario instructions, validation paths, and execution evidence.],
+) <tbl-scenario-summary>
 
-#figure(
-  styled-table((1.05fr, 2.25fr, 3.35fr, 2.1fr), (
-    th[Scenario], th[Business area / selected use case], th[Positive and negative behaviour verified], th[Evidence],
-    [01], [Customer registration (UC-01)], [Invalid phone/email input is rejected; two valid customers are created.], [`transcripts/01_register_customers.txt`],
-    [02], [Order management (UC-02)], [Negative consignment weight is rejected; orders are placed; cancellation, rejection with reason, and approval/invoice creation succeed.], [`02a`, `02a2`, `02b`, `02c` transcripts],
-    [03], [Fleet dispatch (UC-03)], [Non-existent vehicle ID is rejected without side effect; valid vehicle/driver assignment creates `SHP-0001` and sends shipment-assigned notification.], [`transcripts/03_dispatch.txt`],
-    [04], [Shipment tracking (UC-04)], [Delivery directly from Assigned is rejected; valid Picked Up -> In Transit -> Delivered transitions succeed with location/status output.], [`04a`, `04b` transcripts],
-    [05], [Billing/payment (UC-05)], [Overpayment is rejected; partial cash payment creates a receipt and partial invoice status; final card payment settles the invoice and creates a second receipt.], [`transcripts/05_billing.txt`],
-  )),
-  caption: [Scenario-based testing coverage across all selected use cases.],
-) <tbl-testing-summary>
 
-#figure(
-  console(raw(read("implementation/transcripts/01_register_customers.txt"), lang: "text")),
-  caption: [Scenario 01: customer registration validates bad phone/email input before creating customers.],
-) <fig-test-registration>
-
-#figure(
-  console(raw(read("implementation/transcripts/02c_manage_orders.txt"), lang: "text")),
-  caption: [Scenario 02 completion: approval generates `INV-0001` and triggers the designed observer notifications. Earlier scenario transcript parts capture invalid weight, cancellation, and rejection.],
-) <fig-test-order>
-
-#figure(
-  console(raw(read("implementation/transcripts/03_dispatch.txt"), lang: "text")),
-  caption: [Scenario 03: invalid resource selection is rejected, then an approved order is assigned valid vehicle/driver resources and becomes a shipment.],
-) <fig-test-dispatch>
-
-#figure(
-  console(raw(read("implementation/transcripts/04b_delivery.txt"), lang: "text")),
-  caption: [Scenario 04 completion: a shipment progresses to Delivered after the prior transcript verifies the invalid out-of-order transition.],
-) <fig-test-tracking>
-
-#figure(
-  console(raw(read("implementation/transcripts/05_billing.txt"), lang: "text")),
-  caption: [Scenario 05: overpayment is rejected, then partial and final payments demonstrate invoice state changes and receipt issuance.],
-) <fig-test-payment>
 
 After running Scenario 05, `data/smartfm.db` contains committed database rows for two customers, three orders, one delivered shipment, one paid invoice, two settled payments, and two receipts. The table schema is set to version 3 with foreign keys enabled. Replaying CLI scenario transcripts verifies that application state persists correctly across separate process runs.
 
