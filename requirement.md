@@ -82,16 +82,4 @@ The submission is in electronic form only. An electronic copy of your solution m
 
 1. **The source code and executable code** of your solution must be packaged in a single ZIP or RAR file (or equivalent), and
 2. **The remaining parts** (see the marking guidelines above, i.e., excluding the source code and executable code) are in a single pdf document, including your assignment 2 submission as an appendix. In preparing these parts of your submission, you need to organize/structure your submission according to the marking guidelines/sheet, and answer the relevant aspects as stipulated in the marking guidelines/sheet specifically (and in the assignment specification, in general). For example, for the second part (detailed object oriented design), you need to include the final class diagram capturing your final detailed OO design (in readable form, when printed), and provide the change details and justifications for the class level, the responsibility level and the dynamic aspects (bootstrap and scenarios), with corresponding headings. Screen shots or a video can be used as the evidence of compilation and correct execution.
-3. The appropriately completed and signed **"Assignment and Project Cover Sheet"** declaration form.
-4. **"A contribution document"**, signed by all group members, which:
-   * **a.** lists the amount of time spent by each member on each significant part of the assignment,
-   * **b.** describes briefly and specifically the contributions made by each group member, and
-   * **c.** provides evidence showing that the assignment is done through true group collaboration, e.g., discussions and group reviews of all major parts of the assignment, and simple group meeting minutes (time, place, attendees, issues discussed, decisions made, etc).
-
-> **Note:** For this assignment, students are to work in groups of three or four, i.e., the same groups as in Assignment 2. Permission by the Unit of Study convenor is required to change groups, well before the submission deadline with a "good" reason. Extensions to the submission deadline can only be granted for genuine reasons and the Unit of Study convener must be contacted at least 48 hours prior to the submission deadline or the earliest possible time.
->
-> **Also note:** To allow more time for this assignment, its deadline has been pre-extended by 5 days without penalty, while students are still encouraged to submit by the earlier "normal" week 12 deadline. Consequently, no further late submissions than the extended deadline will be allowed (unless the Unit of Study convener has approved a further extension). That is, any late submission beyond the extended deadline will be given a zero result and no feedback may be given on the respective submission.
->
-> The Unit of Study convener and/or the tutor reserve the right to call in any student/group to further explain and demonstrate their submission if there are doubts about the authorship of the presented solution and/or the completeness thereof.
-
 ---
