@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.awt.GraphicsEnvironment;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
@@ -14,6 +15,7 @@ import java.time.LocalDate;
 import javax.swing.SwingUtilities;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -37,6 +39,7 @@ class SmartFmGuiEndToEndTest {
 
   @BeforeEach
   void setUp() throws Exception {
+    Assumptions.assumeFalse(GraphicsEnvironment.isHeadless(), "Skipping Swing GUI tests in headless environment");
     dbPath = Path.of("target", "test-data", "gui-e2e-smartfm.db");
     Files.createDirectories(dbPath.getParent());
     Files.deleteIfExists(dbPath);

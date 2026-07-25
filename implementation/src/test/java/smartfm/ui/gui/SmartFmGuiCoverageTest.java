@@ -12,12 +12,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.awt.Dimension;
+import java.awt.GraphicsEnvironment;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JTable;
 import javax.swing.SwingUtilities;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,6 +36,7 @@ class SmartFmGuiCoverageTest {
 
   @BeforeEach
   void setUp() throws Exception {
+    Assumptions.assumeFalse(GraphicsEnvironment.isHeadless(), "Skipping Swing GUI tests in headless environment");
     dbPath = Path.of("target", "test-data", "gui-coverage-smartfm.db");
     Files.createDirectories(dbPath.getParent());
     Files.deleteIfExists(dbPath);
