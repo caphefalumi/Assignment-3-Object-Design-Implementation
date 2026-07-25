@@ -8,9 +8,9 @@ skinparam DefaultFontSize 11
 
 skinparam class {
     BackgroundColor #FFFFFF
-    BorderColor #232F3E
-    HeaderBackgroundColor #F2F3F3
-    FontColor #232F3E
+    HeaderBackgroundColor #D1E7DD
+    BorderColor #000000
+    FontColor #000000
 }
 
 class "OrderProcessor" as OrderProcessor <<controller>> {
