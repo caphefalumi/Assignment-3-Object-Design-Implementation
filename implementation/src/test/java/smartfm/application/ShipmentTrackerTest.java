@@ -1,12 +1,14 @@
 package smartfm.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import smartfm.common.InvalidDataException;
 import smartfm.domain.fleet.Driver;
 import smartfm.domain.fleet.DutyState;
 import smartfm.domain.fleet.Vehicle;
@@ -60,5 +62,20 @@ class ShipmentTrackerTest {
 
     assertEquals(VehicleStatus.AVAILABLE, vehicle.getStatus());
     assertEquals(DutyState.AVAILABLE, driver.getDutyState());
+  }
+
+  @Test
+  @DisplayName("Should throw InvalidDataException when querying or updating non-existent shipment")
+  void testUnknownShipmentThrowsException() {
+    InvalidDataException exception = assertThrows(
+        InvalidDataException.class,
+        () -> tracker.getStatus("SHP-999")
+    );
+    assertTrue(exception.getMessage().contains("Unknown shipment id 'SHP-999'"));
+
+    assertThrows(
+        InvalidDataException.class,
+        () -> tracker.confirmPickup("SHP-999", "Unknown Depot")
+    );
   }
 }

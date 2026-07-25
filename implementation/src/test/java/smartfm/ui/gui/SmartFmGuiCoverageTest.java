@@ -25,8 +25,6 @@ import smartfm.common.InvalidCredentialsException;
 import smartfm.common.Validators;
 import smartfm.domain.customer.Customer;
 import smartfm.domain.order.Order;
-import smartfm.ui.ConsoleIO;
-import smartfm.ui.Launcher;
 
 @DisplayName("Comprehensive GUI Component & Edge Case Coverage Tests")
 class SmartFmGuiCoverageTest {
@@ -249,35 +247,9 @@ class SmartFmGuiCoverageTest {
   }
 
   @Test
-  @DisplayName("Should test ConsoleIO helper methods and InvalidCredentialsException")
-  void testConsoleIOAndExceptions() {
+  @DisplayName("Should test InvalidCredentialsException")
+  void testInvalidCredentialsException() {
     InvalidCredentialsException exc = new InvalidCredentialsException("Failed auth");
     assertEquals("Failed auth", exc.getMessage());
-
-    String input = "c\nLine Value\ninvalid\n123\n";
-    java.util.Scanner scanner = new java.util.Scanner(input);
-    ConsoleIO io = new ConsoleIO(scanner);
-
-    io.println("Testing println");
-    io.printHeader("Header");
-
-    assertNull(io.readLineOrCancel("Prompt")); // reads "c" -> cancel
-    assertEquals("Line Value", io.readLine("Prompt"));
-
-    // readValidated: first "invalid" triggers exception catch, then "123" succeeds
-    Double validatedNum = io.readValidated("Number", v -> Validators.parsePositiveNumber(v, "Num"));
-    assertEquals(123.0, validatedNum);
-  }
-
-  @Test
-  @DisplayName("Should test Launcher CLI execution path")
-  void testLauncher() throws Exception {
-    java.io.InputStream origIn = System.in;
-    try {
-      System.setIn(new java.io.ByteArrayInputStream("0\n".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
-      Launcher.main(new String[]{"--cli"});
-    } finally {
-      System.setIn(origIn);
-    }
   }
 }

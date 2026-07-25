@@ -48,7 +48,7 @@ SmartFM is a fleet-logistics desktop application that our team designed in Assig
 
 The report follows the assignment structure: Section 1 summarises revisions to Assignment 2; Section 2 presents the detailed class design, sequence diagrams, and architecture; Section 3 reflects on design quality and lessons learned; and Section 4 provides code mappings, build instructions, execution evidence, and test results. The full Assignment 2 submission is attached in Appendix A.
 
-We implemented four core business areas: Order Management, Fleet Dispatch, Shipment Tracking, and Billing & Payment. Both a Swing GUI and a command-line interface (CLI) share the same application controllers, so every feature works identically in both modes. The GUI is the primary interface; the CLI provides repeatable scenario scripts for verification and marking.
+We implemented four core business areas: Order Management, Fleet Dispatch, Shipment Tracking, and Billing & Payment. A Swing GUI (`smartfm.ui.gui`) presents intuitive operational forms that delegate all requests directly to the application controllers, ensuring clean separation between user presentation and domain rules.
 
 = Summary of Design Revision
 
@@ -58,7 +58,7 @@ Because no formal marker feedback was provided, Table 1 records revisions made d
   styled-table((1.55fr, 2.25fr, 3.35fr, 2.0fr), (
     th[Review input / Assignment 2 basis], th[Finding during review], th[Revision made for Assignment 3], th[Effect and status],
     [A2 Assumption A1 deferred data access], [Conceptual model lacked persistence mechanism.], [Added `smartfm.infrastructure.DataStore` gateway using SQLite (`data/smartfm.db`).], [Domain layer remains persistence-agnostic.],
-    [A2 excluded boundary/UI classes], [A working UI was required to process inputs.], [Added Swing GUI panels and CLI boundary classes that delegate to controllers.], [Presentation added without duplicating business rules.],
+    [A2 excluded boundary/UI classes], [A working UI was required to process inputs.], [Added Swing GUI panels (`smartfm.ui.gui`) that delegate directly to application controllers.], [Presentation added without duplicating business rules.],
     [A2 subscribed `DispatchManager` to order approval], [Automatic assignment contradicted human dispatcher requirement.], [Retained event notification but required explicit `assignShipment(...)` call.], [Resolved ambiguity; resource assignment remains manual.],
     [A2 lifecycle state tables], [State rules required programmatic enforcement.], [Built concrete State classes for Order, Shipment, Invoice, and Payment.], [Illegal state transitions throw `InvalidDataException`.],
     [A2 adapter interfaces], [System needed testable concrete adapters.], [Added `ManualTelemetrySource` and `SimulatedGatewayAdapter`.], [External integrations remain replaceable.],
@@ -79,7 +79,7 @@ The detailed design maintains the Entity-Control-Boundary structure established 
 #figure(
   styled-table((1.65fr, 2.35fr, 4.85fr), (
     th[Package / layer], th[Key classes], th[Responsibility],
-    [`smartfm.ui`, `smartfm.ui.gui`], [`Launcher`, `SmartFmConsoleApp`, `SmartFmMainFrame`, five GUI panels], [Boundary layer. Collects and displays information only; it calls controller public operations and displays domain/controller validation messages.],
+    [`smartfm.ui`, `smartfm.ui.gui`], [`Launcher`, `SmartFmMainFrame`, five GUI panels], [Boundary layer. Collects and displays information only; it calls controller public operations and displays domain/controller validation messages.],
     [`smartfm.application`], [`OrderProcessor`, `DispatchManager`, `ShipmentTracker`, `PaymentProcessor`, `Bootstrap`], [Application layer. The four GRASP Controllers receive system events, coordinate entities, publish observer events, and invoke the persistence gateway.],
     [`smartfm.domain.*` (`customer`, `order`, `shipment`, `billing`, `fleet`, `catalog`)], [`Customer`, `Order`, `Consignment`, `Shipment`, `Vehicle`, `Driver`, `Invoice`, `Payment`, `Receipt`, state/strategy interfaces], [Domain layer. Divided into six domain sub-packages. Owns business information, lifecycle state, pricing/payment behaviour, and entity-level validation.],
     [`smartfm.infrastructure`], [`DataStore`], [Infrastructure layer. Opens the local SQLite database and uses a versioned normalized schema for branches, people and resources, catalogue, orders, shipments, invoices, payments, receipts, and association links. It reads and replaces the aggregate rows inside one SQLite transaction; it is the only persistence mechanism.],
@@ -333,7 +333,7 @@ The detailed design maintains the Entity-Control-Boundary structure established 
 
 == GRASP Controller assignments
 
-In GRASP, a Controller handles incoming system events for a use-case session or operational domain @larman2004uml. SmartFM assigns one application controller to each of the four business areas. UI event handlers do not construct domain entities or mutate state directly. Instead, `Launcher` initializes a `Bootstrap` instance that wires controllers and event listeners. UI and CLI actions then delegate all requests to these controller operations.
+In GRASP, a Controller handles incoming system events for a use-case session or operational domain @larman2004uml. SmartFM assigns one application controller to each of the four business areas. UI event handlers do not construct domain entities or mutate state directly. Instead, `Launcher` initializes a `Bootstrap` instance that wires controllers and event listeners. UI actions then delegate all requests to these controller operations.
 
 #figure(
   styled-table((1.75fr, 2.25fr, 3.0fr, 1.95fr), (
@@ -392,13 +392,13 @@ When saving, `DataStore` atomically updates the normalized aggregate tables. Whe
 
 == Selected use-case sequence diagrams
 
-The four sequence diagrams below illustrate the core implemented use cases. Each diagram shows the exact controller methods invoked by the GUI and CLI boundaries. Section 4.1 maps these interactions directly to source code, and Section 4.3 provides execution evidence for each flow.
+The four sequence diagrams below illustrate the core implemented use cases. Each diagram shows the exact controller methods invoked by the GUI boundary. Section 4.1 maps these interactions directly to source code, and Section 4.3 provides execution evidence for each flow.
 
 #figure(
   mermaid("
 sequenceDiagram
     autonumber
-    participant C as Customer / GUI or CLI
+    participant C as Customer / GUI Panel
     participant OP as OrderProcessor<br/>«GRASP Controller»
     participant DOM as Customer, Consignment, Order
     participant DS as DataStore
@@ -417,7 +417,7 @@ sequenceDiagram
   mermaid("
 sequenceDiagram
     autonumber
-    participant D as Dispatcher / GUI or CLI
+    participant D as Dispatcher / GUI Panel
     participant DM as DispatchManager<br/>«GRASP Controller»
     participant DOM as Order, Vehicle, Driver, Shipment
     participant ST as DataStore / ShipmentTracker
@@ -435,7 +435,7 @@ sequenceDiagram
   mermaid("
 sequenceDiagram
     autonumber
-    participant O as Operator / GUI or CLI
+    participant O as Operator / GUI Panel
     participant ST as ShipmentTracker<br/>«GRASP Controller»
     participant TS as ManualTelemetrySource / ShipmentState
     participant DS as Shipment / DataStore
@@ -453,7 +453,7 @@ sequenceDiagram
   mermaid("
 sequenceDiagram
     autonumber
-    participant C as Customer / GUI or CLI
+    participant C as Customer / GUI Panel
     participant PP as PaymentProcessor<br/>«GRASP Controller»
     participant PS as Invoice, Payment, PaymentStrategy
     participant GW as Gateway / Receipt / DataStore
@@ -489,14 +489,14 @@ Assignment 2 did not specify how the system starts up or when data is saved; tho
 
 On first launch, `DataStore` creates `data/smartfm.db`, builds all tables in a single transaction, and seeds demonstration records (two branches, three vehicles, three drivers, and three service offerings). On later launches it detects the existing schema (version 3) and loads domain objects directly. `Bootstrap` then wires the four controllers and registers their event listeners in dependency-safe order. For example, `DispatchManager` is registered as an `OrderApprovedListener` on `OrderProcessor` before any orders can be approved.
 
-We chose to persist after every state mutation rather than only on exit, because the CLI has no guaranteed shutdown hook. This means that if the process is killed mid-session, the database still reflects the last successful operation. The interaction order matters: order approval updates the order and creates the invoice _before_ notifying listeners, dispatch stages shipment and resource changes _before_ firing `shipmentAssigned`, and payments generate a receipt only _after_ settlement succeeds. These sequences match the diagrams in Section 2.4.
+We chose to persist after every state mutation rather than only on exit, ensuring immediate durability. The interaction order matters: order approval updates the order and creates the invoice _before_ notifying listeners, dispatch stages shipment and resource changes _before_ firing `shipmentAssigned`, and payments generate a receipt only _after_ settlement succeeds. These sequences match the diagrams in Section 2.4.
 
 == Architecture style(s)
 
 SmartFM uses two complementary architecture styles: a *Layered Architecture* for structural organisation and an *Event-Driven Architecture* for cross-subsystem communication. We chose this combination because a pure layered design would have forced `OrderProcessor` to call `DispatchManager` directly when an order is approved, creating tight coupling between two independent business areas. Adding event connectors at the application layer keeps the dispatch decision with the human operator while notifying the tracking subsystem automatically.
 
 The system is organised into four architectural components:
-1. *Presentation:* `SmartFmConsoleApp`, `SmartFmMainFrame`, and the Swing panel classes.
+1. *Presentation:* `SmartFmMainFrame` and the Swing panel classes (`smartfm.ui.gui`).
 2. *Order and Billing:* `OrderProcessor`, `PaymentProcessor`, and their domain entities.
 3. *Fleet and Dispatch:* `DispatchManager`, `ShipmentTracker`, and their domain entities.
 4. *Persistence:* The `DataStore` database gateway.
@@ -520,7 +520,7 @@ The four controllers maintain high cohesion: each one owns a single business are
 
 == Missing or ambiguous aspects
 
-Assignment 2 deliberately excluded UI and persistence details, which was appropriate for a high-level design but left notable gaps to fill during coding. We had to define input-validation rules (e.g. phone format, non-negative cargo weight), error-feedback flows for both GUI and CLI, the full SQLite schema, and the bootstrap/seeding sequence. These additions were substantial (DataStore alone is nearly 400 lines), but they did not contradict the original design. Instead, they extended it into areas that Assignment 2 had flagged as out of scope.
+Assignment 2 deliberately excluded UI and persistence details, which was appropriate for a high-level design but left notable gaps to fill during coding. We had to define input-validation rules (e.g. phone format, non-negative cargo weight), error-feedback flows for the GUI, the full SQLite schema, and the bootstrap/seeding sequence. These additions were substantial (DataStore alone is nearly 400 lines), but they did not contradict the original design. Instead, they extended it into areas that Assignment 2 had flagged as out of scope.
 
 The main ambiguity was whether dispatch should be automatic or manual. Assignment 2 described `DispatchManager` as "subscribing to order approval events," which our team initially read as automatic assignment. During implementation, we realised this contradicted the SRS requirement for human dispatchers to choose vehicles and drivers. Resolving this took two team discussions before we settled on the current approach: the event notifies `DispatchManager` that an order is ready, but a dispatcher must still call `assignShipment(...)` explicitly.
 
@@ -543,7 +543,7 @@ Finally, `ServiceOffering` was documented as delegating to `IPricingStrategy`, b
 
 Overall, the Assignment 2 design required moderate interpretation. The parts that were well specified (entity attributes, State transition tables, controller responsibilities, and pattern contracts) translated to code with minimal guesswork. The areas that needed the most interpretation were:
 
-- *Persistence timing:* When should the system save? We chose "after every mutation" rather than "on exit only" because the CLI has no guaranteed shutdown hook (Section 2.5.3).
+- *Persistence timing:* When should the system save? We chose "after every mutation" rather than "on exit only" so that user actions are immediately committed to disk (Section 2.5.3).
 - *Input validation:* Assignment 2 defined what data each entity holds but not what constitutes valid input. We added regex-based phone and email validation, non-negative weight checks, and non-blank name enforcement in `smartfm.common.Validators`.
 - *Adapter behaviour:* The interfaces were defined, but how a simulated gateway or manual telemetry source should behave was left to our judgement. We kept both adapters simple. `SimulatedGatewayAdapter` always approves and `ManualTelemetrySource` accepts free-text locations, making them easy to replace with real integrations.
 - *Dispatch workflow:* As discussed in Sections 3.2 and 3.3, the original observer description was ambiguous about automation versus notification.
@@ -575,7 +575,7 @@ SmartFM is implemented in Java 26 using a standard Maven project layout. The des
 #figure(
   styled-table((2.0fr, 2.65fr, 3.8fr), (
     th[Design element / sequence diagram], th[Production code], th[Implementation match],
-    [Presentation boundary], [`smartfm.ui.Launcher`, `SmartFmConsoleApp`, GUI panels], [GUI and CLI obtain `Bootstrap` on startup and invoke controller operations.],
+    [Presentation boundary], [`smartfm.ui.Launcher`, `SmartFmMainFrame`, GUI panels], [GUI obtains `Bootstrap` on startup and invokes controller operations.],
     [UC-01/UC-02, @fig-seq-order], [`OrderProcessor`, `Customer`, `Consignment`, `Order`, `Invoice`], [`OrderProcessor` registers customers, calculates quotes, handles approval/cancellation, and generates invoices.],
     [UC-03, @fig-seq-dispatch], [`DispatchManager`, `Vehicle`, `Driver`, `Shipment`], [`DispatchManager` checks resource prerequisites, creates shipments, and fires assignment events.],
     [UC-04, @fig-seq-tracking], [`ShipmentTracker`, `ManualTelemetrySource`, `ShipmentState`], [`ShipmentTracker` delegates state updates to `ShipmentState` subclasses and records telemetry.],
@@ -619,8 +619,8 @@ SmartFM is implemented in Java 26 using a standard Maven project layout. The des
     [`src/test/java/smartfm/`], [JUnit 5 unit, integration, and E2E test suite covering all layers.],
     [`src/main/java/smartfm/application/`], [Four GRASP Controllers, observer interfaces, bootstrap, and ID generation.],
     [`src/main/java/smartfm/infrastructure/`], [The `DataStore` SQLite persistence gateway.],
-    [`src/main/java/smartfm/ui/`, `src/main/java/smartfm/ui/gui/`], [CLI and Swing presentation layers over application controllers.],
-    [`scenarios/`], [Repeatable CLI input scripts for scenario testing.],
+    [`src/main/java/smartfm/ui/`, `src/main/java/smartfm/ui/gui/`], [Swing desktop GUI presentation layer over application controllers.],
+    [`scenarios/`], [Test scenario scripts for automated UI evidence drivers.],
     [`tools/java/`], [GUI screenshot automation driver.],
   )),
   caption: [Standard project layout and package organisation.],
@@ -636,7 +636,6 @@ SmartFM is implemented in Java 26 using a standard Maven project layout. The des
 mvn test          # Runs all 76 automated JUnit 5 tests
 mvn package       # Compiles and builds the self-contained executable JAR
 java --enable-native-access=ALL-UNNAMED -jar target/smartfm.jar
-java --enable-native-access=ALL-UNNAMED -jar target/smartfm.jar --cli
 ```) 
 
 *Using Makefile:*
@@ -644,7 +643,6 @@ java --enable-native-access=ALL-UNNAMED -jar target/smartfm.jar --cli
 #console(```
 make compile      # Compiles Java sources with -Xlint:all
 make run          # Launches GUI interface
-make run-cli      # Launches CLI interface
 make jar          # Builds target/smartfm.jar
 ```)
 
@@ -695,7 +693,7 @@ The screenshots below were generated by running `tools/java/smartfm/ui/gui/Scree
 
 #figure(
   image("images/06_final_state_before_exit.png", width: 75%),
-  caption: [Final application state immediately before normal exit. Closing the window invokes the registered handler, commits the normalized `DataStore` rows to SQLite, and exits; the recorded CLI scenarios independently verify that the database is restored in a later process.],
+  caption: [Final application state immediately before normal exit. Closing the window invokes the registered handler, commits the normalized `DataStore` rows to SQLite, and exits cleanly.],
 ) <fig-gui-exit>
 
 To regenerate all screenshots on a machine with JDK 26 and GNU Make, run `make screenshots` inside `implementation/`. The driver resets demonstration data, executes the test scenarios, saves the screenshots, and exits.
@@ -712,7 +710,7 @@ System testing includes compiler linting, automated unit and integration tests, 
 5. *Core E2E Workflows:* Full business flow execution from registration to payment settlement and database recovery (`SmartFmEndToEndTest`).
 6. *Swing GUI E2E:* Interactive GUI testing on the Event Dispatch Thread covering validation errors, dispatch, and window closure (`SmartFmGuiEndToEndTest`).
 7. *GUI Persistence:* Real-time SQLite auto-save verification upon UI state mutation (`GuiContextAndPersistenceTest`).
-8. *Coverage Helpers:* CLI/GUI prompt parsing and edge-case component handlers (`SmartFmGuiCoverageTest`).
+8. *Coverage Helpers:* GUI component event handling and edge-case form input helpers (`SmartFmGuiCoverageTest`).
 
 All 76 automated tests complete in under 5 seconds with zero failures.
 
@@ -732,13 +730,13 @@ All 76 automated tests complete in under 5 seconds with zero failures.
 
 
 
-After running Scenario 05, `data/smartfm.db` contains committed database rows for two customers, three orders, one delivered shipment, one paid invoice, two settled payments, and two receipts. The table schema is set to version 3 with foreign keys enabled. Replaying CLI scenario transcripts verifies that application state persists correctly across separate process runs.
+After running Scenario 05, `data/smartfm.db` contains committed database rows for two customers, three orders, one delivered shipment, one paid invoice, two settled payments, and two receipts. The table schema is set to version 3 with foreign keys enabled. Re-launching the application verifies that application state persists correctly across separate process runs.
 
 = Conclusion
 
 SmartFM demonstrates that a well-structured Assignment 2 design can be turned into working software with relatively few structural surprises. The core entities, State patterns, and controller responsibilities survived implementation largely intact. The changes we made (adding persistence, replacing vague observer descriptions with typed listeners, and relaxing the Invoice-Payment multiplicity) were motivated by concrete problems found during coding rather than design trends.
 
-The system compiles cleanly, passes 76 automated tests, and runs the four core business workflows end-to-end in both GUI and CLI modes. Deferred features such as report generation and service browsing can be added in future iterations without restructuring the layered architecture. If we were to start this project again, we would invest more time in persistence contracts, UI sketches, and scenario walkthroughs during the design phase. However, the overall approach of GRASP Controllers, lifecycle State classes, and event-driven subsystem communication proved to be a solid foundation.
+The system compiles cleanly, passes 76 automated tests, and runs the four core business workflows end-to-end via its Swing GUI. Deferred features such as report generation and service browsing can be added in future iterations without restructuring the layered architecture. If we were to start this project again, we would invest more time in persistence contracts, UI sketches, and scenario walkthroughs during the design phase. However, the overall approach of GRASP Controllers, lifecycle State classes, and event-driven subsystem communication proved to be a solid foundation.
 
 = References
 
