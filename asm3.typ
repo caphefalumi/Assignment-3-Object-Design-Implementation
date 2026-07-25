@@ -328,7 +328,7 @@ The detailed design maintains the Entity-Control-Boundary structure established 
       Driver ..> DutyState
       StaffMember ..> StaffRole
   "),
-  caption: [Final implementation class diagram. Each box names an implemented core class or a closely coupled State, Strategy, or Adapter family; solid lines show aggregate/domain relationships, dashed lines show polymorphic dependencies, and red dotted lines show controller use of the persistence boundary. `Report` and the authentication/session service are deliberately excluded because they are outside the selected four-area scope. Shared utility classes (`Money`, `Validators`, `IdGenerator`) and custom exceptions in `smartfm.common` are omitted from the diagram to prevent clutter, but act as ubiquitous helpers across all layers.],
+  caption: [Final implementation class diagram showing application controllers, domain entities, state and strategy patterns, and persistence relationships. Out-of-scope reporting and shared utility classes are omitted for clarity.],
 ) <fig-final-class-model>
 
 #heading(level: 2, numbering: none)[2.2 GRASP Controller assignments]
