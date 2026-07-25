@@ -1,0 +1,15 @@
+==== Shipment Status ====
+  Shipment SHP-0001 [In Transit] @ Highway 1A, near Da Nang
+==== Business Area 3: Shipment Tracking ====
+[1] Confirm pickup
+[2] Confirm in transit
+[3] Confirm delivery
+[4] View shipment status
+[0] Back to main menu
+Select an option: 
+==== Shipment Tracking: mark delivered (empty form below) ====
+  Shipment SHP-0001 [In Transit] @ Highway 1A, near Da Nang
+Shipment id (or 'c' to cancel): Current location description (or 'c' to cancel): Success: shipment SHP-0001 is now 'Delivered' at WinMart Hanoi warehouse, delivered and signed for.
+==== Shipment Status ====
+  Shipment SHP-0001 [Delivered] @ WinMart Hanoi warehouse, delivered and signed for
+SQLite database committed to data/smartfm.db. Goodbye.

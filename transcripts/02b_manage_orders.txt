@@ -1,0 +1,52 @@
+[1] Business Area 1: Order Management
+[2] Business Area 2: Fleet Dispatch
+[3] Business Area 3: Shipment Tracking
+[4] Business Area 4: Billing and Payment
+[5] Register a new customer account
+[0] Save and exit
+Select an option: 
+==== Business Area 1: Order Management ====
+[1] Place a new shipment order
+[2] View pending orders
+[3] Approve an order
+[4] Reject an order
+[5] Cancel my own order (change of mind)
+[0] Back to main menu
+Select an option: 
+==== Pending Orders ====
+Order ORD-0001 [Submitted] total=22,290,000.00 VND | customer=CUS-0001 | weight=300.0kg
+Order ORD-0002 [Submitted] total=15,150,000.00 VND | customer=CUS-0002 | weight=500.0kg
+Order ORD-0003 [Submitted] total=25,720,000.00 VND | customer=CUS-0001 | weight=20.0kg
+
+==== Main Menu ====
+[1] Business Area 1: Order Management
+[2] Business Area 2: Fleet Dispatch
+[3] Business Area 3: Shipment Tracking
+[4] Business Area 4: Billing and Payment
+[5] Register a new customer account
+[0] Save and exit
+Select an option: 
+==== Business Area 1: Order Management ====
+[1] Place a new shipment order
+[2] View pending orders
+[3] Approve an order
+[4] Reject an order
+[5] Cancel my own order (change of mind)
+[0] Back to main menu
+Select an option: 
+==== Cancel an Order (customer change of mind) ====
+
+==== Pending Orders ====
+Order ORD-0001 [Submitted] total=22,290,000.00 VND | customer=CUS-0001 | weight=300.0kg
+Order ORD-0002 [Submitted] total=15,150,000.00 VND | customer=CUS-0002 | weight=500.0kg
+Order ORD-0003 [Submitted] total=25,720,000.00 VND | customer=CUS-0001 | weight=20.0kg
+Order id to cancel (or 'c' to cancel): Success: order ORD-0002 cancelled at the customer's request.
+
+==== Main Menu ====
+[1] Business Area 1: Order Management
+[2] Business Area 2: Fleet Dispatch
+[3] Business Area 3: Shipment Tracking
+[4] Business Area 4: Billing and Payment
+[5] Register a new customer account
+[0] Save and exit
+Select an option: 
