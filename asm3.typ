@@ -76,6 +76,7 @@ Because no formal marker feedback was provided, Table 1 records revisions made d
 
 The detailed design maintains the Entity-Control-Boundary structure established in Assignment 2. Domain entities store business data and enforce state rules. Application controllers coordinate user requests. UI boundaries handle input and display output, while infrastructure classes isolate database persistence. This structure follows key GRASP principles from Larman @larman2004uml, including Controller, Information Expert, Low Coupling, and Indirection.
 
+#colbreak()
 #figure(
   styled-table((1.65fr, 2.35fr, 4.85fr), (
     th[Package / layer], th[Key classes], th[Responsibility],
