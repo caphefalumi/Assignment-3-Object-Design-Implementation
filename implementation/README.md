@@ -1,174 +1,104 @@
 # SmartFM – Assignment 3 Implementation
 
-SmartFM is a **Java 26** desktop application for the Smart Fleet Management System. It implements four connected business areas from the Assignment 1 SRS and Assignment 2 object design:
+SmartFM is a **Java 26** Swing desktop application for the Smart Fleet Management System. It implements four connected business operational areas from the Assignment 1 SRS and Assignment 2 Object Design:
 
 1. **Order Management** — `smartfm.application.OrderProcessor`
 2. **Fleet Dispatch** — `smartfm.application.DispatchManager`
 3. **Shipment Tracking** — `smartfm.application.ShipmentTracker`
 4. **Billing and Payment** — `smartfm.application.PaymentProcessor`
 
-Both a Swing GUI (`smartfm.ui.gui`) and a CLI (`smartfm.ui.SmartFmConsoleApp`) call the same application/domain controllers.
+The user interface is built using Java Swing (`smartfm.ui.gui.*`). UI panels collect user input and display system results by delegating directly to the four GRASP application controllers.
 
-## SQLite persistence
+---
 
-Assignment 2 assumed a shared relational database. Assignment 3 implements that boundary with embedded **SQLite** and normalized tables:
+## Embedded SQLite Persistence
 
-- Database: `data/smartfm.db`
-- JDBC driver: Xerial SQLite JDBC `3.46.1.0`
-- Supporting runtime libraries: JAXB, R2DBC/Reactive Streams, SLF4J API and no-op binding `1.7.36`
-- Schema: `schema_metadata` records the schema version; normalized tables persist branches, people/resources, catalogue, orders/consignments, shipments, invoices/payments, receipts, and their association links.
+Assignment 2 assumed a shared relational database. Assignment 3 implements that boundary with embedded **SQLite** and versioned normalized tables:
 
-`DataStore` remains the single infrastructure facade used by application startup and shutdown. It uses SQLite JDBC transactions and prepared SQL statements to create the version-3 normalized schema, replace the aggregate rows atomically, and reconstruct the domain graph on startup. Domain classes and controllers remain independent of JDBC and SQL. SQLite is embedded: no database server, account, or network connection is needed. The application accepts only the current normalized schema; reset the database if an older schema is encountered.
+* **Database File**: `data/smartfm.db`
+* **JDBC Driver**: Xerial SQLite JDBC `3.46.1.0`
+* **Supporting Runtime Libraries**: JAXB, R2DBC/Reactive Streams, SLF4J API and no-op binding `1.7.36`
+* **Schema**: `schema_metadata` records the schema version (v3); normalized relational tables persist branches, staff/drivers, customers, vehicles, service offerings, tariffs, orders, consignments, shipments, invoices, payments, receipts, and association links.
 
-## Project layout
+`DataStore` serves as the single infrastructure gateway facade. It executes prepared SQL statements inside atomic SQLite JDBC transactions to manage persistence while keeping domain entities and controllers completely independent of SQL and JDBC.
+
+---
+
+## Project Layout
 
 ```text
-pom.xml                                  Maven descriptor; Java 26 and pinned SQLite/jOOQ dependencies
-lib/                                     Pinned local SQLite, jOOQ, JAXB, and SLF4J runtime JARs
-src/main/java/smartfm/common/            Exceptions, validators, Money formatter
+pom.xml                                  Maven descriptor (Java 26 release target & dependencies)
+Makefile                                 Cross-platform build script (Windows / POSIX)
+lib/                                     Pinned local SQLite JDBC and SLF4J runtime JARs
+data/                                    Embedded SQLite database storage (smartfm.db)
+src/main/java/smartfm/common/            Shared Money formatter, Validators, and Exceptions
 src/main/java/smartfm/domain/            6 domain sub-packages (customer, order, shipment, billing, fleet, catalog)
 src/main/java/smartfm/application/       Four GRASP Controllers, Observer listeners, Bootstrap
-src/main/java/smartfm/infrastructure/    DataStore: normalized SQLite database gateway
-src/main/java/smartfm/ui/                Launcher and CLI
-src/main/java/smartfm/ui/gui/            Swing GUI
-src/main/resources/                      Reserved Maven resource root
-src/test/java/                           JUnit 5 unit, integration, auto-save & Swing GUI E2E test suite (70 tests)
-scenarios/                               Scripted CLI inputs for the five scenario flows
-transcripts/                             Compilation and CLI execution evidence
-screenshots/                             Generated GUI evidence images
-tools/java/                              ScreenshotDriver (development/evidence tool, not packaged application code)
+src/main/java/smartfm/infrastructure/    DataStore normalized SQLite database gateway
+src/main/java/smartfm/ui/                Launcher
+src/main/java/smartfm/ui/gui/            Swing GUI panels, SmartFmMainFrame, and UI components
+src/test/java/                           JUnit 5 test suite (76 automated tests)
+screenshots/                             Generated GUI evidence PNG images
+tools/java/                              ScreenshotDriver automated UI evidence tool
 ```
 
-## Build
+---
 
-A **Java 26 JDK** is required. On this Windows development machine, Azul Zulu JDK 26 is installed at `C:\Program Files\Zulu\zulu-26`. In a new PowerShell session, select any Java 26 JDK before building:
+## Build & Run Instructions
 
-```powershell
-$env:JAVA_HOME = "C:\Program Files\Zulu\zulu-26"
-$env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
-java -version
-javac -version
-```
+### Prerequisites
+* **JDK 26** installed and configured (`JAVA_HOME` pointing to JDK 26)
+* Running under Java 26 requires `--enable-native-access=ALL-UNNAMED` for SQLite JDBC native library loading.
 
-### Option A: GNU Make (verified on Windows)
+### Option A: Maven (Recommended)
 
-From `implementation/`, with Java 26+ and GNU Make installed:
+```bash
+# Run Checkstyle audit and all 76 JUnit 5 automated tests
+mvn test
 
-```text
-make compile      # Compiles 74 production classes with -Xlint:all
-make tools        # Compiles ScreenshotDriver
-make jar          # Builds target/smartfm.jar and target/lib/ runtime dependencies
-```
-
-The Makefile has separate Windows and POSIX recipes. On Windows it has been verified with GNU Make 4.4.1 and PowerShell. The pinned JARs under `lib/` must remain beside the source code. Its run targets provide Java 26 native access for SQLite automatically.
-
-### Option B: Maven
-
-With Maven installed and running under Java 26:
-
-```text
+# Package self-contained executable JAR
 mvn package
-```
 
-`pom.xml` sets `maven.compiler.release` to `26`. Maven resolves the pinned dependencies and uses the Shade plugin to produce a self-contained executable `target/smartfm.jar`.
-
-### Option C: Plain `javac` fallback (PowerShell)
-
-```powershell
-$deps = @(
-  "lib/sqlite-jdbc-3.46.1.0.jar",
-  "lib/jooq-3.20.0.jar",
-  "lib/r2dbc-spi-1.0.0.RELEASE.jar",
-  "lib/reactive-streams-1.0.3.jar",
-  "lib/jakarta.xml.bind-api-4.0.1.jar",
-  "lib/jakarta.activation-api-2.1.2.jar",
-  "lib/slf4j-api-1.7.36.jar",
-  "lib/slf4j-nop-1.7.36.jar"
-) -join ';'
-New-Item -ItemType Directory -Force target/classes | Out-Null
-$sources = Get-ChildItem -Recurse -Filter *.java src/main/java | ForEach-Object { $_.FullName }
-javac --release 26 -cp $deps -d target/classes -encoding UTF-8 -Xlint:all $sources
-```
-
-## Run
-
-### Graphical interface
-
-```text
+# Run the application
 java --enable-native-access=ALL-UNNAMED -jar target/smartfm.jar
 ```
 
-The native-access flag permits the SQLite JDBC driver to load its embedded SQLite library under Java 26. The Makefile JAR uses `target/lib/` for the SQLite/jOOQ/JAXB/SLF4J runtime libraries, so keep that directory next to `target/smartfm.jar`. Alternatively:
+### Option B: GNU Make
 
-```text
+```bash
+# Compile Java sources with -Xlint:all
+make compile
+
+# Run Swing GUI application
 make run
+
+# Build target/smartfm.jar with target/lib/ dependencies
+make jar
+
+# Compile automated ScreenshotDriver tool
+make tools
 ```
 
-### Textual interface
+---
 
-```text
-java --enable-native-access=ALL-UNNAMED -jar target/smartfm.jar --cli
-```
+## Resetting Demonstration Data
 
-or:
+To reset the SQLite database to its clean seeded state (two branches, three vehicles, three drivers, and three service offerings):
 
-```text
-make run-cli
-```
-
-For a plain-JDK build on Windows:
-
-```powershell
-$deps = "target/classes;" + (@(
-  "lib/sqlite-jdbc-3.46.1.0.jar",
-  "lib/jooq-3.20.0.jar",
-  "lib/r2dbc-spi-1.0.0.RELEASE.jar",
-  "lib/reactive-streams-1.0.3.jar",
-  "lib/jakarta.xml.bind-api-4.0.1.jar",
-  "lib/jakarta.activation-api-2.1.2.jar",
-  "lib/slf4j-api-1.7.36.jar",
-  "lib/slf4j-nop-1.7.36.jar"
-) -join ';')
-java --enable-native-access=ALL-UNNAMED -cp $deps smartfm.ui.Launcher
-java --enable-native-access=ALL-UNNAMED -cp $deps smartfm.ui.Launcher --cli
-```
-
-The GUI is the default. Pass `--cli` for the repeatable textual interface.
-
-## Resetting demonstration data
-
-```text
+```bash
 make reset
 ```
 
-This deletes `data/smartfm.db` and any SQLite `-wal`/`-shm` sidecars, then recompiles on the next build. A fresh startup seeds two branches, three vehicles, three drivers, and three service offerings.
+This removes `data/smartfm.db` and any SQLite `-wal`/`-shm` sidecar files.
 
-## Replaying CLI scenarios
+---
 
-After `make reset` then `make compile`, run the scenario input files in numerical order. For example, in PowerShell:
+## Generating Screenshot Evidence
 
-```powershell
-$cp = "target/classes;" + (@(
-  "lib/sqlite-jdbc-3.46.1.0.jar",
-  "lib/jooq-3.20.0.jar",
-  "lib/r2dbc-spi-1.0.0.RELEASE.jar",
-  "lib/reactive-streams-1.0.3.jar",
-  "lib/jakarta.xml.bind-api-4.0.1.jar",
-  "lib/jakarta.activation-api-2.1.2.jar",
-  "lib/slf4j-api-1.7.36.jar",
-  "lib/slf4j-nop-1.7.36.jar"
-) -join ';')
-Get-Content scenarios/01_register_customers.txt | java --enable-native-access=ALL-UNNAMED -cp $cp smartfm.ui.Launcher --cli
-```
+`tools/java/smartfm/ui/gui/ScreenshotDriver.java` drives the real Swing GUI through five operational scenario flows and captures window screenshots directly under `screenshots/`:
 
-Scenarios 01–05 must be run in order against the same SQLite database so later operations can use the customers, approved order, shipment, and invoice created earlier.
-
-## GUI screenshot evidence
-
-`tools/java/smartfm/ui/gui/ScreenshotDriver.java` drives the real Swing GUI through the five scenarios and generates images under `screenshots/`. The capture helper renders the SmartFM frame directly, so no desktop/browser content is included.
-
-```text
+```bash
 make screenshots
 ```
 
-The command resets only the local SQLite demonstration database, compiles the application/tool, generates the screenshots, saves the final normalized database state, and exits automatically.
+This command resets the demonstration database, compiles the application and tools, executes the scenario walkthroughs, saves PNG screenshots, and exits cleanly.
