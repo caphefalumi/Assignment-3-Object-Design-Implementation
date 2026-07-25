@@ -1,6 +1,5 @@
 #import "ieee.typ": *
 #import "@preview/wordometer:0.1.5": total-words, word-count
-#import "@preview/fletcher:0.5.8" as fletcher: diagram, edge, node
 
 #show: word-count
 #show: ieee.with(
@@ -37,78 +36,6 @@
   stroke: border-stroke,
   fill: (_, y) => if y == 0 { header-fill } else if calc.odd(y) { white } else { alt-row-fill },
   ..cells,
-)
-
-// Small reusable diagram primitives. A solid arrow is a synchronous message;
-// dashed vertical lines are lifelines rather than object dependencies.
-#let box(pos, label, width: 2.35cm, height: .62cm, fill: rgb("#f0f4f8")) = node(
-  pos,
-  rect(width: width, height: height, radius: 3pt, fill: fill,
-    stroke: .9pt + rgb("#1a3a5c"), inset: 2pt,
-    align(center + horizon, text(size: 6.7pt, weight: "bold", fill: rgb("#1a3a5c"), label))),
-  stroke: none, fill: none,
-)
-#let lifeline(x, end: 5) = edge((x, .32), (x, end), stroke: .55pt + rgb("#6d7f8f"), dash: "dashed")
-#let sequence-order() = diagram(
-  spacing: (2.35cm, .68cm),
-  {
-    box((0, 0), "Customer / GUI or CLI")
-    box((1, 0), "OrderProcessor\n«GRASP Controller>")
-    box((2, 0), "Customer, Consignment, Order")
-    box((3, 0), "DataStore")
-    lifeline(0); lifeline(1); lifeline(2); lifeline(3)
-    edge((0, 1), (1, 1), "->", label: "1: registerCustomer(details)", label-pos: .5)
-    edge((1, 1.55), (2, 1.55), "->", label: "2: create and validate Customer", label-pos: .5)
-    edge((1, 2.1), (3, 2.1), "->", label: "3: stage customer in aggregate", label-pos: .5)
-    edge((0, 2.8), (1, 2.8), "->", label: "4: submitOrder(customer, consignments)", label-pos: .5)
-    edge((1, 3.35), (2, 3.35), "->", label: "5: create Consignment(s) and Order", label-pos: .5)
-    edge((1, 3.9), (3, 3.9), "->", label: "6: stage order; return id", label-pos: .5)
-  }
-)
-#let sequence-dispatch() = diagram(
-  spacing: (2.35cm, .68cm),
-  {
-    box((0, 0), "Dispatcher / GUI or CLI")
-    box((1, 0), "DispatchManager\n«GRASP Controller>")
-    box((2, 0), "Order, Vehicle, Driver, Shipment")
-    box((3, 0), "DataStore / ShipmentTracker")
-    lifeline(0); lifeline(1); lifeline(2); lifeline(3)
-    edge((0, 1), (1, 1), "->", label: "1: assignShipment(orderId, vehicleId, driverId)", label-pos: .5)
-    edge((1, 1.55), (2, 1.55), "->", label: "2: verify approved / available / branch / capacity", label-pos: .5)
-    edge((1, 2.1), (2, 2.1), "->", label: "3: create Shipment; allocate resources", label-pos: .5)
-    edge((1, 2.65), (3, 2.65), "->", label: "4: stage shipment and resource updates", label-pos: .5)
-    edge((1, 3.2), (3, 3.2), "->", label: "5: publish shipmentAssigned(shipment)", label-pos: .5)
-  }
-)
-#let sequence-tracking() = diagram(
-  spacing: (2.35cm, .68cm),
-  {
-    box((0, 0), "Operator / GUI or CLI")
-    box((1, 0), "ShipmentTracker\n«GRASP Controller>")
-    box((2, 0), "ManualTelemetrySource / ShipmentState")
-    box((3, 0), "Shipment / DataStore")
-    lifeline(0); lifeline(1); lifeline(2); lifeline(3)
-    edge((0, 1), (1, 1), "->", label: "1: record milestone(shipmentId, location)", label-pos: .5)
-    edge((1, 1.55), (2, 1.55), "->", label: "2: obtain location through ITelemetrySource", label-pos: .5)
-    edge((1, 2.1), (3, 2.1), "->", label: "3: request next lifecycle transition", label-pos: .5)
-    edge((3, 2.65), (2, 2.65), "->", label: "4: ShipmentState accepts/rejects transition", label-pos: .5)
-    edge((1, 3.2), (3, 3.2), "->", label: "5: stage accepted status and location", label-pos: .5)
-  }
-)
-#let sequence-payment() = diagram(
-  spacing: (2.35cm, .68cm),
-  {
-    box((0, 0), "Customer / GUI or CLI")
-    box((1, 0), "PaymentProcessor\n«GRASP Controller>")
-    box((2, 0), "Invoice, Payment\nPaymentStrategy")
-    box((3, 0), "Gateway / Receipt / DataStore")
-    lifeline(0); lifeline(1); lifeline(2); lifeline(3)
-    edge((0, 1), (1, 1), "->", label: "1: submitPayment(invoiceId, amount, method)", label-pos: .5)
-    edge((1, 1.55), (2, 1.55), "->", label: "2: validate amount against outstanding balance", label-pos: .5)
-    edge((1, 2.1), (2, 2.1), "->", label: "3: create Payment; select strategy", label-pos: .5)
-    edge((1, 2.65), (3, 2.65), "->", label: "4: verify (gateway only for card)", label-pos: .5)
-    edge((1, 3.2), (3, 3.2), "->", label: "5: settle, issue Receipt, stage aggregate", label-pos: .5)
-  }
 )
 
 #outline(title: [Table of Contents])
@@ -162,141 +89,8 @@ The detailed design maintains the Entity-Control-Boundary structure established 
 
 
 
-#let uml-box(pos, name, stereotype: none, attributes: (), methods: (), width: 3.1cm, fill: rgb("#f0f4f8")) = node(
-  pos,
-  rect(
-    width: width, stroke: .65pt + rgb("#1a3a5c"), radius: 2pt, fill: fill, inset: 0pt,
-    stack(
-      dir: ttb,
-      rect(width: 100%, fill: rgb("#1a3a5c"), inset: (x: 2pt, y: 2.2pt), radius: (top: 2pt))[
-        #align(center)[
-          #if stereotype != none [#text(size: 4.5pt, fill: white, font: "Consolas")[«#stereotype»\ ]]
-          #text(size: 5.5pt, weight: "bold", fill: white)[#name]
-        ]
-      ],
-      if attributes.len() > 0 [
-        #rect(width: 100%, stroke: (bottom: .35pt + rgb("#1a3a5c")), inset: (x: 2.5pt, y: 1.5pt))[
-          #align(left)[
-            #set text(size: 4.2pt, font: "Consolas")
-            #for attr in attributes [ #attr \ ]
-          ]
-        ]
-      ],
-      if methods.len() > 0 [
-        #rect(width: 100%, stroke: none, inset: (x: 2.5pt, y: 1.5pt))[
-          #align(left)[
-            #set text(size: 4.2pt, font: "Consolas")
-            #for m in methods [ #m \ ]
-          ]
-        ]
-      ]
-    )
-  ),
-  stroke: none, fill: none
-)
-
-#let final-class-model() = diagram(
-  spacing: (2.3cm, 1.1cm),
-  {
-    // Row 0: Controllers & Infrastructure
-    uml-box((0, 0), "OrderProcessor", stereotype: "controller",
-      attributes: ("- store: DataStore", "- listeners: List"),
-      methods: ("+ registerCustomer(...)", "+ submitOrder(...)", "+ approveOrder(id)"))
-    uml-box((1, 0), "DispatchManager", stereotype: "controller",
-      attributes: ("- store: DataStore"),
-      methods: ("+ assignShipment(...)", "+ onOrderApproved(...)"))
-    uml-box((2, 0), "ShipmentTracker", stereotype: "controller",
-      attributes: ("- store: DataStore", "- telemetry: ITelemetrySource"),
-      methods: ("+ recordMilestone(...)", "+ recordDelivery(...)"))
-    uml-box((3, 0), "PaymentProcessor", stereotype: "controller",
-      attributes: ("- store: DataStore", "- gateway: IPaymentGateway"),
-      methods: ("+ submitPayment(...)"))
-    uml-box((4, 0), "DataStore", stereotype: "infrastructure", fill: rgb("#fff4db"),
-      attributes: ("- conn: Connection", "- version: int = 3"),
-      methods: ("+ load()", "+ save()", "+ customers()", "+ orders()"))
-
-    // Row 1: Core Domain Entities
-    uml-box((0, 1), "Customer",
-      attributes: ("- id: String", "- fullName: String", "- phone: String"),
-      methods: ("+ recordOrder(id)"))
-    uml-box((1, 1), "Order",
-      attributes: ("- id: String", "- state: OrderState", "- quotedAmount: double"),
-      methods: ("+ approve()", "+ cancel()", "+ addConsignment(...)"))
-    uml-box((2, 1), "ServiceOffering",
-      attributes: ("- id: String", "- name: String", "- tariffId: String"),
-      methods: ("+ isAvailableAt(branchId)"))
-    uml-box((3, 1), "Branch",
-      attributes: ("- id: String", "- name: String", "- city: String"),
-      methods: ("+ addVehicle(...)", "+ addDriver(...)"))
-    uml-box((4, 1), "Invoice",
-      attributes: ("- id: String", "- amount: double", "- state: InvoiceState"),
-      methods: ("+ recordPayment(...)", "+ isSettled()"))
-
-    // Row 2: Secondary Domain & Resources
-    uml-box((0, 2), "Consignment",
-      attributes: ("- id: String", "- weightKg: double", "- desc: String"),
-      methods: ("+ getWeightKg()"))
-    uml-box((1, 2), "Shipment",
-      attributes: ("- id: String", "- state: ShipmentState", "- location: String"),
-      methods: ("+ pickup()", "+ deliver()", "+ updateLocation(...)"))
-    uml-box((2, 2), "Vehicle",
-      attributes: ("- id: String", "- capacityKg: double", "- status: String"),
-      methods: ("+ assignToShipment()"))
-    uml-box((3, 2), "Driver",
-      attributes: ("- licenseNo: String", "- dutyState: DutyState"),
-      methods: ("+ setDutyState(...)"))
-    uml-box((4, 2), "Payment",
-      attributes: ("- id: String", "- amount: double", "- state: PaymentState"),
-      methods: ("+ settle()"))
-
-    // Row 3: Support, Abstractions & Governance
-    uml-box((0, 3), "Person / StaffMember", stereotype: "abstract",
-      attributes: ("- id: String", "- fullName: String", "- role: StaffRole"),
-      methods: ("+ getRole()"))
-    uml-box((1, 3), "Receipt",
-      attributes: ("- id: String", "- paymentId: String", "- issuedAt: DateTime"),
-      methods: ("+ getFormattedReceipt()"))
-    uml-box((2, 3), "OrderState / ShipmentState", stereotype: "abstract",
-      attributes: ("- stateName: String"),
-      methods: ("+ approve()", "+ pickup()", "+ deliver()"))
-    uml-box((3, 3), "PricingTariff / IPricingStrategy", stereotype: "strategy",
-      attributes: ("- baseRate: double", "- kmRate: double"),
-      methods: ("+ calculateQuote(...)"))
-    uml-box((4, 3), "ITelemetrySource / Adapter", stereotype: "adapter",
-      attributes: ("- locations: Map"),
-      methods: ("+ recordMilestone()", "+ getLatestCoordinates()"))
-
-    // Connections with labels and multiplicities
-    edge((0, 0), (0, 1), "->", label: "1", label-pos: .2, stroke: .7pt + rgb("#1a3a5c"))
-    edge((0, 0), (1, 1), "->", label: "1", label-pos: .2, stroke: .7pt + rgb("#1a3a5c"))
-    edge((1, 0), (1, 2), "->", label: "1", label-pos: .2, stroke: .7pt + rgb("#1a3a5c"))
-    edge((2, 0), (1, 2), "->", label: "1", label-pos: .2, stroke: .7pt + rgb("#1a3a5c"))
-    edge((3, 0), (4, 2), "->", label: "1", label-pos: .2, stroke: .7pt + rgb("#1a3a5c"))
-    edge((0, 1), (1, 1), "->", label: "1..*", label-pos: .8, stroke: .65pt + rgb("#1a3a5c"))
-    edge((1, 1), (0, 2), "->", label: "1..*", label-pos: .8, stroke: .65pt + rgb("#1a3a5c"))
-    edge((1, 1), (2, 1), "->", label: "1", label-pos: .8, stroke: .65pt + rgb("#1a3a5c"))
-    edge((1, 1), (1, 2), "->", label: "0..1", label-pos: .8, stroke: .65pt + rgb("#1a3a5c"))
-    edge((3, 1), (2, 2), "->", label: "1..*", label-pos: .8, stroke: .65pt + rgb("#1a3a5c"))
-    edge((3, 1), (3, 2), "->", label: "1..*", label-pos: .8, stroke: .65pt + rgb("#1a3a5c"))
-    edge((1, 2), (2, 2), "->", label: "1", label-pos: .8, stroke: .65pt + rgb("#1a3a5c"))
-    edge((1, 2), (3, 2), "->", label: "1", label-pos: .8, stroke: .65pt + rgb("#1a3a5c"))
-    edge((4, 1), (4, 2), "->", label: "1..*", label-pos: .8, stroke: .65pt + rgb("#1a3a5c"))
-    edge((4, 2), (1, 3), "->", label: "1", label-pos: .8, stroke: .65pt + rgb("#1a3a5c"))
-    edge((1, 1), (2, 3), "->", stroke: .55pt + rgb("#6d7f8f"), dash: "dashed")
-    edge((1, 2), (2, 3), "->", stroke: .55pt + rgb("#6d7f8f"), dash: "dashed")
-    edge((4, 1), (2, 3), "->", stroke: .55pt + rgb("#6d7f8f"), dash: "dashed")
-    edge((4, 2), (2, 3), "->", stroke: .55pt + rgb("#6d7f8f"), dash: "dashed")
-    edge((2, 1), (3, 3), "->", stroke: .55pt + rgb("#6d7f8f"), dash: "dashed")
-    edge((3, 0), (3, 3), "->", stroke: .55pt + rgb("#6d7f8f"), dash: "dashed")
-    edge((2, 0), (4, 3), "->", stroke: .55pt + rgb("#6d7f8f"), dash: "dashed")
-    edge((0, 0), (4, 0), "->", stroke: .55pt + rgb("#c0392b"), dash: "dotted")
-    edge((1, 0), (4, 0), "->", stroke: .55pt + rgb("#c0392b"), dash: "dotted")
-    edge((2, 0), (4, 0), "->", stroke: .55pt + rgb("#c0392b"), dash: "dotted")
-    edge((3, 0), (4, 0), "->", stroke: .55pt + rgb("#c0392b"), dash: "dotted")
-  }
-)
 #figure(
-  align(center, scale(73%, reflow: true, final-class-model())),
+  image("images/final_class_model.svg", width: 100%),
   caption: [Final implementation class diagram. Each box names an implemented core class or a closely coupled State, Strategy, or Adapter family; solid lines show aggregate/domain relationships, dashed lines show polymorphic dependencies, and red dotted lines show controller use of the persistence boundary. `Report` and the authentication/session service are deliberately excluded because they are outside the selected four-area scope. Shared utility classes (`Money`, `Validators`, `IdGenerator`) and custom exceptions in `smartfm.common` are omitted from the diagram to prevent clutter, but act as ubiquitous helpers across all layers.],
 ) <fig-final-class-model>
 
@@ -359,22 +153,22 @@ When saving, `DataStore` atomically updates the normalized aggregate tables. Whe
 The four sequence diagrams below illustrate the core implemented use cases. Each diagram shows the exact controller methods invoked by the GUI and CLI boundaries. Section 4.1 maps these interactions directly to source code, and Section 4.3 provides execution evidence for each flow.
 
 #figure(
-  align(center, sequence-order()),
+  image("images/seq_order.svg", width: 100%),
   caption: [UC-01 / UC-02: customer registration and order submission. The boundary sends each system event to `OrderProcessor`, which creates and validates domain objects and persists changes to SQLite through `DataStore`.],
 ) <fig-seq-order>
 
 #figure(
-  align(center, sequence-dispatch()),
+  image("images/seq_dispatch.svg", width: 100%),
   caption: [UC-03: dispatcher assigns a vehicle and driver to an approved order. `DispatchManager` checks the dispatch constraints, persists the shipment and resource updates to SQLite, and notifies `ShipmentTracker` via the listener interface.],
 ) <fig-seq-dispatch>
 
 #figure(
-  align(center, sequence-tracking()),
+  image("images/seq_tracking.svg", width: 100%),
   caption: [UC-04: tracking a shipment milestone. The adapter normalises location input, while `ShipmentState` decides whether the requested transition is legal.],
 ) <fig-seq-tracking>
 
 #figure(
-  align(center, sequence-payment()),
+  image("images/seq_payment.svg", width: 100%),
   caption: [UC-05: billing and payment. `PaymentProcessor` validates the amount before strategy/gateway processing; a receipt is issued only after settlement.],
 ) <fig-seq-payment>
 
@@ -502,23 +296,23 @@ SmartFM is implemented in Java 26 using a standard Maven project layout. The des
 #figure(
   styled-table((2.0fr, 1.5fr, 4.5fr), (
     th[SRS Task], th[Status], th[Notes],
-    [T1: Register Customer], [✅ Full], [Implemented via `OrderProcessor.registerCustomer()` with field-level validation.],
-    [T2: Browse Services], [❌ Not implemented], [Service catalogue exists but no browse/search UI is provided.],
-    [T3: Place Order], [✅ Full], [Implemented via `OrderProcessor.submitOrder()` with consignment creation and quote calculation.],
-    [T4: Process/Approve Order], [✅ Full], [Dispatcher approve/reject with reason; `OrderState` pattern guards transitions.],
-    [T5: Assign Resources], [✅ Full], [Implemented via `DispatchManager.assignShipment()` with capacity and availability checks.],
-    [T6: Track Shipment], [✅ Full], [Implemented via `ShipmentTracker.confirmPickup/InTransit/Delivery()` with State pattern guards.],
-    [T7: Record Milestones], [✅ Full], [Covered by T6; manual location input through `ManualTelemetrySource` adapter.],
-    [T8: Process Payment], [✅ Full], [Implemented via `PaymentProcessor.submitPayment()` with cash/gateway strategies.],
-    [T9: Generate Receipt], [✅ Full], [Immutable `Receipt` created automatically upon payment settlement.],
-    [T10: Manage Vehicles], [❌ Not implemented], [Vehicle records are seeded during bootstrap but no CRUD UI is provided.],
-    [T11: Manage Drivers], [❌ Not implemented], [Driver records are seeded during bootstrap but no CRUD UI is provided.],
-    [T12: Generate Reports], [❌ Not implemented], [`Report` class is designed (Assignment 2) but explicitly deferred as out of scope.],
-    [T13: Update Customer], [❌ Not implemented], [Customer status can be changed programmatically but no update UI is provided.],
-    [T14: Cancel/Modify Order], [⚠️ Partial], [Cancellation is implemented; modification of submitted order fields is not supported.],
-    [T15: Manage Config], [❌ Not implemented], [`SystemConfiguration` is loaded at startup but no admin UI for changing values is provided.],
+    [T1: Register Customer], [Full], [Implemented via `OrderProcessor.registerCustomer()` with field-level validation.],
+    [T2: Browse Services], [Not implemented], [Service catalogue exists but no browse/search UI is provided.],
+    [T3: Place Order], [Full], [Implemented via `OrderProcessor.submitOrder()` with consignment creation and quote calculation.],
+    [T4: Process/Approve Order], [Full], [Dispatcher approve/reject with reason; `OrderState` pattern guards transitions.],
+    [T5: Assign Resources], [Full], [Implemented via `DispatchManager.assignShipment()` with capacity and availability checks.],
+    [T6: Track Shipment], [Full], [Implemented via `ShipmentTracker.confirmPickup/InTransit/Delivery()` with State pattern guards.],
+    [T7: Record Milestones], [Full], [Covered by T6; manual location input through `ManualTelemetrySource` adapter.],
+    [T8: Process Payment], [Full], [Implemented via `PaymentProcessor.submitPayment()` with cash/gateway strategies.],
+    [T9: Generate Receipt], [Full], [Immutable `Receipt` created automatically upon payment settlement.],
+    [T10: Manage Vehicles], [Not implemented], [Vehicle records are seeded during bootstrap but no CRUD UI is provided.],
+    [T11: Manage Drivers], [Not implemented], [Driver records are seeded during bootstrap but no CRUD UI is provided.],
+    [T12: Generate Reports], [Not implemented], [`Report` class is designed (Assignment 2) but explicitly deferred as out of scope.],
+    [T13: Update Customer], [Not implemented], [Customer status can be changed programmatically but no update UI is provided.],
+    [T14: Cancel/Modify Order], [Partial], [Cancellation is implemented; modification of submitted order fields is not supported.],
+    [T15: Manage Config], [Not implemented], [`SystemConfiguration` is loaded at startup but no admin UI for changing values is provided.],
   )),
-  caption: [SRS task coverage: eight tasks fully implemented (✅), one partially supported (⚠️), six deferred or out of scope (❌).],
+  caption: [SRS task coverage: eight tasks fully implemented, one partially supported, and six deferred or out of scope.],
 ) <tbl-task-coverage>
 
 #figure(
@@ -570,42 +364,42 @@ Data is stored locally in the embedded SQLite database `data/smartfm.db`. Delete
 
 #heading(level: 3, numbering: none)[GUI execution screenshots]
 
-The screenshots below were generated by running `tools/java/smartfm/ui/gui/ScreenshotDriver.java`. The driver automates user actions and captures the application window directly. The full set of 26 screenshots is stored in `implementation/screenshots/`. The selection below illustrates the core system features.
+The screenshots below were generated by running `tools/java/smartfm/ui/gui/ScreenshotDriver.java`. The driver automates user actions and captures the application window directly. The full set of 26 screenshots is stored in `images/`. The selection below illustrates the core system features.
 
 #figure(
   grid(columns: (1fr, 1fr), gutter: 7pt,
-    image("implementation/screenshots/00_home_screen_empty.png", width: 100%),
-    image("implementation/screenshots/01b_customer_registration_validation_errors.png", width: 100%),
+    image("images/00_home_screen_empty.png", width: 100%),
+    image("images/01b_customer_registration_validation_errors.png", width: 100%),
   ),
   caption: [GUI evidence: empty customer-registration home screen (left) and rejected invalid phone/email input with inline messages (right).],
 ) <fig-gui-empty-validation>
 
 #figure(
   grid(columns: (1fr, 1fr), gutter: 7pt,
-    image("implementation/screenshots/01c_customer_registration_success.png", width: 100%),
-    image("implementation/screenshots/02f_order_management_order_cancelled.png", width: 100%),
+    image("images/01c_customer_registration_success.png", width: 100%),
+    image("images/02f_order_management_order_cancelled.png", width: 100%),
   ),
   caption: [GUI evidence: accepted customer input and successful account creation (left); a customer change of mind cancels an order without deleting unrelated data (right).],
 ) <fig-gui-input-change>
 
 #figure(
   grid(columns: (1fr, 1fr), gutter: 7pt,
-    image("implementation/screenshots/03d_fleet_dispatch_shipment_created.png", width: 100%),
-    image("implementation/screenshots/04b_shipment_tracking_invalid_transition_rejected.png", width: 100%),
+    image("images/03d_fleet_dispatch_shipment_created.png", width: 100%),
+    image("images/04b_shipment_tracking_invalid_transition_rejected.png", width: 100%),
   ),
   caption: [GUI evidence: successful vehicle/driver assignment creates a shipment (left); an illegal delivery-before-pickup transition is rejected by the State pattern (right).],
 ) <fig-gui-dispatch-tracking-validation>
 
 #figure(
   grid(columns: (1fr, 1fr), gutter: 7pt,
-    image("implementation/screenshots/04e_shipment_tracking_delivered.png", width: 100%),
-    image("implementation/screenshots/05d_billing_payment_settled.png", width: 100%),
+    image("images/04e_shipment_tracking_delivered.png", width: 100%),
+    image("images/05d_billing_payment_settled.png", width: 100%),
   ),
   caption: [GUI evidence: successful delivery transition (left); simulated payment completion, receipt issuance, and a paid invoice (right). No real banking transaction is performed.],
 ) <fig-gui-completion>
 
 #figure(
-  image("implementation/screenshots/06_final_state_before_exit.png", width: 75%),
+  image("images/06_final_state_before_exit.png", width: 75%),
   caption: [Final application state immediately before normal exit. Closing the window invokes the registered handler, commits the normalized `DataStore` rows to SQLite, and exits; the recorded CLI scenarios independently verify that the database is restored in a later process.],
 ) <fig-gui-exit>
 

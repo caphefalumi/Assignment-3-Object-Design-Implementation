@@ -1,0 +1,215 @@
+@startuml FinalClassModel
+skinparam classAttributeIconSize 0
+skinparam backgroundColor #FAFCFF
+skinparam style strictuml
+skinparam Shadowing false
+skinparam DefaultFontName 'Segoe UI', Arial, sans-serif
+skinparam DefaultFontSize 12
+
+' Class styling definitions
+skinparam class {
+    BackgroundColor #F8FAFC
+    BorderColor #94A3B8
+    HeaderBackgroundColor #E2E8F0
+    FontColor #0F172A
+}
+
+class "OrderProcessor" as OrderProcessor <<controller>> #f0f7ff {
+    - store: DataStore
+    - listeners: List
+    + registerCustomer(...)
+    + submitOrder(...)
+    + approveOrder(id)
+}
+
+class "DispatchManager" as DispatchManager <<controller>> #f0f7ff {
+    - store: DataStore
+    + assignShipment(...)
+    + onOrderApproved(...)
+}
+
+class "ShipmentTracker" as ShipmentTracker <<controller>> #f0f7ff {
+    - store: DataStore
+    - telemetry: ITelemetrySource
+    + recordMilestone(...)
+    + recordDelivery(...)
+}
+
+class "PaymentProcessor" as PaymentProcessor <<controller>> #f0f7ff {
+    - store: DataStore
+    - gateway: IPaymentGateway
+    + submitPayment(...)
+}
+
+class "DataStore" as DataStore <<infrastructure>> #fffbeb {
+    - conn: Connection
+    - version: int = 3
+    + load()
+    + save()
+    + customers()
+    + orders()
+}
+
+class "Customer" as Customer #f0fdf4 {
+    - id: String
+    - fullName: String
+    - phone: String
+    + recordOrder(id)
+}
+
+class "Order" as Order #f0fdf4 {
+    - id: String
+    - state: OrderState
+    - quotedAmount: double
+    + approve()
+    + cancel()
+    + addConsignment(...)
+}
+
+class "ServiceOffering" as ServiceOffering #f0fdf4 {
+    - id: String
+    - name: String
+    - tariffId: String
+    + isAvailableAt(branchId)
+}
+
+class "Branch" as Branch #f0fdf4 {
+    - id: String
+    - name: String
+    - city: String
+    + addVehicle(...)
+    + addDriver(...)
+}
+
+class "Invoice" as Invoice #f0fdf4 {
+    - id: String
+    - amount: double
+    - state: InvoiceState
+    + recordPayment(...)
+    + isSettled()
+}
+
+class "Consignment" as Consignment #f8fafc {
+    - id: String
+    - weightKg: double
+    - desc: String
+    + getWeightKg()
+}
+
+class "Shipment" as Shipment #f8fafc {
+    - id: String
+    - state: ShipmentState
+    - location: String
+    + pickup()
+    + deliver()
+    + updateLocation(...)
+}
+
+class "Vehicle" as Vehicle #f8fafc {
+    - id: String
+    - capacityKg: double
+    - status: String
+    + assignToShipment()
+}
+
+class "Driver" as Driver #f8fafc {
+    - licenseNo: String
+    - dutyState: DutyState
+    + setDutyState(...)
+}
+
+class "Payment" as Payment #f8fafc {
+    - id: String
+    - amount: double
+    - state: PaymentState
+    + settle()
+}
+
+class "Person / StaffMember" as Person <<abstract>> #faf5ff {
+    - id: String
+    - fullName: String
+    - role: StaffRole
+    + getRole()
+}
+
+class "Receipt" as Receipt #f8fafc {
+    - id: String
+    - paymentId: String
+    - issuedAt: DateTime
+    + getFormattedReceipt()
+}
+
+class "OrderState / ShipmentState" as State <<abstract>> #faf5ff {
+    - stateName: String
+    + approve()
+    + pickup()
+    + deliver()
+}
+
+class "PricingTariff / IPricingStrategy" as Pricing <<strategy>> #faf5ff {
+    - baseRate: double
+    - kmRate: double
+    + calculateQuote(...)
+}
+
+class "ITelemetrySource / Adapter" as Telemetry <<adapter>> #faf5ff {
+    - locations: Map
+    + recordMilestone()
+    + getLatestCoordinates()
+}
+
+' Grid Alignment
+OrderProcessor -[hidden]r-> DispatchManager
+DispatchManager -[hidden]r-> ShipmentTracker
+ShipmentTracker -[hidden]r-> PaymentProcessor
+PaymentProcessor -[hidden]r-> DataStore
+
+Customer -[hidden]r-> Order
+Order -[hidden]r-> ServiceOffering
+ServiceOffering -[hidden]r-> Branch
+Branch -[hidden]r-> Invoice
+
+Consignment -[hidden]r-> Shipment
+Shipment -[hidden]r-> Vehicle
+Vehicle -[hidden]r-> Driver
+Driver -[hidden]r-> Payment
+
+Person -[hidden]r-> Receipt
+Receipt -[hidden]r-> State
+State -[hidden]r-> Pricing
+Pricing -[hidden]r-> Telemetry
+
+' Solid associations with multiplicities
+OrderProcessor --> "1" Customer
+OrderProcessor --> "1" Order
+DispatchManager --> "1" Shipment
+ShipmentTracker --> "1" Shipment
+PaymentProcessor --> "1" Payment
+
+Customer "1" --> "1..*" Order
+Order "1" --> "1..*" Consignment
+Order "1" --> "1" ServiceOffering
+Order "1" --> "0..1" Shipment
+Branch "1" --> "1..*" Vehicle
+Branch "1" --> "1..*" Driver
+Shipment "1" --> "1" Vehicle
+Shipment "1" --> "1" Driver
+Invoice "1" --> "1..*" Payment
+Payment "1" --> "1" Receipt
+
+' Polymorphic / Abstract dependencies
+Order ..> State
+Shipment ..> State
+Invoice ..> State
+Payment ..> State
+ServiceOffering ..> Pricing
+PaymentProcessor ..> Pricing
+ShipmentTracker ..> Telemetry
+
+' Persistence boundary calls (Red Dotted)
+OrderProcessor .[#E53E3E].> DataStore
+DispatchManager .[#E53E3E].> DataStore
+ShipmentTracker .[#E53E3E].> DataStore
+PaymentProcessor .[#E53E3E].> DataStore
+
+@enduml

@@ -1,0 +1,48 @@
+{
+  "title": "UC-05: Billing and Payment",
+  "participants": [
+    {
+      "id": "p0",
+      "label": "Customer / GUI or CLI"
+    },
+    {
+      "id": "p1",
+      "label": "PaymentProcessor\n\u00abGRASP Controller\u00bb"
+    },
+    {
+      "id": "p2",
+      "label": "Invoice, Payment\nPaymentStrategy"
+    },
+    {
+      "id": "p3",
+      "label": "Gateway / Receipt / DataStore"
+    }
+  ],
+  "messages": [
+    {
+      "from": "p0",
+      "to": "p1",
+      "label": "1: submitPayment(invoiceId, amount, method)"
+    },
+    {
+      "from": "p1",
+      "to": "p2",
+      "label": "2: validate amount against outstanding balance"
+    },
+    {
+      "from": "p1",
+      "to": "p2",
+      "label": "3: create Payment; select strategy"
+    },
+    {
+      "from": "p1",
+      "to": "p3",
+      "label": "4: verify (gateway only for card)"
+    },
+    {
+      "from": "p1",
+      "to": "p3",
+      "label": "5: settle, issue Receipt, stage aggregate"
+    }
+  ]
+}
