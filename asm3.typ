@@ -752,7 +752,7 @@ The complete Assignment 2 Object Design submission is attached below so this rep
 #counter("appendix").update(1)
 #colbreak()
 
-#for page-num in range(1, 48) {
+#for page-num in range(1, 32) {
   place(top + left, dx: -50pt, dy: -55pt, image("asm2.pdf", page: page-num, width: 21.59cm, height: 27.94cm))
   colbreak()
 }
