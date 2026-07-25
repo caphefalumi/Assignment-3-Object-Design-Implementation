@@ -370,6 +370,11 @@ We used the State pattern to enforce lifecycle rules so that illegal transitions
 When saving, `DataStore` atomically updates the normalized aggregate tables. When loading, it reconstructs domain objects, relationships, and state hierarchies in dependency order. The system enforces schema version 3 and rejects incompatible database versions, requiring a database reset if an older schema is detected.
 
 #figure(
+  image("images/db.png", width: 95%),
+  caption: [Entity-Relationship diagram of the normalized SQLite database schema managed by `DataStore`.],
+) <fig-db-schema>
+
+#figure(
   styled-table((2.25fr, 3.4fr, 3.25fr), (
     th[SQLite table group], th[Representative columns / keys], th[Responsibility],
     [`schema_metadata`], [`id`, `schema_version`], [Stores current schema version (v3) to prevent incompatible loads.],
@@ -646,6 +651,11 @@ make jar          # Builds target/smartfm.jar
 
 
 Data is stored locally in the embedded SQLite database `data/smartfm.db`. Delete this database and any `-wal`/`-shm` sidecar files (or run `make reset`) to return to the seeded state: two branches, three vehicles, three drivers, and three service offerings. No external database server, credentials, or network service is required.
+
+#figure(
+  image("images/compilation.png", width: 95%),
+  caption: [Compilation and test execution evidence: Maven build executing all 76 automated JUnit 5 tests successfully and packaging the self-contained executable JAR.],
+) <fig-compilation>
 
 === GUI execution screenshots
 
