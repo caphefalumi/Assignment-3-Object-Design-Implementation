@@ -92,190 +92,241 @@ The detailed design maintains the Entity-Control-Boundary structure established 
 
 #figure(
   mermaid("
-classDiagram
-    direction TB
+  classDiagram
+      direction TB
+  
+      %% ============ Interfaces ============
+      class IPricingStrategy {
+          <<interface>>
+          +calculateQuote(distanceKm, weightKg) double
+      }
+      class ITelemetrySource {
+          <<interface>>
+          +getLatestCoordinates(shipmentId) Coordinates
+      }
+      class IPaymentGateway {
+          <<interface>>
+          +charge(amount, method) TransactionResult
+      }
+  
+      %% ============ Enumerations ============
+      class OrderState {
+          <<enumeration>>
+          PENDING
+          APPROVED
+          CANCELLED
+      }
+      class ShipmentState {
+          <<enumeration>>
+          SCHEDULED
+          IN_TRANSIT
+          DELIVERED
+      }
+      class InvoiceState {
+          <<enumeration>>
+          UNPAID
+          PARTIALLY_PAID
+          SETTLED
+      }
+      class PaymentState {
+          <<enumeration>>
+          PENDING
+          CONFIRMED
+          FAILED
+      }
+      class DutyState {
+          <<enumeration>>
+          OFF_DUTY
+          ON_DUTY
+          ON_BREAK
+      }
+      class StaffRole {
+          <<enumeration>>
+          DISPATCHER
+          DRIVER
+          ADMIN
+      }
+  
+      %% ============ Controllers ============
+      class OrderProcessor {
+          <<control>>
+          -DataStore store
+          +registerCustomer(details) Customer
+          +submitOrder(order) Order
+          +approveOrder(orderId) void
+      }
+      class DispatchManager {
+          <<control>>
+          -DataStore store
+          +assignShipment(orderId) Shipment
+          +onOrderApproved(order) void
+      }
+      class ShipmentTracker {
+          <<control>>
+          -DataStore store
+          -ITelemetrySource telemetry
+          +recordMilestone(shipmentId, location) void
+          +recordDelivery(shipmentId) void
+      }
+      class PaymentProcessor {
+          <<control>>
+          -DataStore store
+          -IPaymentGateway gateway
+          +submitPayment(invoiceId, amount) Payment
+      }
+  
+      %% ============ Infrastructure ============
+      class DataStore {
+          <<repository>>
+          -Connection conn
+          +load() void
+          +save() void
+          +customers() List~Customer~
+          +orders() List~Order~
+      }
+      class GPSTelemetryAdapter {
+          -Map~String,Coordinates~ locations
+          +getLatestCoordinates(shipmentId) Coordinates
+      }
+      class PaymentGatewayAdapter {
+          +charge(amount, method) TransactionResult
+      }
+  
+      %% ============ People ============
+      class Person {
+          <<abstract>>
+          #String id
+          #String fullName
+      }
+      class Customer {
+          -String phone
+          +recordOrder(orderId) void
+      }
+      class StaffMember {
+          <<abstract>>
+          -StaffRole role
+          +getRole() StaffRole
+      }
+      class Driver {
+          -String licenseNo
+          -DutyState dutyState
+          +setDutyState(state) void
+      }
+  
+      %% ============ Core Domain ============
+      class Order {
+          -String id
+          -OrderState state
+          -double quotedAmount
+          +approve() void
+          +cancel() void
+          +addConsignment(c) void
+      }
+      class Consignment {
+          -String id
+          -double weightKg
+          -String desc
+          +getWeightKg() double
+      }
+      class ServiceOffering {
+          -String id
+          -String name
+          +isAvailableAt(branchId) boolean
+      }
+      class Tariff {
+          -double baseRate
+          -double kmRate
+          +calculateQuote(distanceKm, weightKg) double
+      }
+      class Branch {
+          -String id
+          -String name
+          -String city
+          +addVehicle(v) void
+          +addDriver(d) void
+      }
+      class Vehicle {
+          -String id
+          -double capacityKg
+          -String status
+          +assignToShipment(s) void
+      }
+      class Shipment {
+          -String id
+          -ShipmentState state
+          -String location
+          +pickup() void
+          +deliver() void
+          +updateLocation(loc) void
+      }
+      class Invoice {
+          -String id
+          -double amount
+          -InvoiceState state
+          +recordPayment(p) void
+          +isSettled() boolean
+      }
+      class Payment {
+          -String id
+          -double amount
+          -PaymentState state
+          +settle() void
+      }
+      class Receipt {
+          -String id
+          -DateTime issuedAt
+          +getFormattedReceipt() String
+      }
+  
+      %% ============ Generalization ============
+      Person <|-- Customer
+      Person <|-- StaffMember
+      StaffMember <|-- Driver
+  
+      %% ============ Realization ============
+      IPricingStrategy <|.. Tariff
+      ITelemetrySource <|.. GPSTelemetryAdapter
+      IPaymentGateway <|.. PaymentGatewayAdapter
+  
+      %% ============ Controller dependencies ============
+      OrderProcessor ..> Customer
+      OrderProcessor ..> Order
+      OrderProcessor ..> Invoice
+      OrderProcessor ..> DataStore
+      DispatchManager ..> Branch
+      DispatchManager ..> Shipment
+      DispatchManager ..> DataStore
+      ShipmentTracker ..> Shipment
+      ShipmentTracker ..> DataStore
+      ShipmentTracker --> ITelemetrySource
+      PaymentProcessor ..> Payment
+      PaymentProcessor ..> DataStore
+      PaymentProcessor --> IPaymentGateway
+      PaymentProcessor ..> Tariff
+  
+      %% ============ Domain associations ============
+      Customer \"1\" --> \"1..*\" Order
+      Order \"1\" *-- \"1..*\" Consignment
+      Order \"1\" --> \"1\" ServiceOffering
+      Order \"1\" --> \"0..1\" Shipment
+      Order \"1\" --> \"1\" Invoice
+      ServiceOffering \"1\" --> \"1\" Tariff
 
-    %% Tier 1: Controllers & Infrastructure
-    class OrderProcessor {
-        <<controller>>
-        -DataStore store
-        -List listeners
-        +registerCustomer()
-        +submitOrder()
-        +approveOrder(id)
-    }
-    class DispatchManager {
-        <<controller>>
-        -DataStore store
-        +assignShipment()
-        +onOrderApproved()
-    }
-    class ShipmentTracker {
-        <<controller>>
-        -DataStore store
-        -ITelemetrySource telemetry
-        +recordMilestone()
-        +recordDelivery()
-    }
-    class PaymentProcessor {
-        <<controller>>
-        -DataStore store
-        -IPaymentGateway gateway
-        +submitPayment()
-    }
-    class DataStore {
-        <<infrastructure>>
-        -Connection conn
-        -int version
-        +load()
-        +save()
-        +customers()
-        +orders()
-    }
+      Branch \"1\" o-- \"1..*\" Vehicle
+      Branch \"1\" o-- \"1..*\" Driver
+      Shipment \"1\" --> \"1\" Vehicle
+      Shipment \"1\" --> \"1\" Driver
 
-    %% Tier 2: Core Domain Entities
-    class Customer {
-        -String id
-        -String fullName
-        -String phone
-        +recordOrder(id)
-    }
-    class Order {
-        -String id
-        -OrderState state
-        -double quotedAmount
-        +approve()
-        +cancel()
-        +addConsignment()
-    }
-    class ServiceOffering {
-        -String id
-        -String name
-        -String tariffId
-        +isAvailableAt(branchId)
-    }
-    class Branch {
-        -String id
-        -String name
-        -String city
-        +addVehicle()
-        +addDriver()
-    }
-    class Invoice {
-        -String id
-        -double amount
-        -InvoiceState state
-        +recordPayment()
-        +isSettled()
-    }
-
-    %% Tier 3: Secondary Entities
-    class Consignment {
-        -String id
-        -double weightKg
-        -String desc
-        +getWeightKg()
-    }
-    class Shipment {
-        -String id
-        -ShipmentState state
-        -String location
-        +pickup()
-        +deliver()
-        +updateLocation()
-    }
-    class Vehicle {
-        -String id
-        -double capacityKg
-        -String status
-        +assignToShipment()
-    }
-    class Driver {
-        -String licenseNo
-        -DutyState dutyState
-        +setDutyState()
-    }
-    class Payment {
-        -String id
-        -double amount
-        -PaymentState state
-        +settle()
-    }
-
-    %% Tier 4: Governance, State & Adapters
-    class Receipt {
-        -String id
-        -String paymentId
-        -DateTime issuedAt
-        +getFormattedReceipt()
-    }
-    class Person_StaffMember {
-        <<abstract>>
-        -String id
-        -String fullName
-        -StaffRole role
-        +getRole()
-    }
-    class OrderState_ShipmentState {
-        <<abstract>>
-        -String stateName
-        +approve()
-        +pickup()
-        +deliver()
-    }
-    class PricingTariff_IPricingStrategy {
-        <<strategy>>
-        -double baseRate
-        -double kmRate
-        +calculateQuote()
-    }
-    class ITelemetrySource_Adapter {
-        <<adapter>>
-        -Map locations
-        +recordMilestone()
-        +getLatestCoordinates()
-    }
-
-    %% Controller associations
-    OrderProcessor ..> Customer
-    OrderProcessor ..> Order
-    OrderProcessor ..> Invoice
-    DispatchManager ..> Branch
-    DispatchManager ..> Shipment
-    ShipmentTracker ..> Shipment
-    PaymentProcessor ..> Payment
-
-    %% Domain relationships
-    Customer \"1\" --> \"1..*\" Order
-    Order \"1\" --> \"1..*\" Consignment
-    Order \"1\" --> \"1\" ServiceOffering
-    Order \"1\" --> \"0..1\" Shipment
-    Order \"1\" --> \"1\" Invoice
-
-    Branch \"1\" --> \"1..*\" Vehicle
-    Branch \"1\" --> \"1..*\" Driver
-    Shipment \"1\" --> \"1\" Vehicle
-    Shipment \"1\" --> \"1\" Driver
-
-    Invoice \"1\" --> \"1..*\" Payment
-    Payment \"1\" --> \"1\" Receipt
-
-    %% Governance & State
-    Customer ..> Person_StaffMember
-    Driver ..> Person_StaffMember
-    Order ..> OrderState_ShipmentState
-    Shipment ..> OrderState_ShipmentState
-    Invoice ..> OrderState_ShipmentState
-    Payment ..> OrderState_ShipmentState
-    ServiceOffering ..> PricingTariff_IPricingStrategy
-    PaymentProcessor ..> PricingTariff_IPricingStrategy
-    ShipmentTracker ..> ITelemetrySource_Adapter
-
-    %% Persistence
-    OrderProcessor ..> DataStore
-    DispatchManager ..> DataStore
-    ShipmentTracker ..> DataStore
-    PaymentProcessor ..> DataStore
+      Invoice \"1\" *-- \"1..*\" Payment
+      Payment \"1\" *-- \"1\" Receipt
+  
+      %% ============ State usage ============
+      Order ..> OrderState
+      Shipment ..> ShipmentState
+      Invoice ..> InvoiceState
+      Payment ..> PaymentState
+      Driver ..> DutyState
+      StaffMember ..> StaffRole
   "),
   caption: [Final implementation class diagram. Each box names an implemented core class or a closely coupled State, Strategy, or Adapter family; solid lines show aggregate/domain relationships, dashed lines show polymorphic dependencies, and red dotted lines show controller use of the persistence boundary. `Report` and the authentication/session service are deliberately excluded because they are outside the selected four-area scope. Shared utility classes (`Money`, `Validators`, `IdGenerator`) and custom exceptions in `smartfm.common` are omitted from the diagram to prevent clutter, but act as ubiquitous helpers across all layers.],
 ) <fig-final-class-model>
