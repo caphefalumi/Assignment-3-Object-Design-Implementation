@@ -1,5 +1,6 @@
 #import "ieee.typ": *
 #import "@preview/wordometer:0.1.5": total-words, word-count
+#import "@preview/mmdr:0.2.2": *
 
 #show: word-count
 #show: ieee.with(
@@ -90,7 +91,175 @@ The detailed design maintains the Entity-Control-Boundary structure established 
 
 
 #figure(
-  image("images/final_class_model.svg", width: 100%),
+  mermaid("
+classDiagram
+    class OrderProcessor {
+        <<controller>>
+        -DataStore store
+        -List listeners
+        +registerCustomer()
+        +submitOrder()
+        +approveOrder(id)
+    }
+    class DispatchManager {
+        <<controller>>
+        -DataStore store
+        +assignShipment()
+        +onOrderApproved()
+    }
+    class ShipmentTracker {
+        <<controller>>
+        -DataStore store
+        -ITelemetrySource telemetry
+        +recordMilestone()
+        +recordDelivery()
+    }
+    class PaymentProcessor {
+        <<controller>>
+        -DataStore store
+        -IPaymentGateway gateway
+        +submitPayment()
+    }
+    class DataStore {
+        <<infrastructure>>
+        -Connection conn
+        -int version
+        +load()
+        +save()
+        +customers()
+        +orders()
+    }
+
+    class Customer {
+        -String id
+        -String fullName
+        -String phone
+        +recordOrder(id)
+    }
+    class Order {
+        -String id
+        -OrderState state
+        -double quotedAmount
+        +approve()
+        +cancel()
+        +addConsignment()
+    }
+    class ServiceOffering {
+        -String id
+        -String name
+        -String tariffId
+        +isAvailableAt(branchId)
+    }
+    class Branch {
+        -String id
+        -String name
+        -String city
+        +addVehicle()
+        +addDriver()
+    }
+    class Invoice {
+        -String id
+        -double amount
+        -InvoiceState state
+        +recordPayment()
+        +isSettled()
+    }
+
+    class Consignment {
+        -String id
+        -double weightKg
+        -String desc
+        +getWeightKg()
+    }
+    class Shipment {
+        -String id
+        -ShipmentState state
+        -String location
+        +pickup()
+        +deliver()
+        +updateLocation()
+    }
+    class Vehicle {
+        -String id
+        -double capacityKg
+        -String status
+        +assignToShipment()
+    }
+    class Driver {
+        -String licenseNo
+        -DutyState dutyState
+        +setDutyState()
+    }
+    class Payment {
+        -String id
+        -double amount
+        -PaymentState state
+        +settle()
+    }
+
+    class Person_StaffMember {
+        <<abstract>>
+        -String id
+        -String fullName
+        -StaffRole role
+        +getRole()
+    }
+    class Receipt {
+        -String id
+        -String paymentId
+        -DateTime issuedAt
+        +getFormattedReceipt()
+    }
+    class OrderState_ShipmentState {
+        <<abstract>>
+        -String stateName
+        +approve()
+        +pickup()
+        +deliver()
+    }
+    class PricingTariff_IPricingStrategy {
+        <<strategy>>
+        -double baseRate
+        -double kmRate
+        +calculateQuote()
+    }
+    class ITelemetrySource_Adapter {
+        <<adapter>>
+        -Map locations
+        +recordMilestone()
+        +getLatestCoordinates()
+    }
+
+    OrderProcessor \"1\" --> \"1\" Customer
+    OrderProcessor \"1\" --> \"1\" Order
+    DispatchManager \"1\" --> \"1\" Shipment
+    ShipmentTracker \"1\" --> \"1\" Shipment
+    PaymentProcessor \"1\" --> \"1\" Payment
+
+    Customer \"1\" --> \"1..*\" Order
+    Order \"1\" --> \"1..*\" Consignment
+    Order \"1\" --> \"1\" ServiceOffering
+    Order \"1\" --> \"0..1\" Shipment
+    Branch \"1\" --> \"1..*\" Vehicle
+    Branch \"1\" --> \"1..*\" Driver
+    Shipment \"1\" --> \"1\" Vehicle
+    Shipment \"1\" --> \"1\" Driver
+    Invoice \"1\" --> \"1..*\" Payment
+    Payment \"1\" --> \"1\" Receipt
+
+    Order ..> OrderState_ShipmentState
+    Shipment ..> OrderState_ShipmentState
+    Invoice ..> OrderState_ShipmentState
+    Payment ..> OrderState_ShipmentState
+    ServiceOffering ..> PricingTariff_IPricingStrategy
+    PaymentProcessor ..> PricingTariff_IPricingStrategy
+    ShipmentTracker ..> ITelemetrySource_Adapter
+
+    OrderProcessor ..> DataStore
+    DispatchManager ..> DataStore
+    ShipmentTracker ..> DataStore
+    PaymentProcessor ..> DataStore
+  "),
   caption: [Final implementation class diagram. Each box names an implemented core class or a closely coupled State, Strategy, or Adapter family; solid lines show aggregate/domain relationships, dashed lines show polymorphic dependencies, and red dotted lines show controller use of the persistence boundary. `Report` and the authentication/session service are deliberately excluded because they are outside the selected four-area scope. Shared utility classes (`Money`, `Validators`, `IdGenerator`) and custom exceptions in `smartfm.common` are omitted from the diagram to prevent clutter, but act as ubiquitous helpers across all layers.],
 ) <fig-final-class-model>
 
@@ -153,22 +322,75 @@ When saving, `DataStore` atomically updates the normalized aggregate tables. Whe
 The four sequence diagrams below illustrate the core implemented use cases. Each diagram shows the exact controller methods invoked by the GUI and CLI boundaries. Section 4.1 maps these interactions directly to source code, and Section 4.3 provides execution evidence for each flow.
 
 #figure(
-  image("images/seq_order.svg", width: 100%),
+  mermaid("
+sequenceDiagram
+    autonumber
+    participant C as Customer / GUI or CLI
+    participant OP as OrderProcessor<br/>«GRASP Controller»
+    participant DOM as Customer, Consignment, Order
+    participant DS as DataStore
+
+    C->>OP: registerCustomer(details)
+    OP->>DOM: create and validate Customer
+    OP->>DS: stage customer in aggregate
+    C->>OP: submitOrder(customer, consignments)
+    OP->>DOM: create Consignment(s) and Order
+    OP->>DS: stage order; return id
+  "),
   caption: [UC-01 / UC-02: customer registration and order submission. The boundary sends each system event to `OrderProcessor`, which creates and validates domain objects and persists changes to SQLite through `DataStore`.],
 ) <fig-seq-order>
 
 #figure(
-  image("images/seq_dispatch.svg", width: 100%),
+  mermaid("
+sequenceDiagram
+    autonumber
+    participant D as Dispatcher / GUI or CLI
+    participant DM as DispatchManager<br/>«GRASP Controller»
+    participant DOM as Order, Vehicle, Driver, Shipment
+    participant ST as DataStore / ShipmentTracker
+
+    D->>DM: assignShipment(orderId, vehicleId, driverId)
+    DM->>DOM: verify approved / available / branch / capacity
+    DM->>DOM: create Shipment; allocate resources
+    DM->>ST: stage shipment and resource updates
+    DM->>ST: publish shipmentAssigned(shipment)
+  "),
   caption: [UC-03: dispatcher assigns a vehicle and driver to an approved order. `DispatchManager` checks the dispatch constraints, persists the shipment and resource updates to SQLite, and notifies `ShipmentTracker` via the listener interface.],
 ) <fig-seq-dispatch>
 
 #figure(
-  image("images/seq_tracking.svg", width: 100%),
+  mermaid("
+sequenceDiagram
+    autonumber
+    participant O as Operator / GUI or CLI
+    participant ST as ShipmentTracker<br/>«GRASP Controller»
+    participant TS as ManualTelemetrySource / ShipmentState
+    participant DS as Shipment / DataStore
+
+    O->>ST: record milestone(shipmentId, location)
+    ST->>TS: obtain location through ITelemetrySource
+    ST->>DS: request next lifecycle transition
+    DS->>TS: ShipmentState accepts/rejects transition
+    ST->>DS: stage accepted status and location
+  "),
   caption: [UC-04: tracking a shipment milestone. The adapter normalises location input, while `ShipmentState` decides whether the requested transition is legal.],
 ) <fig-seq-tracking>
 
 #figure(
-  image("images/seq_payment.svg", width: 100%),
+  mermaid("
+sequenceDiagram
+    autonumber
+    participant C as Customer / GUI or CLI
+    participant PP as PaymentProcessor<br/>«GRASP Controller»
+    participant PS as Invoice, Payment, PaymentStrategy
+    participant GW as Gateway / Receipt / DataStore
+
+    C->>PP: submitPayment(invoiceId, amount, method)
+    PP->>PS: validate amount against outstanding balance
+    PP->>PS: create Payment; select strategy
+    PP->>GW: verify (gateway only for card)
+    PP->>GW: settle, issue Receipt, stage aggregate
+  "),
   caption: [UC-05: billing and payment. `PaymentProcessor` validates the amount before strategy/gateway processing; a receipt is issued only after settlement.],
 ) <fig-seq-payment>
 
