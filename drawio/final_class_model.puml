@@ -1,20 +1,19 @@
 @startuml FinalClassModel
 skinparam classAttributeIconSize 0
-skinparam backgroundColor #FAFCFF
+skinparam backgroundColor #FFFFFF
 skinparam style strictuml
 skinparam Shadowing false
 skinparam DefaultFontName 'Segoe UI', Arial, sans-serif
-skinparam DefaultFontSize 12
+skinparam DefaultFontSize 11
 
-' Class styling definitions
 skinparam class {
-    BackgroundColor #F8FAFC
-    BorderColor #94A3B8
-    HeaderBackgroundColor #E2E8F0
-    FontColor #0F172A
+    BackgroundColor #FFFFFF
+    BorderColor #232F3E
+    HeaderBackgroundColor #F2F3F3
+    FontColor #232F3E
 }
 
-class "OrderProcessor" as OrderProcessor <<controller>> #f0f7ff {
+class "OrderProcessor" as OrderProcessor <<controller>> {
     - store: DataStore
     - listeners: List
     + registerCustomer(...)
@@ -22,26 +21,26 @@ class "OrderProcessor" as OrderProcessor <<controller>> #f0f7ff {
     + approveOrder(id)
 }
 
-class "DispatchManager" as DispatchManager <<controller>> #f0f7ff {
+class "DispatchManager" as DispatchManager <<controller>> {
     - store: DataStore
     + assignShipment(...)
     + onOrderApproved(...)
 }
 
-class "ShipmentTracker" as ShipmentTracker <<controller>> #f0f7ff {
+class "ShipmentTracker" as ShipmentTracker <<controller>> {
     - store: DataStore
     - telemetry: ITelemetrySource
     + recordMilestone(...)
     + recordDelivery(...)
 }
 
-class "PaymentProcessor" as PaymentProcessor <<controller>> #f0f7ff {
+class "PaymentProcessor" as PaymentProcessor <<controller>> {
     - store: DataStore
     - gateway: IPaymentGateway
     + submitPayment(...)
 }
 
-class "DataStore" as DataStore <<infrastructure>> #fffbeb {
+class "DataStore" as DataStore <<infrastructure>> {
     - conn: Connection
     - version: int = 3
     + load()
@@ -50,14 +49,14 @@ class "DataStore" as DataStore <<infrastructure>> #fffbeb {
     + orders()
 }
 
-class "Customer" as Customer #f0fdf4 {
+class "Customer" as Customer {
     - id: String
     - fullName: String
     - phone: String
     + recordOrder(id)
 }
 
-class "Order" as Order #f0fdf4 {
+class "Order" as Order {
     - id: String
     - state: OrderState
     - quotedAmount: double
@@ -66,14 +65,14 @@ class "Order" as Order #f0fdf4 {
     + addConsignment(...)
 }
 
-class "ServiceOffering" as ServiceOffering #f0fdf4 {
+class "ServiceOffering" as ServiceOffering {
     - id: String
     - name: String
     - tariffId: String
     + isAvailableAt(branchId)
 }
 
-class "Branch" as Branch #f0fdf4 {
+class "Branch" as Branch {
     - id: String
     - name: String
     - city: String
@@ -81,7 +80,7 @@ class "Branch" as Branch #f0fdf4 {
     + addDriver(...)
 }
 
-class "Invoice" as Invoice #f0fdf4 {
+class "Invoice" as Invoice {
     - id: String
     - amount: double
     - state: InvoiceState
@@ -89,14 +88,14 @@ class "Invoice" as Invoice #f0fdf4 {
     + isSettled()
 }
 
-class "Consignment" as Consignment #f8fafc {
+class "Consignment" as Consignment {
     - id: String
     - weightKg: double
     - desc: String
     + getWeightKg()
 }
 
-class "Shipment" as Shipment #f8fafc {
+class "Shipment" as Shipment {
     - id: String
     - state: ShipmentState
     - location: String
@@ -105,60 +104,59 @@ class "Shipment" as Shipment #f8fafc {
     + updateLocation(...)
 }
 
-class "Vehicle" as Vehicle #f8fafc {
+class "Vehicle" as Vehicle {
     - id: String
     - capacityKg: double
     - status: String
     + assignToShipment()
 }
 
-class "Driver" as Driver #f8fafc {
+class "Driver" as Driver {
     - licenseNo: String
     - dutyState: DutyState
     + setDutyState(...)
 }
 
-class "Payment" as Payment #f8fafc {
+class "Payment" as Payment {
     - id: String
     - amount: double
     - state: PaymentState
     + settle()
 }
 
-class "Person / StaffMember" as Person <<abstract>> #faf5ff {
+class "Person / StaffMember" as Person <<abstract>> {
     - id: String
     - fullName: String
     - role: StaffRole
     + getRole()
 }
 
-class "Receipt" as Receipt #f8fafc {
+class "Receipt" as Receipt {
     - id: String
     - paymentId: String
     - issuedAt: DateTime
     + getFormattedReceipt()
 }
 
-class "OrderState / ShipmentState" as State <<abstract>> #faf5ff {
+class "OrderState / ShipmentState" as State <<abstract>> {
     - stateName: String
     + approve()
     + pickup()
     + deliver()
 }
 
-class "PricingTariff / IPricingStrategy" as Pricing <<strategy>> #faf5ff {
+class "PricingTariff / IPricingStrategy" as Pricing <<strategy>> {
     - baseRate: double
     - kmRate: double
     + calculateQuote(...)
 }
 
-class "ITelemetrySource / Adapter" as Telemetry <<adapter>> #faf5ff {
+class "ITelemetrySource / Adapter" as Telemetry <<adapter>> {
     - locations: Map
     + recordMilestone()
     + getLatestCoordinates()
 }
 
-' Grid Alignment
 OrderProcessor -[hidden]r-> DispatchManager
 DispatchManager -[hidden]r-> ShipmentTracker
 ShipmentTracker -[hidden]r-> PaymentProcessor
@@ -179,7 +177,6 @@ Receipt -[hidden]r-> State
 State -[hidden]r-> Pricing
 Pricing -[hidden]r-> Telemetry
 
-' Solid associations with multiplicities
 OrderProcessor --> "1" Customer
 OrderProcessor --> "1" Order
 DispatchManager --> "1" Shipment
@@ -197,7 +194,6 @@ Shipment "1" --> "1" Driver
 Invoice "1" --> "1..*" Payment
 Payment "1" --> "1" Receipt
 
-' Polymorphic / Abstract dependencies
 Order ..> State
 Shipment ..> State
 Invoice ..> State
@@ -206,10 +202,9 @@ ServiceOffering ..> Pricing
 PaymentProcessor ..> Pricing
 ShipmentTracker ..> Telemetry
 
-' Persistence boundary calls (Red Dotted)
-OrderProcessor .[#E53E3E].> DataStore
-DispatchManager .[#E53E3E].> DataStore
-ShipmentTracker .[#E53E3E].> DataStore
-PaymentProcessor .[#E53E3E].> DataStore
+OrderProcessor .[#D13212].> DataStore
+DispatchManager .[#D13212].> DataStore
+ShipmentTracker .[#D13212].> DataStore
+PaymentProcessor .[#D13212].> DataStore
 
 @enduml

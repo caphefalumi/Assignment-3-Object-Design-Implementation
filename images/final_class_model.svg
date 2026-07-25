@@ -1,246 +1,255 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1260 770" width="100%" height="100%" font-family="Segoe UI, Helvetica, Arial, sans-serif">
-  <rect width="100%" height="100%" fill="#fafcff"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1225 770" width="100%" height="100%" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="100%" height="100%" fill="#ffffff"/>
   <style>
-    .code-text { font-family: Consolas, monospace; font-size: 9.5px; fill: #1e293b; }
+    .code-text { font-family: Consolas, monospace; font-size: 9.5px; fill: #232f3e; }
+    .container-title { font-size: 10px; font-weight: bold; fill: #545b64; }
   </style>
   <defs>
     <marker id="arrow-solid" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 1 L 10 5 L 0 9 z" fill="#334155" />
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#232f3e" />
     </marker>
     <marker id="arrow-dashed" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 1 L 10 5 L 0 9 z" fill="#64748b" />
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#545b64" />
     </marker>
     <marker id="arrow-dotted" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 1 L 10 5 L 0 9 z" fill="#e53e3e" />
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#d13212" />
     </marker>
   </defs>
-  <rect x="40" y="40" width="210" height="140" rx="5" fill="#f0f7ff" stroke="#3b82f6" stroke-width="1.2"/>
-  <path d="M 40 45 A 5 5 0 0 1 45 40 L 245 40 A 5 5 0 0 1 250 45 L 250 68 L 40 68 Z" fill="#dbeafe"/>
-  <text x="145.0" y="51" font-family="Consolas, monospace" font-size="9px" fill="#2563eb" text-anchor="middle">«controller»</text>
-  <text x="145.0" y="63" font-weight="bold" font-size="11px" fill="#1e40af" text-anchor="middle">OrderProcessor</text>
-  <text x="48" y="80" class="code-text">- store: DataStore</text>
-  <text x="48" y="93" class="code-text">- listeners: List</text>
-  <line x1="40" y1="100" x2="250" y2="100" stroke="#3b82f6" stroke-width="0.7"/>
-  <text x="48" y="113" class="code-text">+ registerCustomer(...)</text>
-  <text x="48" y="126" class="code-text">+ submitOrder(...)</text>
-  <text x="48" y="139" class="code-text">+ approveOrder(id)</text>
-  <rect x="280" y="40" width="210" height="140" rx="5" fill="#f0f7ff" stroke="#3b82f6" stroke-width="1.2"/>
-  <path d="M 280 45 A 5 5 0 0 1 285 40 L 485 40 A 5 5 0 0 1 490 45 L 490 68 L 280 68 Z" fill="#dbeafe"/>
-  <text x="385.0" y="51" font-family="Consolas, monospace" font-size="9px" fill="#2563eb" text-anchor="middle">«controller»</text>
-  <text x="385.0" y="63" font-weight="bold" font-size="11px" fill="#1e40af" text-anchor="middle">DispatchManager</text>
-  <text x="288" y="80" class="code-text">- store: DataStore</text>
-  <line x1="280" y1="87" x2="490" y2="87" stroke="#3b82f6" stroke-width="0.7"/>
-  <text x="288" y="100" class="code-text">+ assignShipment(...)</text>
-  <text x="288" y="113" class="code-text">+ onOrderApproved(...)</text>
-  <rect x="520" y="40" width="210" height="140" rx="5" fill="#f0f7ff" stroke="#3b82f6" stroke-width="1.2"/>
-  <path d="M 520 45 A 5 5 0 0 1 525 40 L 725 40 A 5 5 0 0 1 730 45 L 730 68 L 520 68 Z" fill="#dbeafe"/>
-  <text x="625.0" y="51" font-family="Consolas, monospace" font-size="9px" fill="#2563eb" text-anchor="middle">«controller»</text>
-  <text x="625.0" y="63" font-weight="bold" font-size="11px" fill="#1e40af" text-anchor="middle">ShipmentTracker</text>
-  <text x="528" y="80" class="code-text">- store: DataStore</text>
-  <text x="528" y="93" class="code-text">- telemetry: ITelemetrySource</text>
-  <line x1="520" y1="100" x2="730" y2="100" stroke="#3b82f6" stroke-width="0.7"/>
-  <text x="528" y="113" class="code-text">+ recordMilestone(...)</text>
-  <text x="528" y="126" class="code-text">+ recordDelivery(...)</text>
-  <rect x="760" y="40" width="210" height="140" rx="5" fill="#f0f7ff" stroke="#3b82f6" stroke-width="1.2"/>
-  <path d="M 760 45 A 5 5 0 0 1 765 40 L 965 40 A 5 5 0 0 1 970 45 L 970 68 L 760 68 Z" fill="#dbeafe"/>
-  <text x="865.0" y="51" font-family="Consolas, monospace" font-size="9px" fill="#2563eb" text-anchor="middle">«controller»</text>
-  <text x="865.0" y="63" font-weight="bold" font-size="11px" fill="#1e40af" text-anchor="middle">PaymentProcessor</text>
-  <text x="768" y="80" class="code-text">- store: DataStore</text>
-  <text x="768" y="93" class="code-text">- gateway: IPaymentGateway</text>
-  <line x1="760" y1="100" x2="970" y2="100" stroke="#3b82f6" stroke-width="0.7"/>
-  <text x="768" y="113" class="code-text">+ submitPayment(...)</text>
-  <rect x="1000" y="40" width="210" height="140" rx="5" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.2"/>
-  <path d="M 1000 45 A 5 5 0 0 1 1005 40 L 1205 40 A 5 5 0 0 1 1210 45 L 1210 68 L 1000 68 Z" fill="#fef3c7"/>
-  <text x="1105.0" y="51" font-family="Consolas, monospace" font-size="9px" fill="#d97706" text-anchor="middle">«infrastructure»</text>
-  <text x="1105.0" y="63" font-weight="bold" font-size="11px" fill="#92400e" text-anchor="middle">DataStore</text>
-  <text x="1008" y="80" class="code-text">- conn: Connection</text>
-  <text x="1008" y="93" class="code-text">- version: int = 3</text>
-  <line x1="1000" y1="100" x2="1210" y2="100" stroke="#f59e0b" stroke-width="0.7"/>
-  <text x="1008" y="113" class="code-text">+ load()</text>
-  <text x="1008" y="126" class="code-text">+ save()</text>
-  <text x="1008" y="139" class="code-text">+ customers()</text>
-  <text x="1008" y="152" class="code-text">+ orders()</text>
-  <rect x="40" y="230" width="210" height="140" rx="5" fill="#f0fdf4" stroke="#10b981" stroke-width="1.2"/>
-  <path d="M 40 235 A 5 5 0 0 1 45 230 L 245 230 A 5 5 0 0 1 250 235 L 250 252 L 40 252 Z" fill="#d1fae5"/>
-  <text x="145.0" y="245" font-weight="bold" font-size="11px" fill="#065f46" text-anchor="middle">Customer</text>
-  <text x="48" y="264" class="code-text">- id: String</text>
-  <text x="48" y="277" class="code-text">- fullName: String</text>
-  <text x="48" y="290" class="code-text">- phone: String</text>
-  <line x1="40" y1="297" x2="250" y2="297" stroke="#10b981" stroke-width="0.7"/>
-  <text x="48" y="310" class="code-text">+ recordOrder(id)</text>
-  <rect x="280" y="230" width="210" height="140" rx="5" fill="#f0fdf4" stroke="#10b981" stroke-width="1.2"/>
-  <path d="M 280 235 A 5 5 0 0 1 285 230 L 485 230 A 5 5 0 0 1 490 235 L 490 252 L 280 252 Z" fill="#d1fae5"/>
-  <text x="385.0" y="245" font-weight="bold" font-size="11px" fill="#065f46" text-anchor="middle">Order</text>
-  <text x="288" y="264" class="code-text">- id: String</text>
-  <text x="288" y="277" class="code-text">- state: OrderState</text>
-  <text x="288" y="290" class="code-text">- quotedAmount: double</text>
-  <line x1="280" y1="297" x2="490" y2="297" stroke="#10b981" stroke-width="0.7"/>
-  <text x="288" y="310" class="code-text">+ approve()</text>
-  <text x="288" y="323" class="code-text">+ cancel()</text>
-  <text x="288" y="336" class="code-text">+ addConsignment(...)</text>
-  <rect x="520" y="230" width="210" height="140" rx="5" fill="#f0fdf4" stroke="#10b981" stroke-width="1.2"/>
-  <path d="M 520 235 A 5 5 0 0 1 525 230 L 725 230 A 5 5 0 0 1 730 235 L 730 252 L 520 252 Z" fill="#d1fae5"/>
-  <text x="625.0" y="245" font-weight="bold" font-size="11px" fill="#065f46" text-anchor="middle">ServiceOffering</text>
-  <text x="528" y="264" class="code-text">- id: String</text>
-  <text x="528" y="277" class="code-text">- name: String</text>
-  <text x="528" y="290" class="code-text">- tariffId: String</text>
-  <line x1="520" y1="297" x2="730" y2="297" stroke="#10b981" stroke-width="0.7"/>
-  <text x="528" y="310" class="code-text">+ isAvailableAt(branchId)</text>
-  <rect x="760" y="230" width="210" height="140" rx="5" fill="#f0fdf4" stroke="#10b981" stroke-width="1.2"/>
-  <path d="M 760 235 A 5 5 0 0 1 765 230 L 965 230 A 5 5 0 0 1 970 235 L 970 252 L 760 252 Z" fill="#d1fae5"/>
-  <text x="865.0" y="245" font-weight="bold" font-size="11px" fill="#065f46" text-anchor="middle">Branch</text>
-  <text x="768" y="264" class="code-text">- id: String</text>
-  <text x="768" y="277" class="code-text">- name: String</text>
-  <text x="768" y="290" class="code-text">- city: String</text>
-  <line x1="760" y1="297" x2="970" y2="297" stroke="#10b981" stroke-width="0.7"/>
-  <text x="768" y="310" class="code-text">+ addVehicle(...)</text>
-  <text x="768" y="323" class="code-text">+ addDriver(...)</text>
-  <rect x="1000" y="230" width="210" height="140" rx="5" fill="#f0fdf4" stroke="#10b981" stroke-width="1.2"/>
-  <path d="M 1000 235 A 5 5 0 0 1 1005 230 L 1205 230 A 5 5 0 0 1 1210 235 L 1210 252 L 1000 252 Z" fill="#d1fae5"/>
-  <text x="1105.0" y="245" font-weight="bold" font-size="11px" fill="#065f46" text-anchor="middle">Invoice</text>
-  <text x="1008" y="264" class="code-text">- id: String</text>
-  <text x="1008" y="277" class="code-text">- amount: double</text>
-  <text x="1008" y="290" class="code-text">- state: InvoiceState</text>
-  <line x1="1000" y1="297" x2="1210" y2="297" stroke="#10b981" stroke-width="0.7"/>
-  <text x="1008" y="310" class="code-text">+ recordPayment(...)</text>
-  <text x="1008" y="323" class="code-text">+ isSettled()</text>
-  <rect x="40" y="410" width="210" height="140" rx="5" fill="#f8fafc" stroke="#64748b" stroke-width="1.2"/>
-  <path d="M 40 415 A 5 5 0 0 1 45 410 L 245 410 A 5 5 0 0 1 250 415 L 250 432 L 40 432 Z" fill="#e2e8f0"/>
-  <text x="145.0" y="425" font-weight="bold" font-size="11px" fill="#1e293b" text-anchor="middle">Consignment</text>
-  <text x="48" y="444" class="code-text">- id: String</text>
-  <text x="48" y="457" class="code-text">- weightKg: double</text>
-  <text x="48" y="470" class="code-text">- desc: String</text>
-  <line x1="40" y1="477" x2="250" y2="477" stroke="#64748b" stroke-width="0.7"/>
-  <text x="48" y="490" class="code-text">+ getWeightKg()</text>
-  <rect x="280" y="410" width="210" height="140" rx="5" fill="#f8fafc" stroke="#64748b" stroke-width="1.2"/>
-  <path d="M 280 415 A 5 5 0 0 1 285 410 L 485 410 A 5 5 0 0 1 490 415 L 490 432 L 280 432 Z" fill="#e2e8f0"/>
-  <text x="385.0" y="425" font-weight="bold" font-size="11px" fill="#1e293b" text-anchor="middle">Shipment</text>
-  <text x="288" y="444" class="code-text">- id: String</text>
-  <text x="288" y="457" class="code-text">- state: ShipmentState</text>
-  <text x="288" y="470" class="code-text">- location: String</text>
-  <line x1="280" y1="477" x2="490" y2="477" stroke="#64748b" stroke-width="0.7"/>
-  <text x="288" y="490" class="code-text">+ pickup()</text>
-  <text x="288" y="503" class="code-text">+ deliver()</text>
-  <text x="288" y="516" class="code-text">+ updateLocation(...)</text>
-  <rect x="520" y="410" width="210" height="140" rx="5" fill="#f8fafc" stroke="#64748b" stroke-width="1.2"/>
-  <path d="M 520 415 A 5 5 0 0 1 525 410 L 725 410 A 5 5 0 0 1 730 415 L 730 432 L 520 432 Z" fill="#e2e8f0"/>
-  <text x="625.0" y="425" font-weight="bold" font-size="11px" fill="#1e293b" text-anchor="middle">Vehicle</text>
-  <text x="528" y="444" class="code-text">- id: String</text>
-  <text x="528" y="457" class="code-text">- capacityKg: double</text>
-  <text x="528" y="470" class="code-text">- status: String</text>
-  <line x1="520" y1="477" x2="730" y2="477" stroke="#64748b" stroke-width="0.7"/>
-  <text x="528" y="490" class="code-text">+ assignToShipment()</text>
-  <rect x="760" y="410" width="210" height="140" rx="5" fill="#f8fafc" stroke="#64748b" stroke-width="1.2"/>
-  <path d="M 760 415 A 5 5 0 0 1 765 410 L 965 410 A 5 5 0 0 1 970 415 L 970 432 L 760 432 Z" fill="#e2e8f0"/>
-  <text x="865.0" y="425" font-weight="bold" font-size="11px" fill="#1e293b" text-anchor="middle">Driver</text>
-  <text x="768" y="444" class="code-text">- licenseNo: String</text>
-  <text x="768" y="457" class="code-text">- dutyState: DutyState</text>
-  <line x1="760" y1="464" x2="970" y2="464" stroke="#64748b" stroke-width="0.7"/>
-  <text x="768" y="477" class="code-text">+ setDutyState(...)</text>
-  <rect x="1000" y="410" width="210" height="140" rx="5" fill="#f8fafc" stroke="#64748b" stroke-width="1.2"/>
-  <path d="M 1000 415 A 5 5 0 0 1 1005 410 L 1205 410 A 5 5 0 0 1 1210 415 L 1210 432 L 1000 432 Z" fill="#e2e8f0"/>
-  <text x="1105.0" y="425" font-weight="bold" font-size="11px" fill="#1e293b" text-anchor="middle">Payment</text>
-  <text x="1008" y="444" class="code-text">- id: String</text>
-  <text x="1008" y="457" class="code-text">- amount: double</text>
-  <text x="1008" y="470" class="code-text">- state: PaymentState</text>
-  <line x1="1000" y1="477" x2="1210" y2="477" stroke="#64748b" stroke-width="0.7"/>
-  <text x="1008" y="490" class="code-text">+ settle()</text>
-  <rect x="40" y="590" width="210" height="140" rx="5" fill="#faf5ff" stroke="#a855f7" stroke-width="1.2"/>
-  <path d="M 40 595 A 5 5 0 0 1 45 590 L 245 590 A 5 5 0 0 1 250 595 L 250 618 L 40 618 Z" fill="#f3e8ff"/>
-  <text x="145.0" y="601" font-family="Consolas, monospace" font-size="9px" fill="#9333ea" text-anchor="middle">«abstract»</text>
-  <text x="145.0" y="613" font-weight="bold" font-size="11px" fill="#6b21a8" text-anchor="middle">Person / StaffMember</text>
-  <text x="48" y="630" class="code-text">- id: String</text>
-  <text x="48" y="643" class="code-text">- fullName: String</text>
-  <text x="48" y="656" class="code-text">- role: StaffRole</text>
-  <line x1="40" y1="663" x2="250" y2="663" stroke="#a855f7" stroke-width="0.7"/>
-  <text x="48" y="676" class="code-text">+ getRole()</text>
-  <rect x="280" y="590" width="210" height="140" rx="5" fill="#f8fafc" stroke="#64748b" stroke-width="1.2"/>
-  <path d="M 280 595 A 5 5 0 0 1 285 590 L 485 590 A 5 5 0 0 1 490 595 L 490 612 L 280 612 Z" fill="#e2e8f0"/>
-  <text x="385.0" y="605" font-weight="bold" font-size="11px" fill="#1e293b" text-anchor="middle">Receipt</text>
-  <text x="288" y="624" class="code-text">- id: String</text>
-  <text x="288" y="637" class="code-text">- paymentId: String</text>
-  <text x="288" y="650" class="code-text">- issuedAt: DateTime</text>
-  <line x1="280" y1="657" x2="490" y2="657" stroke="#64748b" stroke-width="0.7"/>
-  <text x="288" y="670" class="code-text">+ getFormattedReceipt()</text>
-  <rect x="520" y="590" width="210" height="140" rx="5" fill="#faf5ff" stroke="#a855f7" stroke-width="1.2"/>
-  <path d="M 520 595 A 5 5 0 0 1 525 590 L 725 590 A 5 5 0 0 1 730 595 L 730 618 L 520 618 Z" fill="#f3e8ff"/>
-  <text x="625.0" y="601" font-family="Consolas, monospace" font-size="9px" fill="#9333ea" text-anchor="middle">«abstract»</text>
-  <text x="625.0" y="613" font-weight="bold" font-size="11px" fill="#6b21a8" text-anchor="middle">OrderState / ShipmentState</text>
-  <text x="528" y="630" class="code-text">- stateName: String</text>
-  <line x1="520" y1="637" x2="730" y2="637" stroke="#a855f7" stroke-width="0.7"/>
-  <text x="528" y="650" class="code-text">+ approve()</text>
-  <text x="528" y="663" class="code-text">+ pickup()</text>
-  <text x="528" y="676" class="code-text">+ deliver()</text>
-  <rect x="760" y="590" width="210" height="140" rx="5" fill="#faf5ff" stroke="#a855f7" stroke-width="1.2"/>
-  <path d="M 760 595 A 5 5 0 0 1 765 590 L 965 590 A 5 5 0 0 1 970 595 L 970 618 L 760 618 Z" fill="#f3e8ff"/>
-  <text x="865.0" y="601" font-family="Consolas, monospace" font-size="9px" fill="#9333ea" text-anchor="middle">«strategy»</text>
-  <text x="865.0" y="613" font-weight="bold" font-size="11px" fill="#6b21a8" text-anchor="middle">PricingTariff / IPricingStrategy</text>
-  <text x="768" y="630" class="code-text">- baseRate: double</text>
-  <text x="768" y="643" class="code-text">- kmRate: double</text>
-  <line x1="760" y1="650" x2="970" y2="650" stroke="#a855f7" stroke-width="0.7"/>
-  <text x="768" y="663" class="code-text">+ calculateQuote(...)</text>
-  <rect x="1000" y="590" width="210" height="140" rx="5" fill="#faf5ff" stroke="#a855f7" stroke-width="1.2"/>
-  <path d="M 1000 595 A 5 5 0 0 1 1005 590 L 1205 590 A 5 5 0 0 1 1210 595 L 1210 618 L 1000 618 Z" fill="#f3e8ff"/>
-  <text x="1105.0" y="601" font-family="Consolas, monospace" font-size="9px" fill="#9333ea" text-anchor="middle">«adapter»</text>
-  <text x="1105.0" y="613" font-weight="bold" font-size="11px" fill="#6b21a8" text-anchor="middle">ITelemetrySource / Adapter</text>
-  <text x="1008" y="630" class="code-text">- locations: Map</text>
-  <line x1="1000" y1="637" x2="1210" y2="637" stroke="#a855f7" stroke-width="0.7"/>
-  <text x="1008" y="650" class="code-text">+ recordMilestone()</text>
-  <text x="1008" y="663" class="code-text">+ getLatestCoordinates()</text>
-  <path d="M 145.0 180 L 145.0 230" fill="none" stroke="#334155" stroke-width="1.3"  marker-end="url(#arrow-solid)"/>
-  <rect x="135.0" y="197.0" width="20" height="14" rx="3" fill="#ffffff" stroke="#cbd5e1" stroke-width="0.8"/>
-  <text x="145.0" y="208.0" font-size="9.5px" font-weight="bold" fill="#334155" text-anchor="middle">1</text>
-  <path d="M 145.0 180 L 145.0 205.0 L 385.0 205.0 L 385.0 230" fill="none" stroke="#334155" stroke-width="1.3"  marker-end="url(#arrow-solid)"/>
-  <rect x="145.0" y="184.5" width="20" height="14" rx="3" fill="#ffffff" stroke="#cbd5e1" stroke-width="0.8"/>
-  <text x="155.0" y="195.5" font-size="9.5px" font-weight="bold" fill="#334155" text-anchor="middle">1</text>
-  <path d="M 385.0 180 L 385.0 410" fill="none" stroke="#334155" stroke-width="1.3"  marker-end="url(#arrow-solid)"/>
-  <rect x="375.0" y="287.0" width="20" height="14" rx="3" fill="#ffffff" stroke="#cbd5e1" stroke-width="0.8"/>
-  <text x="385.0" y="298.0" font-size="9.5px" font-weight="bold" fill="#334155" text-anchor="middle">1</text>
-  <path d="M 625.0 180 L 625.0 295.0 L 385.0 295.0 L 385.0 410" fill="none" stroke="#334155" stroke-width="1.3"  marker-end="url(#arrow-solid)"/>
-  <rect x="625.0" y="229.5" width="20" height="14" rx="3" fill="#ffffff" stroke="#cbd5e1" stroke-width="0.8"/>
-  <text x="635.0" y="240.5" font-size="9.5px" font-weight="bold" fill="#334155" text-anchor="middle">1</text>
-  <path d="M 865.0 180 L 865.0 295.0 L 1105.0 295.0 L 1105.0 410" fill="none" stroke="#334155" stroke-width="1.3"  marker-end="url(#arrow-solid)"/>
-  <rect x="865.0" y="229.5" width="20" height="14" rx="3" fill="#ffffff" stroke="#cbd5e1" stroke-width="0.8"/>
-  <text x="875.0" y="240.5" font-size="9.5px" font-weight="bold" fill="#334155" text-anchor="middle">1</text>
-  <path d="M 250 300.0 L 280 300.0" fill="none" stroke="#334155" stroke-width="1.3"  marker-end="url(#arrow-solid)"/>
-  <rect x="255.0" y="292.0" width="20" height="14" rx="3" fill="#ffffff" stroke="#cbd5e1" stroke-width="0.8"/>
-  <text x="265.0" y="303.0" font-size="9.5px" font-weight="bold" fill="#334155" text-anchor="middle">1..*</text>
-  <path d="M 385.0 370 L 385.0 390.0 L 145.0 390.0 L 145.0 410" fill="none" stroke="#334155" stroke-width="1.3"  marker-end="url(#arrow-solid)"/>
-  <rect x="385.0" y="372.0" width="20" height="14" rx="3" fill="#ffffff" stroke="#cbd5e1" stroke-width="0.8"/>
-  <text x="395.0" y="383.0" font-size="9.5px" font-weight="bold" fill="#334155" text-anchor="middle">1..*</text>
-  <path d="M 490 300.0 L 520 300.0" fill="none" stroke="#334155" stroke-width="1.3"  marker-end="url(#arrow-solid)"/>
-  <rect x="495.0" y="292.0" width="20" height="14" rx="3" fill="#ffffff" stroke="#cbd5e1" stroke-width="0.8"/>
-  <text x="505.0" y="303.0" font-size="9.5px" font-weight="bold" fill="#334155" text-anchor="middle">1</text>
-  <path d="M 385.0 370 L 385.0 410" fill="none" stroke="#334155" stroke-width="1.3"  marker-end="url(#arrow-solid)"/>
-  <rect x="375.0" y="382.0" width="20" height="14" rx="3" fill="#ffffff" stroke="#cbd5e1" stroke-width="0.8"/>
-  <text x="385.0" y="393.0" font-size="9.5px" font-weight="bold" fill="#334155" text-anchor="middle">0..1</text>
-  <path d="M 865.0 370 L 865.0 390.0 L 625.0 390.0 L 625.0 410" fill="none" stroke="#334155" stroke-width="1.3"  marker-end="url(#arrow-solid)"/>
-  <rect x="865.0" y="372.0" width="20" height="14" rx="3" fill="#ffffff" stroke="#cbd5e1" stroke-width="0.8"/>
-  <text x="875.0" y="383.0" font-size="9.5px" font-weight="bold" fill="#334155" text-anchor="middle">1..*</text>
-  <path d="M 865.0 370 L 865.0 410" fill="none" stroke="#334155" stroke-width="1.3"  marker-end="url(#arrow-solid)"/>
-  <rect x="855.0" y="382.0" width="20" height="14" rx="3" fill="#ffffff" stroke="#cbd5e1" stroke-width="0.8"/>
-  <text x="865.0" y="393.0" font-size="9.5px" font-weight="bold" fill="#334155" text-anchor="middle">1..*</text>
-  <path d="M 490 480.0 L 520 480.0" fill="none" stroke="#334155" stroke-width="1.3"  marker-end="url(#arrow-solid)"/>
-  <rect x="495.0" y="472.0" width="20" height="14" rx="3" fill="#ffffff" stroke="#cbd5e1" stroke-width="0.8"/>
-  <text x="505.0" y="483.0" font-size="9.5px" font-weight="bold" fill="#334155" text-anchor="middle">1</text>
-  <path d="M 490 480.0 L 760 480.0" fill="none" stroke="#334155" stroke-width="1.3"  marker-end="url(#arrow-solid)"/>
-  <rect x="615.0" y="472.0" width="20" height="14" rx="3" fill="#ffffff" stroke="#cbd5e1" stroke-width="0.8"/>
-  <text x="625.0" y="483.0" font-size="9.5px" font-weight="bold" fill="#334155" text-anchor="middle">1</text>
-  <path d="M 1105.0 370 L 1105.0 410" fill="none" stroke="#334155" stroke-width="1.3"  marker-end="url(#arrow-solid)"/>
-  <rect x="1095.0" y="382.0" width="20" height="14" rx="3" fill="#ffffff" stroke="#cbd5e1" stroke-width="0.8"/>
-  <text x="1105.0" y="393.0" font-size="9.5px" font-weight="bold" fill="#334155" text-anchor="middle">1..*</text>
-  <path d="M 1105.0 550 L 1105.0 570.0 L 385.0 570.0 L 385.0 590" fill="none" stroke="#334155" stroke-width="1.3"  marker-end="url(#arrow-solid)"/>
-  <rect x="1105.0" y="552.0" width="20" height="14" rx="3" fill="#ffffff" stroke="#cbd5e1" stroke-width="0.8"/>
-  <text x="1115.0" y="563.0" font-size="9.5px" font-weight="bold" fill="#334155" text-anchor="middle">1</text>
-  <path d="M 385.0 370 L 385.0 480.0 L 625.0 480.0 L 625.0 590" fill="none" stroke="#64748b" stroke-width="1.3" stroke-dasharray="5,4" marker-end="url(#arrow-dashed)"/>
-  <path d="M 385.0 550 L 385.0 570.0 L 625.0 570.0 L 625.0 590" fill="none" stroke="#64748b" stroke-width="1.3" stroke-dasharray="5,4" marker-end="url(#arrow-dashed)"/>
-  <path d="M 1105.0 370 L 1105.0 480.0 L 625.0 480.0 L 625.0 590" fill="none" stroke="#64748b" stroke-width="1.3" stroke-dasharray="5,4" marker-end="url(#arrow-dashed)"/>
-  <path d="M 1105.0 550 L 1105.0 570.0 L 625.0 570.0 L 625.0 590" fill="none" stroke="#64748b" stroke-width="1.3" stroke-dasharray="5,4" marker-end="url(#arrow-dashed)"/>
-  <path d="M 625.0 370 L 625.0 480.0 L 865.0 480.0 L 865.0 590" fill="none" stroke="#64748b" stroke-width="1.3" stroke-dasharray="5,4" marker-end="url(#arrow-dashed)"/>
-  <path d="M 865.0 180 L 865.0 590" fill="none" stroke="#64748b" stroke-width="1.3" stroke-dasharray="5,4" marker-end="url(#arrow-dashed)"/>
-  <path d="M 625.0 180 L 625.0 385.0 L 1105.0 385.0 L 1105.0 590" fill="none" stroke="#64748b" stroke-width="1.3" stroke-dasharray="5,4" marker-end="url(#arrow-dashed)"/>
-  <path d="M 250 110.0 L 1000 110.0" fill="none" stroke="#e53e3e" stroke-width="1.3" stroke-dasharray="2,3" marker-end="url(#arrow-dotted)"/>
-  <path d="M 490 110.0 L 1000 110.0" fill="none" stroke="#e53e3e" stroke-width="1.3" stroke-dasharray="2,3" marker-end="url(#arrow-dotted)"/>
-  <path d="M 730 110.0 L 1000 110.0" fill="none" stroke="#e53e3e" stroke-width="1.3" stroke-dasharray="2,3" marker-end="url(#arrow-dotted)"/>
-  <path d="M 970 110.0 L 1000 110.0" fill="none" stroke="#e53e3e" stroke-width="1.3" stroke-dasharray="2,3" marker-end="url(#arrow-dotted)"/>
+  <rect x="15" y="15" width="960" height="190" rx="2" fill="none" stroke="#aab7b8" stroke-width="1" stroke-dasharray="4,4"/>
+  <text x="25" y="29" class="container-title">Application Controllers Layer</text>
+  <rect x="980" y="15" width="230" height="190" rx="2" fill="none" stroke="#aab7b8" stroke-width="1" stroke-dasharray="4,4"/>
+  <text x="990" y="29" class="container-title">Infrastructure Gateway Layer</text>
+  <rect x="15" y="215" width="1195" height="360" rx="2" fill="none" stroke="#aab7b8" stroke-width="1" stroke-dasharray="4,4"/>
+  <text x="25" y="229" class="container-title">Core Operational &amp; Domain Model</text>
+  <rect x="15" y="580" width="1195" height="175" rx="2" fill="none" stroke="#aab7b8" stroke-width="1" stroke-dasharray="4,4"/>
+  <text x="25" y="594" class="container-title">Support, State &amp; Abstraction Layer</text>
+  <rect x="30" y="45" width="210" height="145" rx="2" fill="#ffffff" stroke="#232f3e" stroke-width="1"/>
+  <rect x="30" y="45" width="210" height="28" fill="#f2f3f3" stroke="#232f3e" stroke-width="0.8"/>
+  <text x="135.0" y="56" font-family="Consolas, monospace" font-size="8.5px" fill="#545b64" text-anchor="middle">«controller»</text>
+  <text x="135.0" y="68" font-weight="bold" font-size="11px" fill="#232f3e" text-anchor="middle">OrderProcessor</text>
+  <text x="38" y="85" class="code-text">- store: DataStore</text>
+  <text x="38" y="98" class="code-text">- listeners: List</text>
+  <line x1="30" y1="105" x2="240" y2="105" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="38" y="118" class="code-text">+ registerCustomer(...)</text>
+  <text x="38" y="131" class="code-text">+ submitOrder(...)</text>
+  <text x="38" y="144" class="code-text">+ approveOrder(id)</text>
+  <rect x="270" y="45" width="210" height="145" rx="2" fill="#ffffff" stroke="#232f3e" stroke-width="1"/>
+  <rect x="270" y="45" width="210" height="28" fill="#f2f3f3" stroke="#232f3e" stroke-width="0.8"/>
+  <text x="375.0" y="56" font-family="Consolas, monospace" font-size="8.5px" fill="#545b64" text-anchor="middle">«controller»</text>
+  <text x="375.0" y="68" font-weight="bold" font-size="11px" fill="#232f3e" text-anchor="middle">DispatchManager</text>
+  <text x="278" y="85" class="code-text">- store: DataStore</text>
+  <line x1="270" y1="92" x2="480" y2="92" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="278" y="105" class="code-text">+ assignShipment(...)</text>
+  <text x="278" y="118" class="code-text">+ onOrderApproved(...)</text>
+  <rect x="510" y="45" width="210" height="145" rx="2" fill="#ffffff" stroke="#232f3e" stroke-width="1"/>
+  <rect x="510" y="45" width="210" height="28" fill="#f2f3f3" stroke="#232f3e" stroke-width="0.8"/>
+  <text x="615.0" y="56" font-family="Consolas, monospace" font-size="8.5px" fill="#545b64" text-anchor="middle">«controller»</text>
+  <text x="615.0" y="68" font-weight="bold" font-size="11px" fill="#232f3e" text-anchor="middle">ShipmentTracker</text>
+  <text x="518" y="85" class="code-text">- store: DataStore</text>
+  <text x="518" y="98" class="code-text">- telemetry: ITelemetrySource</text>
+  <line x1="510" y1="105" x2="720" y2="105" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="518" y="118" class="code-text">+ recordMilestone(...)</text>
+  <text x="518" y="131" class="code-text">+ recordDelivery(...)</text>
+  <rect x="750" y="45" width="210" height="145" rx="2" fill="#ffffff" stroke="#232f3e" stroke-width="1"/>
+  <rect x="750" y="45" width="210" height="28" fill="#f2f3f3" stroke="#232f3e" stroke-width="0.8"/>
+  <text x="855.0" y="56" font-family="Consolas, monospace" font-size="8.5px" fill="#545b64" text-anchor="middle">«controller»</text>
+  <text x="855.0" y="68" font-weight="bold" font-size="11px" fill="#232f3e" text-anchor="middle">PaymentProcessor</text>
+  <text x="758" y="85" class="code-text">- store: DataStore</text>
+  <text x="758" y="98" class="code-text">- gateway: IPaymentGateway</text>
+  <line x1="750" y1="105" x2="960" y2="105" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="758" y="118" class="code-text">+ submitPayment(...)</text>
+  <rect x="990" y="45" width="210" height="145" rx="2" fill="#ffffff" stroke="#232f3e" stroke-width="1"/>
+  <rect x="990" y="45" width="210" height="28" fill="#f2f3f3" stroke="#232f3e" stroke-width="0.8"/>
+  <text x="1095.0" y="56" font-family="Consolas, monospace" font-size="8.5px" fill="#545b64" text-anchor="middle">«infrastructure»</text>
+  <text x="1095.0" y="68" font-weight="bold" font-size="11px" fill="#232f3e" text-anchor="middle">DataStore</text>
+  <text x="998" y="85" class="code-text">- conn: Connection</text>
+  <text x="998" y="98" class="code-text">- version: int = 3</text>
+  <line x1="990" y1="105" x2="1200" y2="105" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="998" y="118" class="code-text">+ load()</text>
+  <text x="998" y="131" class="code-text">+ save()</text>
+  <text x="998" y="144" class="code-text">+ customers()</text>
+  <text x="998" y="157" class="code-text">+ orders()</text>
+  <rect x="30" y="235" width="210" height="145" rx="2" fill="#ffffff" stroke="#232f3e" stroke-width="1"/>
+  <rect x="30" y="235" width="210" height="22" fill="#f2f3f3" stroke="#232f3e" stroke-width="0.8"/>
+  <text x="135.0" y="250" font-weight="bold" font-size="11px" fill="#232f3e" text-anchor="middle">Customer</text>
+  <text x="38" y="269" class="code-text">- id: String</text>
+  <text x="38" y="282" class="code-text">- fullName: String</text>
+  <text x="38" y="295" class="code-text">- phone: String</text>
+  <line x1="30" y1="302" x2="240" y2="302" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="38" y="315" class="code-text">+ recordOrder(id)</text>
+  <rect x="270" y="235" width="210" height="145" rx="2" fill="#ffffff" stroke="#232f3e" stroke-width="1"/>
+  <rect x="270" y="235" width="210" height="22" fill="#f2f3f3" stroke="#232f3e" stroke-width="0.8"/>
+  <text x="375.0" y="250" font-weight="bold" font-size="11px" fill="#232f3e" text-anchor="middle">Order</text>
+  <text x="278" y="269" class="code-text">- id: String</text>
+  <text x="278" y="282" class="code-text">- state: OrderState</text>
+  <text x="278" y="295" class="code-text">- quotedAmount: double</text>
+  <line x1="270" y1="302" x2="480" y2="302" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="278" y="315" class="code-text">+ approve()</text>
+  <text x="278" y="328" class="code-text">+ cancel()</text>
+  <text x="278" y="341" class="code-text">+ addConsignment(...)</text>
+  <rect x="510" y="235" width="210" height="145" rx="2" fill="#ffffff" stroke="#232f3e" stroke-width="1"/>
+  <rect x="510" y="235" width="210" height="22" fill="#f2f3f3" stroke="#232f3e" stroke-width="0.8"/>
+  <text x="615.0" y="250" font-weight="bold" font-size="11px" fill="#232f3e" text-anchor="middle">ServiceOffering</text>
+  <text x="518" y="269" class="code-text">- id: String</text>
+  <text x="518" y="282" class="code-text">- name: String</text>
+  <text x="518" y="295" class="code-text">- tariffId: String</text>
+  <line x1="510" y1="302" x2="720" y2="302" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="518" y="315" class="code-text">+ isAvailableAt(branchId)</text>
+  <rect x="750" y="235" width="210" height="145" rx="2" fill="#ffffff" stroke="#232f3e" stroke-width="1"/>
+  <rect x="750" y="235" width="210" height="22" fill="#f2f3f3" stroke="#232f3e" stroke-width="0.8"/>
+  <text x="855.0" y="250" font-weight="bold" font-size="11px" fill="#232f3e" text-anchor="middle">Branch</text>
+  <text x="758" y="269" class="code-text">- id: String</text>
+  <text x="758" y="282" class="code-text">- name: String</text>
+  <text x="758" y="295" class="code-text">- city: String</text>
+  <line x1="750" y1="302" x2="960" y2="302" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="758" y="315" class="code-text">+ addVehicle(...)</text>
+  <text x="758" y="328" class="code-text">+ addDriver(...)</text>
+  <rect x="990" y="235" width="210" height="145" rx="2" fill="#ffffff" stroke="#232f3e" stroke-width="1"/>
+  <rect x="990" y="235" width="210" height="22" fill="#f2f3f3" stroke="#232f3e" stroke-width="0.8"/>
+  <text x="1095.0" y="250" font-weight="bold" font-size="11px" fill="#232f3e" text-anchor="middle">Invoice</text>
+  <text x="998" y="269" class="code-text">- id: String</text>
+  <text x="998" y="282" class="code-text">- amount: double</text>
+  <text x="998" y="295" class="code-text">- state: InvoiceState</text>
+  <line x1="990" y1="302" x2="1200" y2="302" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="998" y="315" class="code-text">+ recordPayment(...)</text>
+  <text x="998" y="328" class="code-text">+ isSettled()</text>
+  <rect x="30" y="415" width="210" height="145" rx="2" fill="#ffffff" stroke="#232f3e" stroke-width="1"/>
+  <rect x="30" y="415" width="210" height="22" fill="#f2f3f3" stroke="#232f3e" stroke-width="0.8"/>
+  <text x="135.0" y="430" font-weight="bold" font-size="11px" fill="#232f3e" text-anchor="middle">Consignment</text>
+  <text x="38" y="449" class="code-text">- id: String</text>
+  <text x="38" y="462" class="code-text">- weightKg: double</text>
+  <text x="38" y="475" class="code-text">- desc: String</text>
+  <line x1="30" y1="482" x2="240" y2="482" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="38" y="495" class="code-text">+ getWeightKg()</text>
+  <rect x="270" y="415" width="210" height="145" rx="2" fill="#ffffff" stroke="#232f3e" stroke-width="1"/>
+  <rect x="270" y="415" width="210" height="22" fill="#f2f3f3" stroke="#232f3e" stroke-width="0.8"/>
+  <text x="375.0" y="430" font-weight="bold" font-size="11px" fill="#232f3e" text-anchor="middle">Shipment</text>
+  <text x="278" y="449" class="code-text">- id: String</text>
+  <text x="278" y="462" class="code-text">- state: ShipmentState</text>
+  <text x="278" y="475" class="code-text">- location: String</text>
+  <line x1="270" y1="482" x2="480" y2="482" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="278" y="495" class="code-text">+ pickup()</text>
+  <text x="278" y="508" class="code-text">+ deliver()</text>
+  <text x="278" y="521" class="code-text">+ updateLocation(...)</text>
+  <rect x="510" y="415" width="210" height="145" rx="2" fill="#ffffff" stroke="#232f3e" stroke-width="1"/>
+  <rect x="510" y="415" width="210" height="22" fill="#f2f3f3" stroke="#232f3e" stroke-width="0.8"/>
+  <text x="615.0" y="430" font-weight="bold" font-size="11px" fill="#232f3e" text-anchor="middle">Vehicle</text>
+  <text x="518" y="449" class="code-text">- id: String</text>
+  <text x="518" y="462" class="code-text">- capacityKg: double</text>
+  <text x="518" y="475" class="code-text">- status: String</text>
+  <line x1="510" y1="482" x2="720" y2="482" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="518" y="495" class="code-text">+ assignToShipment()</text>
+  <rect x="750" y="415" width="210" height="145" rx="2" fill="#ffffff" stroke="#232f3e" stroke-width="1"/>
+  <rect x="750" y="415" width="210" height="22" fill="#f2f3f3" stroke="#232f3e" stroke-width="0.8"/>
+  <text x="855.0" y="430" font-weight="bold" font-size="11px" fill="#232f3e" text-anchor="middle">Driver</text>
+  <text x="758" y="449" class="code-text">- licenseNo: String</text>
+  <text x="758" y="462" class="code-text">- dutyState: DutyState</text>
+  <line x1="750" y1="469" x2="960" y2="469" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="758" y="482" class="code-text">+ setDutyState(...)</text>
+  <rect x="990" y="415" width="210" height="145" rx="2" fill="#ffffff" stroke="#232f3e" stroke-width="1"/>
+  <rect x="990" y="415" width="210" height="22" fill="#f2f3f3" stroke="#232f3e" stroke-width="0.8"/>
+  <text x="1095.0" y="430" font-weight="bold" font-size="11px" fill="#232f3e" text-anchor="middle">Payment</text>
+  <text x="998" y="449" class="code-text">- id: String</text>
+  <text x="998" y="462" class="code-text">- amount: double</text>
+  <text x="998" y="475" class="code-text">- state: PaymentState</text>
+  <line x1="990" y1="482" x2="1200" y2="482" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="998" y="495" class="code-text">+ settle()</text>
+  <rect x="30" y="595" width="210" height="145" rx="2" fill="#ffffff" stroke="#232f3e" stroke-width="1"/>
+  <rect x="30" y="595" width="210" height="28" fill="#f2f3f3" stroke="#232f3e" stroke-width="0.8"/>
+  <text x="135.0" y="606" font-family="Consolas, monospace" font-size="8.5px" fill="#545b64" text-anchor="middle">«abstract»</text>
+  <text x="135.0" y="618" font-weight="bold" font-size="11px" fill="#232f3e" text-anchor="middle">Person / StaffMember</text>
+  <text x="38" y="635" class="code-text">- id: String</text>
+  <text x="38" y="648" class="code-text">- fullName: String</text>
+  <text x="38" y="661" class="code-text">- role: StaffRole</text>
+  <line x1="30" y1="668" x2="240" y2="668" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="38" y="681" class="code-text">+ getRole()</text>
+  <rect x="270" y="595" width="210" height="145" rx="2" fill="#ffffff" stroke="#232f3e" stroke-width="1"/>
+  <rect x="270" y="595" width="210" height="22" fill="#f2f3f3" stroke="#232f3e" stroke-width="0.8"/>
+  <text x="375.0" y="610" font-weight="bold" font-size="11px" fill="#232f3e" text-anchor="middle">Receipt</text>
+  <text x="278" y="629" class="code-text">- id: String</text>
+  <text x="278" y="642" class="code-text">- paymentId: String</text>
+  <text x="278" y="655" class="code-text">- issuedAt: DateTime</text>
+  <line x1="270" y1="662" x2="480" y2="662" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="278" y="675" class="code-text">+ getFormattedReceipt()</text>
+  <rect x="510" y="595" width="210" height="145" rx="2" fill="#ffffff" stroke="#232f3e" stroke-width="1"/>
+  <rect x="510" y="595" width="210" height="28" fill="#f2f3f3" stroke="#232f3e" stroke-width="0.8"/>
+  <text x="615.0" y="606" font-family="Consolas, monospace" font-size="8.5px" fill="#545b64" text-anchor="middle">«abstract»</text>
+  <text x="615.0" y="618" font-weight="bold" font-size="11px" fill="#232f3e" text-anchor="middle">OrderState / ShipmentState</text>
+  <text x="518" y="635" class="code-text">- stateName: String</text>
+  <line x1="510" y1="642" x2="720" y2="642" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="518" y="655" class="code-text">+ approve()</text>
+  <text x="518" y="668" class="code-text">+ pickup()</text>
+  <text x="518" y="681" class="code-text">+ deliver()</text>
+  <rect x="750" y="595" width="210" height="145" rx="2" fill="#ffffff" stroke="#232f3e" stroke-width="1"/>
+  <rect x="750" y="595" width="210" height="28" fill="#f2f3f3" stroke="#232f3e" stroke-width="0.8"/>
+  <text x="855.0" y="606" font-family="Consolas, monospace" font-size="8.5px" fill="#545b64" text-anchor="middle">«strategy»</text>
+  <text x="855.0" y="618" font-weight="bold" font-size="11px" fill="#232f3e" text-anchor="middle">PricingTariff / IPricingStrategy</text>
+  <text x="758" y="635" class="code-text">- baseRate: double</text>
+  <text x="758" y="648" class="code-text">- kmRate: double</text>
+  <line x1="750" y1="655" x2="960" y2="655" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="758" y="668" class="code-text">+ calculateQuote(...)</text>
+  <rect x="990" y="595" width="210" height="145" rx="2" fill="#ffffff" stroke="#232f3e" stroke-width="1"/>
+  <rect x="990" y="595" width="210" height="28" fill="#f2f3f3" stroke="#232f3e" stroke-width="0.8"/>
+  <text x="1095.0" y="606" font-family="Consolas, monospace" font-size="8.5px" fill="#545b64" text-anchor="middle">«adapter»</text>
+  <text x="1095.0" y="618" font-weight="bold" font-size="11px" fill="#232f3e" text-anchor="middle">ITelemetrySource / Adapter</text>
+  <text x="998" y="635" class="code-text">- locations: Map</text>
+  <line x1="990" y1="642" x2="1200" y2="642" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="998" y="655" class="code-text">+ recordMilestone()</text>
+  <text x="998" y="668" class="code-text">+ getLatestCoordinates()</text>
+  <path d="M 135.0 190 L 135.0 235" fill="none" stroke="#232f3e" stroke-width="1.2"  marker-end="url(#arrow-solid)"/>
+  <rect x="125.0" y="204.5" width="20" height="14" rx="2" fill="#ffffff" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="135.0" y="215.5" font-size="9px" font-weight="bold" fill="#232f3e" text-anchor="middle">1</text>
+  <path d="M 135.0 190 L 135.0 212.5 L 375.0 212.5 L 375.0 235" fill="none" stroke="#232f3e" stroke-width="1.2"  marker-end="url(#arrow-solid)"/>
+  <rect x="135.0" y="193.25" width="20" height="14" rx="2" fill="#ffffff" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="145.0" y="204.25" font-size="9px" font-weight="bold" fill="#232f3e" text-anchor="middle">1</text>
+  <path d="M 375.0 190 L 375.0 415" fill="none" stroke="#232f3e" stroke-width="1.2"  marker-end="url(#arrow-solid)"/>
+  <rect x="365.0" y="294.5" width="20" height="14" rx="2" fill="#ffffff" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="375.0" y="305.5" font-size="9px" font-weight="bold" fill="#232f3e" text-anchor="middle">1</text>
+  <path d="M 615.0 190 L 615.0 302.5 L 375.0 302.5 L 375.0 415" fill="none" stroke="#232f3e" stroke-width="1.2"  marker-end="url(#arrow-solid)"/>
+  <rect x="615.0" y="238.25" width="20" height="14" rx="2" fill="#ffffff" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="625.0" y="249.25" font-size="9px" font-weight="bold" fill="#232f3e" text-anchor="middle">1</text>
+  <path d="M 855.0 190 L 855.0 302.5 L 1095.0 302.5 L 1095.0 415" fill="none" stroke="#232f3e" stroke-width="1.2"  marker-end="url(#arrow-solid)"/>
+  <rect x="855.0" y="238.25" width="20" height="14" rx="2" fill="#ffffff" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="865.0" y="249.25" font-size="9px" font-weight="bold" fill="#232f3e" text-anchor="middle">1</text>
+  <path d="M 240 307.5 L 270 307.5" fill="none" stroke="#232f3e" stroke-width="1.2"  marker-end="url(#arrow-solid)"/>
+  <rect x="245.0" y="299.5" width="20" height="14" rx="2" fill="#ffffff" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="255.0" y="310.5" font-size="9px" font-weight="bold" fill="#232f3e" text-anchor="middle">1..*</text>
+  <path d="M 375.0 380 L 375.0 397.5 L 135.0 397.5 L 135.0 415" fill="none" stroke="#232f3e" stroke-width="1.2"  marker-end="url(#arrow-solid)"/>
+  <rect x="375.0" y="380.75" width="20" height="14" rx="2" fill="#ffffff" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="385.0" y="391.75" font-size="9px" font-weight="bold" fill="#232f3e" text-anchor="middle">1..*</text>
+  <path d="M 480 307.5 L 510 307.5" fill="none" stroke="#232f3e" stroke-width="1.2"  marker-end="url(#arrow-solid)"/>
+  <rect x="485.0" y="299.5" width="20" height="14" rx="2" fill="#ffffff" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="495.0" y="310.5" font-size="9px" font-weight="bold" fill="#232f3e" text-anchor="middle">1</text>
+  <path d="M 375.0 380 L 375.0 415" fill="none" stroke="#232f3e" stroke-width="1.2"  marker-end="url(#arrow-solid)"/>
+  <rect x="365.0" y="389.5" width="20" height="14" rx="2" fill="#ffffff" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="375.0" y="400.5" font-size="9px" font-weight="bold" fill="#232f3e" text-anchor="middle">0..1</text>
+  <path d="M 855.0 380 L 855.0 397.5 L 615.0 397.5 L 615.0 415" fill="none" stroke="#232f3e" stroke-width="1.2"  marker-end="url(#arrow-solid)"/>
+  <rect x="855.0" y="380.75" width="20" height="14" rx="2" fill="#ffffff" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="865.0" y="391.75" font-size="9px" font-weight="bold" fill="#232f3e" text-anchor="middle">1..*</text>
+  <path d="M 855.0 380 L 855.0 415" fill="none" stroke="#232f3e" stroke-width="1.2"  marker-end="url(#arrow-solid)"/>
+  <rect x="845.0" y="389.5" width="20" height="14" rx="2" fill="#ffffff" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="855.0" y="400.5" font-size="9px" font-weight="bold" fill="#232f3e" text-anchor="middle">1..*</text>
+  <path d="M 480 487.5 L 510 487.5" fill="none" stroke="#232f3e" stroke-width="1.2"  marker-end="url(#arrow-solid)"/>
+  <rect x="485.0" y="479.5" width="20" height="14" rx="2" fill="#ffffff" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="495.0" y="490.5" font-size="9px" font-weight="bold" fill="#232f3e" text-anchor="middle">1</text>
+  <path d="M 480 487.5 L 750 487.5" fill="none" stroke="#232f3e" stroke-width="1.2"  marker-end="url(#arrow-solid)"/>
+  <rect x="605.0" y="479.5" width="20" height="14" rx="2" fill="#ffffff" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="615.0" y="490.5" font-size="9px" font-weight="bold" fill="#232f3e" text-anchor="middle">1</text>
+  <path d="M 1095.0 380 L 1095.0 415" fill="none" stroke="#232f3e" stroke-width="1.2"  marker-end="url(#arrow-solid)"/>
+  <rect x="1085.0" y="389.5" width="20" height="14" rx="2" fill="#ffffff" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="1095.0" y="400.5" font-size="9px" font-weight="bold" fill="#232f3e" text-anchor="middle">1..*</text>
+  <path d="M 1095.0 560 L 1095.0 577.5 L 375.0 577.5 L 375.0 595" fill="none" stroke="#232f3e" stroke-width="1.2"  marker-end="url(#arrow-solid)"/>
+  <rect x="1095.0" y="560.75" width="20" height="14" rx="2" fill="#ffffff" stroke="#aab7b8" stroke-width="0.6"/>
+  <text x="1105.0" y="571.75" font-size="9px" font-weight="bold" fill="#232f3e" text-anchor="middle">1</text>
+  <path d="M 375.0 380 L 375.0 487.5 L 615.0 487.5 L 615.0 595" fill="none" stroke="#545b64" stroke-width="1.2" stroke-dasharray="4,4" marker-end="url(#arrow-dashed)"/>
+  <path d="M 375.0 560 L 375.0 577.5 L 615.0 577.5 L 615.0 595" fill="none" stroke="#545b64" stroke-width="1.2" stroke-dasharray="4,4" marker-end="url(#arrow-dashed)"/>
+  <path d="M 1095.0 380 L 1095.0 487.5 L 615.0 487.5 L 615.0 595" fill="none" stroke="#545b64" stroke-width="1.2" stroke-dasharray="4,4" marker-end="url(#arrow-dashed)"/>
+  <path d="M 1095.0 560 L 1095.0 577.5 L 615.0 577.5 L 615.0 595" fill="none" stroke="#545b64" stroke-width="1.2" stroke-dasharray="4,4" marker-end="url(#arrow-dashed)"/>
+  <path d="M 615.0 380 L 615.0 487.5 L 855.0 487.5 L 855.0 595" fill="none" stroke="#545b64" stroke-width="1.2" stroke-dasharray="4,4" marker-end="url(#arrow-dashed)"/>
+  <path d="M 855.0 190 L 855.0 595" fill="none" stroke="#545b64" stroke-width="1.2" stroke-dasharray="4,4" marker-end="url(#arrow-dashed)"/>
+  <path d="M 615.0 190 L 615.0 392.5 L 1095.0 392.5 L 1095.0 595" fill="none" stroke="#545b64" stroke-width="1.2" stroke-dasharray="4,4" marker-end="url(#arrow-dashed)"/>
+  <path d="M 240 117.5 L 990 117.5" fill="none" stroke="#d13212" stroke-width="1.2" stroke-dasharray="2,3" marker-end="url(#arrow-dotted)"/>
+  <path d="M 480 117.5 L 990 117.5" fill="none" stroke="#d13212" stroke-width="1.2" stroke-dasharray="2,3" marker-end="url(#arrow-dotted)"/>
+  <path d="M 720 117.5 L 990 117.5" fill="none" stroke="#d13212" stroke-width="1.2" stroke-dasharray="2,3" marker-end="url(#arrow-dotted)"/>
+  <path d="M 960 117.5 L 990 117.5" fill="none" stroke="#d13212" stroke-width="1.2" stroke-dasharray="2,3" marker-end="url(#arrow-dotted)"/>
 </svg>
