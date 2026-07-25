@@ -19,6 +19,8 @@ import java.util.Arrays;
  */
 public final class Validators {
 
+  // StrictResolver requires 'uuuu' (proleptic year) instead of 'yyyy' (year-of-era);
+  // using 'yyyy' with STRICT without explicit era fields causes DateTimeParseException at runtime.
   private static final DateTimeFormatter DATE_FORMAT =
       DateTimeFormatter.ofPattern("dd/MM/uuuu").withResolverStyle(ResolverStyle.STRICT);
 

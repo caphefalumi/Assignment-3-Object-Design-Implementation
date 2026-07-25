@@ -74,6 +74,7 @@ public class PricingTariff implements IPricingStrategy, Serializable {
     if (isPeakPeriod) {
       quote *= peakMultiplier;
     }
+    // Rounds calculated quote to 2 decimal places to avoid IEEE 754 precision noise in financial totals.
     return Math.round(quote * 100.0) / 100.0;
   }
 }

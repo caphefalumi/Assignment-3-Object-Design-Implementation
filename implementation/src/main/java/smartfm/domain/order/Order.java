@@ -133,7 +133,11 @@ public class Order implements Serializable {
     state.cancel(this);
   }
 
-  /** Restores a lifecycle state read by the normalized persistence gateway. */
+  /**
+   * Restores a lifecycle state read by the normalized persistence gateway.
+   * Parses parameterized state representations like "Rejected (reason)" by extracting
+   * the rejection reason substring between parentheses.
+   */
   public void restoreState(String persistedState) {
     if (persistedState == null || persistedState.equals("Submitted")) {
       state = new OrderSubmittedState();

@@ -73,6 +73,8 @@ public class PaymentProcessor implements InvoiceCreatedListener {
     if (invoice.isSettled()) {
       throw new InvalidDataException("Invoice " + invoiceId + " is already fully paid.");
     }
+    // Small epsilon (+ 0.001) protects against IEEE 754 floating-point representation artifacts
+    // when comparing exact currency balance amounts.
     if (amount > invoice.getOutstandingBalance() + 0.001) {
       throw new InvalidDataException(
           "Payment amount " + Money.format(amount) + " exceeds the outstanding balance of "

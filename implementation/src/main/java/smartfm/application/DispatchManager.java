@@ -106,6 +106,8 @@ public class DispatchManager implements OrderApprovedListener {
       throw new InvalidDataException("Order " + orderId + " already has a shipment.");
     }
 
+    // Verifies multi-entity dispatch invariants: order approval, origin branch affinity,
+    // vehicle & driver availability, valid driver license, and weight/volume cargo capacity limits.
     Branch originBranch = store.branches().get(order.getOriginBranchId());
     if (originBranch == null) {
       throw new InvalidDataException("Unknown origin branch id '" + order.getOriginBranchId() + "'.");

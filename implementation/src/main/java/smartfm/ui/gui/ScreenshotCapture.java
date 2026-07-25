@@ -28,6 +28,8 @@ public final class ScreenshotCapture {
     int width = Math.max(1, frame.getWidth());
     int height = Math.max(1, frame.getHeight());
     BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+    // Directly renders the Swing component tree into an off-screen image buffer via printAll().
+    // This avoids OS focus changes, window occlusion, or screen coordinate mismatches inherent to java.awt.Robot.
     Graphics2D graphics = image.createGraphics();
     try {
       frame.printAll(graphics);

@@ -90,7 +90,11 @@ public class Invoice implements Serializable {
     return state instanceof InvoicePaidState;
   }
 
-  /** Restores persisted billing state and payment links after a relational load. */
+  /**
+   * Directly restores persisted billing state, outstanding balance, and linked payment IDs
+   * after a relational load. Bypasses {@link #applyPayment(String, double)} to prevent
+   * re-triggering business logic or double-deducting balances.
+   */
   public void restoreState(String persistedState, double persistedOutstandingBalance,
       List<String> persistedPaymentIds) {
     this.outstandingBalance = Math.max(0.0, persistedOutstandingBalance);

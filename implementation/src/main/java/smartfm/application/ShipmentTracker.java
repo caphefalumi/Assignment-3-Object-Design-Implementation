@@ -80,6 +80,10 @@ public class ShipmentTracker implements ShipmentAssignedListener {
     activeShipments.remove(shipment.getId());
   }
 
+  /**
+   * Passes raw GPS/location strings through the telemetry adapter pipeline for normalization.
+   * If the vendor adapter yields null or "Unknown", falls back gracefully to the raw input location.
+   */
   private void applyTelemetry(Shipment shipment, String rawLocation) {
     telemetrySource.stageLocation(shipment.getId(), rawLocation);
     String normalised = telemetrySource.readLocation(shipment.getId());
