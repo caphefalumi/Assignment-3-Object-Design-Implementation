@@ -93,6 +93,9 @@ The detailed design maintains the Entity-Control-Boundary structure established 
 #figure(
   mermaid("
 classDiagram
+    direction TB
+
+    %% Tier 1: Controllers & Infrastructure
     class OrderProcessor {
         <<controller>>
         -DataStore store
@@ -130,6 +133,7 @@ classDiagram
         +orders()
     }
 
+    %% Tier 2: Core Domain Entities
     class Customer {
         -String id
         -String fullName
@@ -165,6 +169,7 @@ classDiagram
         +isSettled()
     }
 
+    %% Tier 3: Secondary Entities
     class Consignment {
         -String id
         -double weightKg
@@ -197,18 +202,19 @@ classDiagram
         +settle()
     }
 
+    %% Tier 4: Governance, State & Adapters
+    class Receipt {
+        -String id
+        -String paymentId
+        -DateTime issuedAt
+        +getFormattedReceipt()
+    }
     class Person_StaffMember {
         <<abstract>>
         -String id
         -String fullName
         -StaffRole role
         +getRole()
-    }
-    class Receipt {
-        -String id
-        -String paymentId
-        -DateTime issuedAt
-        +getFormattedReceipt()
     }
     class OrderState_ShipmentState {
         <<abstract>>
@@ -230,23 +236,33 @@ classDiagram
         +getLatestCoordinates()
     }
 
-    OrderProcessor \"1\" --> \"1\" Customer
-    OrderProcessor \"1\" --> \"1\" Order
-    DispatchManager \"1\" --> \"1\" Shipment
-    ShipmentTracker \"1\" --> \"1\" Shipment
-    PaymentProcessor \"1\" --> \"1\" Payment
+    %% Controller associations
+    OrderProcessor ..> Customer
+    OrderProcessor ..> Order
+    OrderProcessor ..> Invoice
+    DispatchManager ..> Branch
+    DispatchManager ..> Shipment
+    ShipmentTracker ..> Shipment
+    PaymentProcessor ..> Payment
 
+    %% Domain relationships
     Customer \"1\" --> \"1..*\" Order
     Order \"1\" --> \"1..*\" Consignment
     Order \"1\" --> \"1\" ServiceOffering
     Order \"1\" --> \"0..1\" Shipment
+    Order \"1\" --> \"1\" Invoice
+
     Branch \"1\" --> \"1..*\" Vehicle
     Branch \"1\" --> \"1..*\" Driver
     Shipment \"1\" --> \"1\" Vehicle
     Shipment \"1\" --> \"1\" Driver
+
     Invoice \"1\" --> \"1..*\" Payment
     Payment \"1\" --> \"1\" Receipt
 
+    %% Governance & State
+    Customer ..> Person_StaffMember
+    Driver ..> Person_StaffMember
     Order ..> OrderState_ShipmentState
     Shipment ..> OrderState_ShipmentState
     Invoice ..> OrderState_ShipmentState
@@ -255,6 +271,7 @@ classDiagram
     PaymentProcessor ..> PricingTariff_IPricingStrategy
     ShipmentTracker ..> ITelemetrySource_Adapter
 
+    %% Persistence
     OrderProcessor ..> DataStore
     DispatchManager ..> DataStore
     ShipmentTracker ..> DataStore
