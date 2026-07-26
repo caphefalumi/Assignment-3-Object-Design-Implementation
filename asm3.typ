@@ -308,7 +308,7 @@ The detailed design maintains the Entity-Control-Boundary structure established 
       Driver ..> DutyState
       StaffMember ..> StaffRole
   "),
-  caption: [Final implementation class diagram showing application controllers, domain entities, state and strategy patterns, and persistence relationships. Out-of-scope reporting and shared utility classes are omitted for clarity.],
+  caption: [Final implementation class diagram showing application controllers, domain entities, state and strategy patterns, and persistence relationships.],
 ) <fig-final-class-model>
 
 == GRASP Controller assignments
