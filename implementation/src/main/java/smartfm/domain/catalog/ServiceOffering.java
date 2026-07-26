@@ -12,7 +12,6 @@ import smartfm.common.Validators;
  * {@code ServiceOffering} CRC card in Assignment 2 Section 3 (Service
  * and Pricing Catalog Package).
  */
-@SuppressWarnings("serial")
 public class ServiceOffering implements Serializable {
 
   private static final long serialVersionUID = 1L;

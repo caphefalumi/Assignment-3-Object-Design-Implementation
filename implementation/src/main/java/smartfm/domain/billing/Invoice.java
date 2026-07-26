@@ -15,7 +15,6 @@ import smartfm.common.Validators;
  * (Billing and Settlement Package). Delegates balance calculations to
  * an {@link InvoiceState} instance (State pattern).
  */
-@SuppressWarnings("serial")
 public class Invoice implements Serializable {
 
   private static final long serialVersionUID = 1L;

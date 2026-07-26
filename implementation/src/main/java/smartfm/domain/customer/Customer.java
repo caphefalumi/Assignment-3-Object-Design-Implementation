@@ -12,7 +12,6 @@ import smartfm.domain.fleet.Person;
  * services from ABC-Trans. Corresponds to the {@code Customer} CRC card
  * in Assignment 2 Section 3 (Commercial and Ordering Package).
  */
-@SuppressWarnings("serial")
 public class Customer extends Person {
 
   private static final long serialVersionUID = 1L;
