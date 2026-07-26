@@ -699,27 +699,28 @@ SmartFM is implemented in Java 26 using a standard Maven project layout. The des
 
 == Compilation and Execution
 
-*Prerequisites:* Building and running the application needs JDK 26. SQLite is embedded, so no external database or network configuration is needed. All required library JARs are declared in `pom.xml` and stored in `lib/`. Running on Java 26 requires `--enable-native-access=ALL-UNNAMED` for SQLite JDBC native library loading. Run commands from the project root directory using one of the methods below.
+*Prerequisites:* Building and running the application requires JDK 26 (e.g., OpenJDK 26.0.2). SQLite is embedded via JDBC (`lib/sqlite-jdbc-3.46.1.0.jar`), so no external database server, network setup, or database credentials are needed. Running on Java 26 requires the JVM flag `--enable-native-access=ALL-UNNAMED` for SQLite JDBC native library loading.
 
-*Using Maven (recommended):*
+*Step-by-step setup and execution guide for external evaluators:*
+
+1. *Extract the submission package:* Unzip the project files to a local directory on any Windows, macOS, or Linux machine with JDK 26 installed.
+2. *Compile and run tests:* Open a terminal in the root directory and execute `mvn test` (or `make compile`). This validates Checkstyle compliance and executes all 76 automated JUnit 5 tests.
+3. *Launch the GUI application:* Execute `make run` (or build the executable shaded JAR via `mvn package` and run `java --enable-native-access=ALL-UNNAMED -jar target/smartfm.jar`). The SmartFM desktop interface will launch displaying Tab 1 ("1. Customer Registration").
+4. *Reset demonstration data (optional):* State is persisted locally in `data/smartfm.db`. To reset the system to its initial seeded state (2 branches, 3 vehicles, 3 drivers, 3 service offerings), execute `make reset` or delete `data/smartfm.db*`.
+
+*Build tool options summary:*
 
 #console(```
-mvn test          # Runs all 76 automated JUnit 5 tests
-mvn package       # Compiles and builds the self-contained executable JAR
+# Option A: Maven Build & Execution (Recommended)
+mvn test          # Validates Checkstyle (0 errors) and runs all 76 JUnit 5 tests
+mvn package       # Compiles and packages self-contained executable JAR in target/
 java --enable-native-access=ALL-UNNAMED -jar target/smartfm.jar
-```) 
 
-*Using Makefile:*
-
-#console(```
-make compile      # Compiles Java sources with -Xlint:all
-make run          # Launches GUI interface
-make jar          # Builds target/smartfm.jar
+# Option B: GNU Make Shortcuts
+make compile      # Compiles Java sources with -Xlint:all to target/classes
+make run          # Launches the desktop GUI interface
+make reset        # Cleans compiled classes and resets SQLite database state
 ```)
-
-
-
-Data is stored locally in the embedded SQLite database `data/smartfm.db`. Delete this database and any `-wal`/`-shm` sidecar files (or run `make reset`) to return to the seeded state: two branches, three vehicles, three drivers, and three service offerings. No external database server, credentials, or network service is required.
 
 #figure(
   image("images/compilation.png", width: 95%),
