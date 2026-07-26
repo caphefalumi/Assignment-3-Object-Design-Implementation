@@ -17,7 +17,7 @@ import smartfm.common.Validators;
 import smartfm.domain.customer.Customer;
 
 /**
- * GUI equivalent of {@code SmartFmConsoleApp.registerCustomer()}.
+ * Customer Registration GUI Panel.
  * Presents an empty registration form (Assignment 3 brief requirement
  * 1: "an empty UI at the beginning of the scenario"), validates every
  * field on submit, and shows a clear success message once the account

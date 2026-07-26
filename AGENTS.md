@@ -10,7 +10,7 @@ This file provides architectural context, repository layout, build instructions,
 - **Project**: SmartFM (Smart Fleet Management System) - Assignment 3
 - **Primary Stack**:
   - **Java 26** (Desktop Application)
-  - **Swing GUI** (`smartfm.ui.gui.*`) and **Console CLI** (`smartfm.ui.SmartFmConsoleApp`)
+  - **Swing GUI** (`smartfm.ui.gui.*`)
   - **SQLite JDBC** (`3.46.1.0`) embedded persistence via single-file DB `data/smartfm.db`
   - **SLF4J API** (`1.7.36`) with no-op logging binding
   - **GNU Make** / **Maven** build systems
@@ -41,7 +41,7 @@ Assignment 3/
     │       ├── domain/                      # Domain sub-packages (customer, order, shipment, billing, fleet, catalog)
     │       ├── application/                 # 4 GRASP Controllers, Observer listeners, Bootstrap
     │       ├── infrastructure/              # DataStore: SQLite database gateway
-    │       └── ui/                          # Launcher, CLI, and Swing GUI (`ui.gui`)
+    │       └── ui/                          # Launcher and Swing GUI (`ui.gui`)
     ├── scenarios/                           # Scripted CLI inputs for end-to-end user flows
     ├── tools/java/                          # Automated ScreenshotDriver for visual evidence
     ├── transcripts/                         # Evidence of compilation and CLI execution
@@ -56,7 +56,7 @@ SmartFM is designed according to GRASP, GoF design patterns, and strict layered 
 
 ### Layered Separation
 1. **UI Layer (`smartfm.ui`, `smartfm.ui.gui`)**:
-   - Presents Swing views and CLI prompts.
+   - Presents Swing views.
    - Delegates all business requests directly to Application Controllers.
    - **Must not** perform direct SQL/database access or implement business rules.
 2. **Application Layer (`smartfm.application`)**:
@@ -90,7 +90,6 @@ SmartFM is designed according to GRASP, GoF design patterns, and strict layered 
 | :--- | :--- | :--- |
 | **Compile Project** | `make compile` | Compiles Java sources with `-Xlint:all` to `target/classes` |
 | **Run Swing GUI** | `make run` | Launches the GUI desktop application |
-| **Run CLI Application** | `make run-cli` | Launches `smartfm.ui.SmartFmConsoleApp` in CLI mode |
 | **Build Executable JAR** | `make jar` | Generates `target/smartfm.jar` with `target/lib/` dependencies |
 | **Compile Tools** | `make tools` | Compiles `ScreenshotDriver` tool |
 | **Generate Screenshots** | `make screenshots` | Resets DB, runs `ScreenshotDriver` to generate evidence PNGs |

@@ -11,13 +11,11 @@ import smartfm.application.ShipmentTracker;
 import smartfm.infrastructure.DataStore;
 
 /**
- * Shared application state for the Swing GUI: one {@link DataStore} and
- * one {@link Bootstrap} instance for the lifetime of the window,
- * exactly mirroring how {@code SmartFmConsoleApp} holds a single
- * instance of each. This class does not contain any business logic
- * itself; it is a thin holder that lets every panel reach the same
- * four controllers (Assignment 2 Section 5.3.1, Facade pattern) without
- * duplicating the bootstrap sequence per panel.
+ * Shared application state for the Swing GUI: holds one {@link DataStore} and
+ * one {@link Bootstrap} instance for the lifetime of the window.
+ * This class does not contain any business logic itself; it is a thin holder
+ * that lets every panel reach the same four controllers (Assignment 2 Section 5.3.1,
+ * Facade pattern) without duplicating the bootstrap sequence per panel.
  *
  * <p>Because several panels display data that another panel may have
  * just changed (e.g. placing an order changes what {@code

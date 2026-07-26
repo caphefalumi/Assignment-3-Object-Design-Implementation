@@ -17,13 +17,10 @@ import javax.swing.UIManager;
 /**
  * Graphical (Swing) user interface for the SmartFM Assignment 3
  * implementation, satisfying the Assignment 3 brief's requirement for
- * "a simple user interface (graphical or textual)". Presents the same
- * five workflows as the textual {@code SmartFmConsoleApp} - customer
- * registration plus the four business areas - as tabs in a single
- * window, each backed by the exact same controller classes so that
- * both interfaces are two Boundary-layer views over one unchanged
- * Application/Domain layer (Assignment 2 Section 5.3.3, layered
- * architecture; Assignment 3 Part IV, Presentation component).
+ * "a simple user interface (graphical or textual)". Presents five core
+ * workflows - customer registration plus the four business areas - as tabs in a single
+ * window, each backed by application controller classes (Assignment 2 Section 5.3.3,
+ * layered architecture; Assignment 3 Part IV, Presentation component).
  */
 @SuppressWarnings({"serial", "this-escape"})
 public class SmartFmMainFrame extends JFrame {

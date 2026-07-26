@@ -30,7 +30,7 @@ ACTIVATION_API_NAME = jakarta.activation-api-2.1.2.jar
 SLF4J_API_NAME = slf4j-api-1.7.36.jar
 SLF4J_NOP_NAME = slf4j-nop-1.7.36.jar
 
-.PHONY: all compile jar exe run run-cli tools screenshots clean reset
+.PHONY: all compile jar exe run tools screenshots clean reset
 
 all: compile
 
@@ -64,9 +64,6 @@ exe: jar
 
 run: compile
 	$(JAVA) -cp "$(OUT_DIR);$(DEPS_CP)" $(MAIN)
-
-run-cli: compile
-	$(JAVA) -cp "$(OUT_DIR);$(DEPS_CP)" $(MAIN) --cli
 
 tools: compile
 	@if not exist "$(TOOLS_OUT)" mkdir "$(TOOLS_OUT)"
@@ -117,9 +114,6 @@ exe: jar
 
 run: compile
 	$(JAVA) -cp "$(OUT_DIR):$(DEPS_CP)" $(MAIN)
-
-run-cli: compile
-	$(JAVA) -cp "$(OUT_DIR):$(DEPS_CP)" $(MAIN) --cli
 
 tools: compile $(TOOLS_SRC)
 	@mkdir -p "$(TOOLS_OUT)"
