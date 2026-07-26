@@ -691,7 +691,6 @@ SmartFM is implemented in Java 26 using a standard Maven project layout. The des
     [`src/main/java/smartfm/application/`], [Four GRASP Controllers, observer interfaces, bootstrap, and ID generation.],
     [`src/main/java/smartfm/infrastructure/`], [The `DataStore` SQLite persistence gateway.],
     [`src/main/java/smartfm/ui/`, `src/main/java/smartfm/ui/gui/`], [Swing desktop GUI presentation layer over application controllers.],
-    [`scenarios/`], [Test scenario scripts for automated UI evidence drivers.],
     [`tools/java/`], [GUI screenshot automation driver.],
   )),
   caption: [Standard project layout and package organisation.],
