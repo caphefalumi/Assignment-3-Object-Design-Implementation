@@ -1,3 +1,21 @@
+#let header-fill = rgb("#1a3a5c")
+#let alt-row-fill = rgb("#f0f4f8")
+#let border-stroke = 0.5pt + rgb("#9db3c8")
+#let th(content) = table.cell(fill: header-fill, text(fill: white, weight: "bold", content))
+#let console(content) = block(
+  width: 100%, fill: rgb("#0d1117"), radius: 4pt, inset: 8pt,
+  stroke: border-stroke,
+  align(left, text(fill: rgb("#c9d1d9"), font: "Consolas", size: 6.7pt, content)),
+)
+#let styled-table(columns, cells) = table(
+  columns: columns,
+  align: (left + top,)*columns.len(),
+  inset: (x: 7pt, y: 6pt),
+  stroke: border-stroke,
+  fill: (_, y) => if y == 0 { header-fill } else if calc.odd(y) { white } else { alt-row-fill },
+  ..cells,
+)
+
 // This function gets your whole document as its `body` and formats
 // it as an article in the style of the IEEE.
 #let ieee(
@@ -223,7 +241,8 @@
 
   // Start two column mode and configure paragraph properties.
   show: columns.with(1, gutter: 12pt)
-  set par(justify: true, first-line-indent: 1em)
+  set par(justify: true, first-line-indent: (amount: 1.5em, all: true))
+  show table: set text(size: 8.2pt)
 
   // Display abstract and index terms.
   if abstract != none [
