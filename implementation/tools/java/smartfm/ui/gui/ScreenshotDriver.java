@@ -55,6 +55,7 @@ public final class ScreenshotDriver {
     captureFleetDispatch();
     captureShipmentTracking();
     captureBillingPayment();
+    captureReports();
     captureExitConfirmation();
 
     onEdt(() -> frame.getContext().save());
@@ -265,6 +266,16 @@ public final class ScreenshotDriver {
     });
     clickButton(panel, "Submit Payment");
     shoot("05d_billing_payment_settled");
+  }
+
+  private void captureReports() throws Exception {
+    ReportPanel panel = frame.reportPanel();
+    onEdt(() -> frame.tabs().setSelectedIndex(5));
+    shoot("06a_reports_financial_summary");
+
+    onEdt(() -> panel.categoryCombo().setSelectedItem(smartfm.domain.report.ReportCategory.FLEET));
+    clickButton(panel, "Generate Report");
+    shoot("06b_reports_fleet_utilization");
   }
 
   private void captureExitConfirmation() throws Exception {

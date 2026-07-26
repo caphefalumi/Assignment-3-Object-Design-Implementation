@@ -2,9 +2,12 @@ package smartfm.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -15,6 +18,8 @@ import smartfm.domain.customer.Customer;
 import smartfm.domain.fleet.Branch;
 import smartfm.domain.order.Consignment;
 import smartfm.domain.order.Order;
+import smartfm.domain.report.Report;
+import smartfm.domain.report.ReportCategory;
 import smartfm.infrastructure.DataStore;
 
 @DisplayName("OrderProcessor Application Controller Tests")
@@ -49,7 +54,7 @@ class OrderProcessorTest {
   }
 
   @Test
-  @DisplayName("Should successfully submit order and calculate quoted amount")
+  @DisplayName("Should successfully submit order, calculate quoted amount, and support report generation")
   void testSubmitOrder() {
     Consignment consignment = new Consignment("CNS-001", 10.0, 0.1, false, false, "Books");
     Order order = orderProcessor.submitOrder(
@@ -66,6 +71,25 @@ class OrderProcessorTest {
     assertEquals(220.0, order.getQuotedAmount(), 0.01);
     assertEquals(1, store.orders().size());
     assertEquals(1, store.customers().get("CUST-001").getOrderIds().size());
+
+    // Report entity and ReportProcessor integration assertions
+    Map<String, String> metrics = new LinkedHashMap<>();
+    metrics.put("Test Metric", "100");
+    Report report = new Report("RPT-001", "Test Report", ReportCategory.FINANCIAL,
+        LocalDate.now(), LocalDate.now(), metrics, "Summary text");
+    assertEquals("RPT-001", report.getId());
+    assertEquals(ReportCategory.FINANCIAL, report.getCategory());
+
+    ReportProcessor reportProcessor = new ReportProcessor(store);
+    Report finReport = reportProcessor.generateFinancialReport(null, null);
+    assertNotNull(finReport);
+    Report fleetReport = reportProcessor.generateFleetReport(null, null);
+    assertNotNull(fleetReport);
+    Report branchReport = reportProcessor.generateBranchReport("BR-MEL", null, null);
+    assertNotNull(branchReport);
+    Report orderReport = reportProcessor.generateOrderSummaryReport(null, null);
+    assertNotNull(orderReport);
+    assertTrue(orderReport.getContent().contains("SMARTFM ORDER"));
   }
 
   @Test

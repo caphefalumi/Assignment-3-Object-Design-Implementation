@@ -30,6 +30,7 @@ public final class Bootstrap {
   private DispatchManager dispatchManager;
   private ShipmentTracker shipmentTracker;
   private PaymentProcessor paymentProcessor;
+  private ReportProcessor reportProcessor;
 
   public Bootstrap(DataStore store) {
     this.store = store;
@@ -45,12 +46,13 @@ public final class Bootstrap {
       seedBranchesFleetAndCatalogue();
     }
 
-    // Step 5-8: instantiate the four controllers in dependency-safe,
+    // Step 5-8: instantiate the controllers in dependency-safe,
     // Observer-registration-safe order (Assignment 2 Section 6.2).
     orderProcessor = new OrderProcessor(store);
     dispatchManager = new DispatchManager(store);
     shipmentTracker = new ShipmentTracker(store, telemetrySource);
     paymentProcessor = new PaymentProcessor(store);
+    reportProcessor = new ReportProcessor(store);
 
     orderProcessor.addOrderApprovedListener(dispatchManager);
     orderProcessor.addInvoiceCreatedListener(paymentProcessor);
@@ -145,6 +147,10 @@ public final class Bootstrap {
 
   public PaymentProcessor getPaymentProcessor() {
     return paymentProcessor;
+  }
+
+  public ReportProcessor getReportProcessor() {
+    return reportProcessor;
   }
 
   public ManualTelemetrySource getTelemetrySource() {

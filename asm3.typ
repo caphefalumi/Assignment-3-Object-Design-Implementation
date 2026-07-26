@@ -42,7 +42,7 @@ Because no formal marker feedback was provided, Table 1 records revisions made d
     [A2 lifecycle state tables], [State rules required programmatic enforcement.], [Built concrete State classes for Order, Shipment, Invoice, and Payment.], [Illegal state transitions throw `InvalidDataException`.],
     [A2 adapter interfaces], [System needed testable concrete adapters.], [Added `ManualTelemetrySource` and `SimulatedGatewayAdapter`.], [External integrations remain replaceable.],
     [A2 narrative observer descriptions], [Callbacks risked concrete controller coupling.], [Defined narrow interfaces (`OrderApprovedListener`, `InvoiceCreatedListener`, `ShipmentAssignedListener`).], [Maintained low coupling between application controllers.],
-    [A2 wide conceptual scope], [Reporting was independent of the four core areas.], [Deferred `Report` class while completing the main operational flow.], [Scope kept focused on four required business areas.],
+    [A2 wide conceptual scope], [Reporting was independent of the four core areas.], [Added `Report` entity, `ReportProcessor` controller, and `ReportPanel` UI tab for administrative reporting.], [Implemented Task T12 with zero changes to existing transactional layers.],
     [A2 Invoice-Payment 1-to-1 assumption], [Partial payments require multiple payments per invoice.], [Updated relationship to 1-to-Many with `InvoicePartiallyPaidState`.], [Supported partial cash/card payment scenarios.],
     [A2 ServiceOffering-Branch conceptual link], [Branch availability check was not enforced during order entry.], [Added `Branch.registerServiceOffering()`; origin branch check deferred.], [Documented as a minor scope boundary in Section 3.2.],
   )),
@@ -542,7 +542,7 @@ All fourteen core domain classes from Assignment 2 (Customer, Order, Consignment
 
 The main class-level change was updating the `Invoice` to `Payment` relationship from 1-to-1 to 1-to-Many. During implementation, we found that a customer paying a 500-dollar invoice with a 200-dollar cash deposit followed by a 300-dollar card payment was impossible under the 1-to-1 constraint. The new `InvoicePartiallyPaidState` tracks the remaining balance across multiple `Payment` objects. Each `Payment` remains immutable once settled.
 
-Features outside the four operational areas, such as the `Report` class and authentication or role-based access (`StaffMember`, `StaffRole`, `SystemConfiguration`), remain in the domain model without UI bindings. We deferred these deliberately rather than deliver half-built features.
+Features outside the four operational areas, such as authentication or role-based access (`StaffMember`, `StaffRole`, `SystemConfiguration`), remain in the domain model without UI bindings. We deferred these deliberately rather than deliver half-built features. The `Report` class and its coordinating controller `ReportProcessor` are fully implemented (Task T12) and exposed via the `ReportPanel` UI tab.
 
 === Responsibilities and collaborators
 
@@ -647,13 +647,14 @@ SmartFM is implemented in Java 26 using a standard Maven project layout. The des
     [UC-03, @fig-seq-dispatch], [`DispatchManager`, `Vehicle`, `Driver`, `Shipment`], [`DispatchManager` checks resource prerequisites, creates shipments, and fires assignment events.],
     [UC-04, @fig-seq-tracking], [`ShipmentTracker`, `ManualTelemetrySource`, `ShipmentState`], [`ShipmentTracker` delegates state updates to `ShipmentState` subclasses and records telemetry.],
     [UC-05, @fig-seq-payment], [`PaymentProcessor`, `IPaymentStrategy`, `SimulatedGatewayAdapter`], [`PaymentProcessor` validates balances, delegates cash/card strategies, invokes adapter, and generates receipts.],
+    [T12 / Administrative Reports], [`ReportProcessor`, `Report`, `ReportPanel`], [`ReportProcessor` aggregates metrics across `DataStore` entities and presents KPI cards, tables, and documents in `ReportPanel`.],
     [Persistence / indirection], [`smartfm.infrastructure.DataStore`], [`DataStore` manages SQLite JDBC operations inside atomic transactions.],
     [Bootstrap / observer wiring], [`Bootstrap`, listener interfaces, `IdGenerator`], [Seeds initial database records and wires listener interfaces in dependency-safe order.],
   )),
   caption: [Traceability from detailed design and selected sequence diagrams to Java source.],
 ) <tbl-design-code-map>
 
-*Task coverage.* The table below maps each SRS task (from Assignment 1) to its implementation status. Eight of fifteen tasks are fully implemented. The remaining seven are either partially supported or outside the four-area scope we selected.
+*Task coverage.* The table below maps each SRS task (from Assignment 1) to its implementation status. Nine of fifteen tasks are fully implemented. The remaining six are either partially supported or outside the four-area scope we selected.
 
 #figure(
   styled-table((2.0fr, 1.5fr, 4.5fr), (
@@ -669,12 +670,12 @@ SmartFM is implemented in Java 26 using a standard Maven project layout. The des
     [T9: Generate Receipt], [Full], [Immutable `Receipt` created automatically upon payment settlement.],
     [T10: Manage Vehicles], [Not implemented], [Vehicle records are seeded during bootstrap but no CRUD UI is provided.],
     [T11: Manage Drivers], [Not implemented], [Driver records are seeded during bootstrap but no CRUD UI is provided.],
-    [T12: Generate Reports], [Not implemented], [`Report` class is designed (Assignment 2) but explicitly deferred as out of scope.],
+    [T12: Generate Reports], [Full], [Implemented via `ReportProcessor` and `ReportPanel` across financial, fleet, branch, and commercial order metrics.],
     [T13: Update Customer], [Not implemented], [Customer status can be changed programmatically but no update UI is provided.],
     [T14: Cancel/Modify Order], [Partial], [Cancellation is implemented; modification of submitted order fields is not supported.],
     [T15: Manage Config], [Not implemented], [`SystemConfiguration` is loaded at startup but no admin UI for changing values is provided.],
   )),
-  caption: [SRS task coverage: eight tasks fully implemented, one partially supported, and six deferred or out of scope.],
+  caption: [SRS task coverage: nine tasks fully implemented, one partially supported, and five tasks are out of scope.],
 ) <tbl-task-coverage>
 
 #figure(
@@ -757,6 +758,14 @@ The screenshots below were generated by running `tools/java/smartfm/ui/gui/Scree
   ),
   caption: [Successful delivery transition (left); simulated payment completion, receipt issuance, and a paid invoice (right). No real banking transaction is performed.],
 ) <fig-gui-completion>
+
+#figure(
+  grid(columns: (1fr, 1fr), gutter: 7pt,
+    image("images/06a_reports_financial_summary.png", width: 100%),
+    image("images/06b_reports_fleet_utilization.png", width: 100%),
+  ),
+  caption: [Administrative report generation UI: financial and revenue summary report (left); fleet asset utilization and dispatch report (right).],
+) <fig-gui-reports>
 
 #figure(
   image("images/06_final_state_before_exit.png", width: 75%),

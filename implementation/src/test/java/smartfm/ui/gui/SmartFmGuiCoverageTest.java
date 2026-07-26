@@ -151,11 +151,12 @@ class SmartFmGuiCoverageTest {
   }
 
   @Test
-  @DisplayName("Should cover FleetDispatchPanel, ShipmentTrackingPanel, and BillingPaymentPanel error paths")
+  @DisplayName("Should cover FleetDispatchPanel, ShipmentTrackingPanel, BillingPaymentPanel, and ReportPanel")
   void testOtherPanelsErrorPaths() throws Exception {
     FleetDispatchPanel dispatchPanel = frame.dispatchPanel();
     ShipmentTrackingPanel trackingPanel = frame.trackingPanel();
     BillingPaymentPanel billingPanel = frame.billingPanel();
+    ReportPanel reportPanel = frame.reportPanel();
 
     // 1. Dispatch without selecting order -> error
     onEdt(() -> dispatchPanel.clickDispatch());
@@ -167,6 +168,13 @@ class SmartFmGuiCoverageTest {
 
     // 3. Billing without selecting invoice -> error
     onEdt(() -> billingPanel.clickSubmitPayment());
+
+    // 4. Report panel generation
+    onEdt(() -> {
+      reportPanel.categoryCombo().setSelectedIndex(0);
+      reportPanel.clickGenerate();
+    });
+    assertNotNull(reportPanel);
   }
 
   @Test
@@ -222,6 +230,7 @@ class SmartFmGuiCoverageTest {
       assertNotNull(frame.dispatchPanel());
       assertNotNull(frame.trackingPanel());
       assertNotNull(frame.billingPanel());
+      assertNotNull(frame.reportPanel());
       assertNotNull(frame.tabs());
       assertNotNull(frame.getContext());
     });

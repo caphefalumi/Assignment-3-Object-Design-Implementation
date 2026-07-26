@@ -23,6 +23,7 @@ import smartfm.domain.customer.Customer;
  * field on submit, and shows a clear success message once the account
  * is created.
  */
+@SuppressWarnings({"serial", "this-escape"})
 public class CustomerRegistrationPanel extends JPanel {
 
   private static final long serialVersionUID = 1L;

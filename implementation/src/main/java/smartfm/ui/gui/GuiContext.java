@@ -62,6 +62,10 @@ public final class GuiContext {
     return bootstrap.getPaymentProcessor();
   }
 
+  public smartfm.application.ReportProcessor getReportProcessor() {
+    return bootstrap.getReportProcessor();
+  }
+
   public void addChangeListener(Runnable listener) {
     changeListeners.add(listener);
   }

@@ -22,6 +22,7 @@ import javax.swing.UIManager;
  * window, each backed by application controller classes (Assignment 2 Section 5.3.3,
  * layered architecture; Assignment 3 Part IV, Presentation component).
  */
+@SuppressWarnings({"serial", "this-escape"})
 public class SmartFmMainFrame extends JFrame {
 
   private static final long serialVersionUID = 1L;
@@ -33,6 +34,7 @@ public class SmartFmMainFrame extends JFrame {
   private FleetDispatchPanel dispatchPanel;
   private ShipmentTrackingPanel trackingPanel;
   private BillingPaymentPanel billingPanel;
+  private ReportPanel reportPanel;
 
   public SmartFmMainFrame(Path dataFile) {
     super("SmartFM - Smart Fleet Management System (Assignment 3)");
@@ -53,6 +55,7 @@ public class SmartFmMainFrame extends JFrame {
     this.dispatchPanel = new FleetDispatchPanel(context);
     this.trackingPanel = new ShipmentTrackingPanel(context);
     this.billingPanel = new BillingPaymentPanel(context);
+    this.reportPanel = new ReportPanel(context);
 
     this.tabs = new JTabbedPane();
     tabs.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 13));
@@ -61,6 +64,7 @@ public class SmartFmMainFrame extends JFrame {
     tabs.addTab("2. Fleet Dispatch", dispatchPanel);
     tabs.addTab("3. Shipment Tracking", trackingPanel);
     tabs.addTab("4. Billing and Payment", billingPanel);
+    tabs.addTab("5. Reports", reportPanel);
 
     JLabel statusBar = new JLabel(" SQLite database: " + dataFile.getFileName() + " (saved in data/)");
     statusBar.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
@@ -121,6 +125,10 @@ public class SmartFmMainFrame extends JFrame {
 
   BillingPaymentPanel billingPanel() {
     return billingPanel;
+  }
+
+  ReportPanel reportPanel() {
+    return reportPanel;
   }
 
   public static void launch(Path dataFile) {

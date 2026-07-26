@@ -16,6 +16,7 @@ import smartfm.common.Validators;
  * (Commercial and Ordering Package). Delegates lifecycle transitions to
  * an {@link OrderState} instance (State pattern).
  */
+@SuppressWarnings("serial")
 public class Order implements Serializable {
 
   private static final long serialVersionUID = 1L;

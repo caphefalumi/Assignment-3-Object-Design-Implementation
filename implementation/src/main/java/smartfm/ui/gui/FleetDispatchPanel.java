@@ -27,6 +27,7 @@ import smartfm.domain.shipment.Shipment;
  * Area 1 (an order must already be Approved), matching the dependency
  * chain documented in asm3.typ Part V.C.
  */
+@SuppressWarnings({"serial", "this-escape"})
 public class FleetDispatchPanel extends JPanel {
 
   private static final long serialVersionUID = 1L;
