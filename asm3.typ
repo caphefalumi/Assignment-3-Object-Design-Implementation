@@ -23,11 +23,11 @@
 
 = Introduction
 
-SmartFM is a fleet-logistics desktop application that our team designed in Assignment 2 and has now built as a working Java 26 system. It handles customer registration, order placement, dispatch, shipment tracking, billing, and payment. This report explains how we turned the high-level design into running code, what we changed along the way, and what we learned from the process.
+SmartFM is a fleet-logistics desktop application that our team designed in Assignment 2 and has now built as a working Java 26 system. It handles customer registration, order placement, dispatch, shipment tracking, billing, and payment. This report covers how we turned the high-level design into running code, what changed along the way, and what we learned.
 
-The report follows the assignment structure: Section 1 summarises revisions to Assignment 2; Section 2 presents the detailed class design, sequence diagrams, and architecture; Section 3 reflects on design quality and lessons learned; and Section 4 provides code mappings, build instructions, execution evidence, and test results. The full Assignment 2 submission is attached in Appendix A.
+The report follows the assignment structure: Section 1 lists revisions to Assignment 2; Section 2 presents the detailed class design, sequence diagrams, and architecture; Section 3 reflects on design quality and lessons learned; Section 4 provides code mappings, build instructions, execution evidence, and test results. The full Assignment 2 submission is attached in Appendix A.
 
-We implemented four core business areas: Order Management, Fleet Dispatch, Shipment Tracking, and Billing & Payment. A Swing GUI (`smartfm.ui.gui`) presents intuitive operational forms that delegate all requests directly to the application controllers, ensuring clean separation between user presentation and domain rules.
+We implemented four business areas: Order Management, Fleet Dispatch, Shipment Tracking, and Billing & Payment. A Swing GUI (`smartfm.ui.gui`) provides operational forms that delegate all requests to the application controllers. The UI does not contain business rules; it only collects input and displays results.
 
 = Summary of Design Revision
 
@@ -53,7 +53,7 @@ Because no formal marker feedback was provided, Table 1 records revisions made d
 
 == Design approach and responsibility allocation
 
-The detailed design maintains the Entity-Control-Boundary structure established in Assignment 2. Domain entities store business data and enforce state rules. Application controllers coordinate user requests. UI boundaries handle input and display output, while infrastructure classes isolate database persistence. This structure follows key GRASP principles from Larman @larman2004uml, including Controller, Information Expert, Low Coupling, and Indirection.
+The detailed design keeps the Entity-Control-Boundary structure from Assignment 2. Domain entities store business data and enforce state rules. Application controllers coordinate user requests. UI boundaries handle input and display output, and infrastructure classes isolate database persistence. This follows several GRASP principles (Controller, Information Expert, Low Coupling, Indirection) as described by Larman @larman2004uml.
 
 #colbreak()
 #figure(
@@ -399,7 +399,7 @@ The detailed design maintains the Entity-Control-Boundary structure established 
 
 == GRASP Controller assignments
 
-In GRASP, a Controller handles incoming system events for a use-case session or operational domain @larman2004uml. SmartFM assigns one application controller to each of the four business areas. UI event handlers do not construct domain entities or mutate state directly. Instead, `Launcher` initializes a `Bootstrap` instance that wires controllers and event listeners. UI actions then delegate all requests to these controller operations.
+A GRASP Controller is a non-UI object that handles incoming system events for a use-case session or operational domain @larman2004uml. SmartFM has one application controller per business area. UI event handlers do not construct domain entities or change state directly. Instead, `Launcher` creates a `Bootstrap` instance that wires controllers and event listeners. UI actions then pass all requests to these controller operations.
 
 #colbreak()
 #figure(
@@ -415,7 +415,7 @@ In GRASP, a Controller handles incoming system events for a use-case session or 
 
 == Lifecycle, patterns, and dynamic constraints
 
-We used the State pattern to enforce lifecycle rules so that illegal transitions are caught at the point of request rather than discovered later in corrupted data. Each lifecycle uses a polymorphic class hierarchy: concrete state subclasses override only the transitions they permit and inherit default rejection from the abstract base. Orders move from Submitted to Approved, Rejected (with reason), or Cancelled. Shipments progress strictly from Assigned → Picked Up → In Transit → Delivered, with no shortcuts. Invoices transition from Unpaid to Partially Paid or Paid depending on the outstanding balance, and Payments move from Pending → Verified → Settled, or to Failed at any point before settlement. Any out-of-order transition throws an `InvalidDataException`; for example, a shipment cannot be marked Delivered without first passing through Picked Up and In Transit. An early bug during development confirmed this guard was worth the sixteen concrete State subclasses across the four hierarchies.
+We used the State pattern to enforce lifecycle rules so that illegal transitions are caught at the point of request rather than discovered later in corrupted data. Each lifecycle uses a polymorphic class hierarchy: concrete state subclasses override only the transitions they permit and inherit default rejection from the abstract base. Orders move from Submitted to Approved, Rejected (with reason), or Cancelled. Shipments progress strictly from Assigned to Picked Up to In Transit to Delivered, with no shortcuts. Invoices go from Unpaid to Partially Paid or Paid depending on the outstanding balance, and Payments go from Pending to Verified to Settled, or to Failed at any point before settlement. Any out-of-order transition throws an `InvalidDataException`. For example, a shipment cannot be marked Delivered without first passing through Picked Up and In Transit. An early bug during development confirmed this guard was worth the sixteen concrete State subclasses across the four hierarchies.
 
 #figure(
   styled-table((1.7fr, 3.15fr, 4.1fr), (
@@ -432,9 +432,9 @@ We used the State pattern to enforce lifecycle rules so that illegal transitions
 
 === SQLite database design
 
-`DataStore` is the persistence gateway, fulfilling Assumption A1 from Assignment 2 while keeping domain models independent of database logic. It connects to the embedded SQLite database (`data/smartfm.db`) using the pinned Xerial JDBC driver. All database operations use prepared statements within explicit transactions.
+`DataStore` is the persistence gateway, filling the role that Assumption A1 from Assignment 2 left open, while keeping domain models independent of database logic. It connects to the embedded SQLite database (`data/smartfm.db`) using the pinned Xerial JDBC driver. All database operations use prepared statements within explicit transactions.
 
-When saving, `DataStore` atomically updates the normalized aggregate tables. When loading, it reconstructs domain objects, relationships, and state hierarchies in dependency order. The system enforces schema version 3 and rejects incompatible database versions, requiring a database reset if an older schema is detected.
+When saving, `DataStore` atomically updates the normalized aggregate tables. When loading, it reconstructs domain objects, relationships, and state hierarchies in dependency order. The system checks for schema version 3 on startup and rejects incompatible database versions, requiring a database reset if an older schema is found.
 
 #figure(
   image("images/db.png", width: 95%),
@@ -454,12 +454,12 @@ When saving, `DataStore` atomically updates the normalized aggregate tables. Whe
     [`shipments`], [`order_id`, `vehicle_id`, `driver_id`, `state_name`, location], [Stores dispatch assignments, state names, and current locations.],
     [`invoices`, `payments`, `invoice_payments`, `receipts`], [Billing IDs, amounts, dates, methods, states and foreign keys], [Stores billing balances, payment history, and receipt records.],
   )),
-  caption: [Normalized SQLite schema owned exclusively by `DataStore`; all writes occur in one transaction and all foreign-key relationships are enabled.],
+  caption: [Normalized SQLite schema owned by `DataStore`. All writes happen in one transaction with foreign keys enabled.],
 ) <tbl-sqlite-schema>
 
 == Selected use-case sequence diagrams
 
-The four sequence diagrams below illustrate the core implemented use cases. Each diagram shows the exact controller methods invoked by the GUI boundary. Section 4.1 maps these interactions directly to source code, and Section 4.3 provides execution evidence for each flow.
+The four sequence diagrams below show the main implemented use cases. Each diagram shows the controller methods that the GUI boundary calls. Section 4.1 maps these interactions to source code, and Section 4.3 provides execution evidence for each flow.
 
 #figure(
   mermaid("
@@ -538,17 +538,17 @@ sequenceDiagram
 
 === Class-level changes and non-changes
 
-All fourteen core domain classes from Assignment 2 (Customer, Order, Consignment, Shipment, Vehicle, Driver, Branch, ServiceOffering, PricingTariff, Invoice, Payment, Receipt, and the Person hierarchy) remain in the final implementation with the same responsibilities. The four State hierarchies and core interfaces (`IPaymentGateway`, `IPaymentStrategy`, `IPricingStrategy`, `ITelemetrySource`) were also preserved. The only additions are components that Assignment 2 explicitly deferred: `DataStore` for persistence, concrete adapters, `Bootstrap` for startup wiring, listener interfaces, and the UI boundary classes. Table 1 in Section 1 lists every revision; the paragraphs below explain the reasoning for the main changes.
+All fourteen core domain classes from Assignment 2 (Customer, Order, Consignment, Shipment, Vehicle, Driver, Branch, ServiceOffering, PricingTariff, Invoice, Payment, Receipt, and the Person hierarchy) are in the final implementation with the same responsibilities. The four State hierarchies and core interfaces (`IPaymentGateway`, `IPaymentStrategy`, `IPricingStrategy`, `ITelemetrySource`) were also kept. The only additions are components that Assignment 2 explicitly deferred: `DataStore` for persistence, concrete adapters, `Bootstrap` for startup wiring, listener interfaces, and the UI boundary classes. Table 1 in Section 1 lists every revision; the paragraphs below explain the reasoning for the main changes.
 
-The main class-level change was updating the relationship between `Invoice` and `Payment` from 1-to-1 to 1-to-Many. During implementation, we found that a customer paying a 500-dollar invoice with a 200-dollar cash deposit followed by a 300-dollar card payment was impossible under the 1-to-1 constraint. The new `InvoicePartiallyPaidState` tracks the remaining balance across multiple `Payment` objects, each of which remains immutable once settled.
+The main class-level change was updating the `Invoice` to `Payment` relationship from 1-to-1 to 1-to-Many. During implementation, we found that a customer paying a 500-dollar invoice with a 200-dollar cash deposit followed by a 300-dollar card payment was impossible under the 1-to-1 constraint. The new `InvoicePartiallyPaidState` tracks the remaining balance across multiple `Payment` objects. Each `Payment` remains immutable once settled.
 
 Features outside the four operational areas, such as the `Report` class and authentication or role-based access (`StaffMember`, `StaffRole`, `SystemConfiguration`), remain in the domain model without UI bindings. We deferred these deliberately rather than deliver half-built features.
 
 === Responsibilities and collaborators
 
-The responsibility split from Assignment 2 (entities own business rules, controllers coordinate workflows, and boundaries handle I/O) carried over without change. The single new collaborator is `DataStore`, which controllers receive at construction time so domain entities stay persistence-agnostic.
+The responsibility split from Assignment 2 (entities own business rules, controllers coordinate workflows, boundaries handle I/O) carried over without change. The one new collaborator is `DataStore`, which controllers receive at construction time so domain entities stay persistence-agnostic.
 
-The biggest responsibility-level refinement was replacing narrative observer callbacks with typed listener interfaces (`OrderApprovedListener`, `InvoiceCreatedListener`). In Assignment 2, we described these as "DispatchManager subscribes to order events," but during coding we found that this wording was ambiguous: did it mean automatic dispatch or just a notification? Defining narrow interfaces made the answer explicit: `OrderProcessor` fires an event, `DispatchManager.onOrderApproved` flags the order as dispatch-ready, and a human dispatcher must still call `assignShipment(...)` to allocate resources.
+The biggest responsibility-level refinement was replacing narrative observer callbacks with typed listener interfaces (`OrderApprovedListener`, `InvoiceCreatedListener`). In Assignment 2, we wrote that "DispatchManager subscribes to order events," but during coding that wording turned out to be ambiguous: did it mean automatic dispatch or just a notification? Defining narrow interfaces made the answer clear. `OrderProcessor` fires an event, `DispatchManager.onOrderApproved` flags the order as dispatch-ready, and a human dispatcher must still call `assignShipment(...)` to allocate resources.
 
 === Dynamic aspects: bootstrap and interactions
 
@@ -556,38 +556,38 @@ Assignment 2 did not specify how the system starts up or when data is saved; tho
 
 On first launch, `DataStore` creates `data/smartfm.db`, builds all tables in a single transaction, and seeds demonstration records (two branches, three vehicles, three drivers, and three service offerings). On later launches it detects the existing schema (version 3) and loads domain objects directly. `Bootstrap` then wires the four controllers and registers their event listeners in dependency-safe order. For example, `DispatchManager` is registered as an `OrderApprovedListener` on `OrderProcessor` before any orders can be approved.
 
-We chose to persist after every state mutation rather than only on exit, ensuring immediate durability. The interaction order matters: order approval updates the order and creates the invoice _before_ notifying listeners, dispatch stages shipment and resource changes _before_ firing `shipmentAssigned`, and payments generate a receipt only _after_ settlement succeeds. These sequences match the diagrams in Section 2.4.
+We chose to persist after every state mutation rather than only on exit, so that user actions are immediately committed to disk. The interaction order matters: order approval updates the order and creates the invoice _before_ notifying listeners, dispatch stages shipment and resource changes _before_ firing `shipmentAssigned`, and payments generate a receipt only _after_ settlement succeeds. These sequences match the diagrams in Section 2.4.
 
 == Architecture style(s)
 
 SmartFM uses two complementary architecture styles: a *Layered Architecture* for structural organisation and an *Event-Driven Architecture* for cross-subsystem communication. We chose this combination because a pure layered design would have forced `OrderProcessor` to call `DispatchManager` directly when an order is approved, creating tight coupling between two independent business areas. Adding event connectors at the application layer keeps the dispatch decision with the human operator while notifying the tracking subsystem automatically.
 
-The system is organised into four architectural components:
+The system has four architectural components:
 1. *Presentation:* `SmartFmMainFrame` and the Swing panel classes (`smartfm.ui.gui`).
 2. *Order and Billing:* `OrderProcessor`, `PaymentProcessor`, and their domain entities.
 3. *Fleet and Dispatch:* `DispatchManager`, `ShipmentTracker`, and their domain entities.
 4. *Persistence:* The `DataStore` database gateway.
 
-These components communicate through two connector types. *Synchronous downward calls* follow the layer ordering: UI views call controller methods, controllers coordinate domain entities, and controllers invoke `DataStore`. *Event connectors* operate within the application layer: order approval, invoice creation, and shipment assignment publish events through narrow listener interfaces, so that no publisher needs to know which concrete class handles the event.
+These components communicate through two connector types. *Synchronous downward calls* follow the layer ordering: UI views call controller methods, controllers coordinate domain entities, and controllers call `DataStore`. *Event connectors* operate within the application layer: order approval, invoice creation, and shipment assignment publish events through narrow listener interfaces, so no publisher needs to know which concrete class handles the event.
 
 Three architectural constraints enforce these rules:
-1. Domain classes never import presentation or application packages, as verified by the package structure.
-2. `DataStore` is accessed exclusively through controllers; UI and domain classes never touch JDBC.
-3. Event publishers depend only on listener interfaces, never on concrete subscriber classes.
+1. Domain classes never import presentation or application packages (verified by the package structure).
+2. `DataStore` is accessed only through controllers. UI and domain classes never touch JDBC.
+3. Event publishers depend only on listener interfaces, not on concrete subscriber classes.
 
 = Design Quality
 
 == Good aspects of the Assignment 2 design
 
-The CRC cards from Assignment 2 mapped almost one-to-one to controller methods. For example, `OrderProcessor`'s three core responsibilities became `registerCustomer()`, `submitOrder()`, and `approveOrder()` with no extra logic bolted on; the CRC description was specific enough to code from directly. Defining lifecycle tables early was equally valuable: each table row became a concrete State subclass, and writing JUnit tests for invalid transitions was straightforward because the expected behaviour was already documented.
+The CRC cards from Assignment 2 mapped almost one-to-one to controller methods. For example, `OrderProcessor`'s three core responsibilities became `registerCustomer()`, `submitOrder()`, and `approveOrder()` with nothing extra bolted on. The CRC description was specific enough to code from directly. Defining lifecycle tables early was equally useful: each table row became a concrete State subclass, and writing JUnit tests for invalid transitions was straightforward because the expected behaviour was already written down.
 
-Design patterns chosen during Assignment 2 also proved useful in practice. The Adapter pattern allowed us to build `SimulatedGatewayAdapter` for development and swap it for a real payment gateway later without modifying `PaymentProcessor`. The Observer pattern kept controllers decoupled. When order approval needed to notify `PaymentProcessor` about a newly created invoice, we registered it as an `InvoiceCreatedListener` rather than adding a direct call inside `OrderProcessor`.
+Design patterns chosen during Assignment 2 also worked well in practice. The Adapter pattern let us build `SimulatedGatewayAdapter` for development and swap it for a real payment gateway later without touching `PaymentProcessor`. The Observer pattern kept controllers decoupled. When order approval needed to notify `PaymentProcessor` about a newly created invoice, we registered it as an `InvoiceCreatedListener` rather than adding a direct call inside `OrderProcessor`.
 
 The four controllers maintain high cohesion: each one owns a single business area and delegates domain logic to the entities it coordinates. Coupling stays low because the UI depends on controller methods (not domain internals) and cross-controller communication flows through abstract listener interfaces.
 
 == Missing or ambiguous aspects
 
-Assignment 2 deliberately excluded UI and persistence details, which was appropriate for a high-level design but left notable gaps to fill during coding. We had to define input-validation rules (e.g. phone format, non-negative cargo weight), error-feedback flows for the GUI, the full SQLite schema, and the bootstrap/seeding sequence. These additions were substantial (`DataStore` alone grew to nearly 800 lines), but they did not contradict the original design. Instead, they extended it into areas that Assignment 2 had flagged as out of scope.
+Assignment 2 deliberately excluded UI and persistence details, which made sense for a high-level design but left gaps to fill during coding. We had to define input-validation rules (e.g. phone format, non-negative cargo weight), error-feedback flows for the GUI, the full SQLite schema, and the bootstrap/seeding sequence. These additions were substantial (`DataStore` alone grew to nearly 800 lines), but they did not contradict the original design. They extended it into areas that Assignment 2 had flagged as out of scope.
 
 The main ambiguity was whether dispatch should be automatic or manual. Assignment 2 described `DispatchManager` as "subscribing to order approval events," which our team initially read as automatic assignment. During implementation, we realised this contradicted the SRS requirement for human dispatchers to choose vehicles and drivers. Resolving this took two team discussions before we settled on the current approach: the event notifies `DispatchManager` that an order is ready, but a dispatcher must still call `assignShipment(...)` explicitly.
 
@@ -598,36 +598,36 @@ Two minor design gaps remain in the implementation:
 
 == Flaws or errors in the initial design
 
-The most consequential flaw was the dispatch ambiguity discussed in Section 3.2. Looking back, we should have drawn at least a basic dispatch screen wireframe during Assignment 2. A simple sketch showing a "Select Vehicle" dropdown and an "Assign" button would have made the manual-dispatch requirement obvious and saved two days of team debate during implementation.
+The most consequential flaw was the dispatch ambiguity discussed in Section 3.2. In hindsight, we should have drawn at least a basic dispatch screen wireframe during Assignment 2. A simple sketch showing a "Select Vehicle" dropdown and an "Assign" button would have made the manual-dispatch requirement obvious and saved two days of team debate during implementation.
 
-The second flaw was omitting any persistence contract. Assignment 2's Assumption A1 acknowledged that "data access is deferred," but it said nothing about _when_ to save or _how_ to initialise. This forced us to design the entire `DataStore` transaction model from scratch, which worked out well but could have been guided by even a brief paragraph in the original design.
+The second flaw was omitting any persistence contract. Assignment 2's Assumption A1 acknowledged that "data access is deferred," but it said nothing about _when_ to save or _how_ to initialise. This forced us to design the entire `DataStore` transaction model from scratch. It worked out, but even a brief paragraph in the original design would have helped.
 
 The third flaw was the 1-to-1 constraint between `Invoice` and `Payment`. We only discovered this was a problem when trying to implement a scenario where a customer pays in two instalments: cash first, then card. The fix (1-to-Many with `InvoicePartiallyPaidState`) was straightforward, but walking through realistic payment scenarios during design would have caught it earlier.
 
-Finally, `ServiceOffering` was documented as delegating to `IPricingStrategy`, but the delegation was never specified in the CRC collaborators. During coding, we wired `PricingTariff` directly into `OrderProcessor` rather than routing through `ServiceOffering`, which means the strategy pattern is structurally present but not fully exercised.
+Finally, `ServiceOffering` was documented as delegating to `IPricingStrategy`, but the delegation was never listed in the CRC collaborators. During coding, we wired `PricingTariff` directly into `OrderProcessor` rather than routing through `ServiceOffering`. The strategy pattern is structurally present but not fully exercised.
 
 == Level of interpretation required
 
-Overall, the Assignment 2 design required moderate interpretation. The parts that were well specified (entity attributes, State transition tables, controller responsibilities, and pattern contracts) translated to code with minimal guesswork. The areas that needed the most interpretation were:
+Overall, the Assignment 2 design required moderate interpretation. The parts that were well specified (entity attributes, State transition tables, controller responsibilities, and pattern contracts) translated to code with little guesswork. The areas that needed the most interpretation were:
 
-- *Persistence timing:* When should the system save? We chose "after every mutation" rather than "on exit only" so that user actions are immediately committed to disk (Section 2.5.3).
-- *Input validation:* Assignment 2 defined what data each entity holds but not what constitutes valid input. We added regex-based phone and email validation, non-negative weight checks, and non-blank name enforcement in `smartfm.common.Validators`.
-- *Adapter behaviour:* The interfaces were defined, but how a simulated gateway or manual telemetry source should behave was left to our judgement. We kept both adapters simple. `SimulatedGatewayAdapter` always approves and `ManualTelemetrySource` accepts free-text locations, making them easy to replace with real integrations.
+- *Persistence timing:* When should the system save? We chose "after every mutation" rather than "on exit only" so that user actions are committed to disk right away (Section 2.5.3).
+- *Input validation:* Assignment 2 defined what data each entity holds but not what counts as valid input. We added regex-based phone and email validation, non-negative weight checks, and non-blank name enforcement in `smartfm.common.Validators`.
+- *Adapter behaviour:* The interfaces were defined, but how a simulated gateway or manual telemetry source should behave was left open. We kept both adapters simple. `SimulatedGatewayAdapter` always approves and `ManualTelemetrySource` accepts free-text locations, making them easy to replace with real integrations.
 - *Dispatch workflow:* As discussed in Sections 3.2 and 3.3, the original observer description was ambiguous about automation versus notification.
 
 == Lessons learnt
 
-Building SmartFM taught us several lessons that would change how we approach high-level OO design in the future.
+Building SmartFM taught us several things that would change how we approach OO design next time.
 
-*Specify state behaviour, not just state names.* The lifecycle tables in Assignment 2 were our most useful design artefact. Because each row already defined legal transitions, writing State subclasses was mechanical. We knew exactly which methods to allow and which to reject. By contrast, the observer descriptions were vague enough that we spent two days debating whether dispatch was automatic or manual. Next time, we would specify observer semantics with the same precision as state transitions: what triggers the event, what the listener is allowed to do, and what still requires human action.
+*Specify state behaviour, not just state names.* The lifecycle tables in Assignment 2 were our most useful design artefact. Because each row already defined legal transitions, writing State subclasses was mechanical. We knew which methods to allow and which to reject. By contrast, the observer descriptions were vague enough that we spent two days debating whether dispatch was automatic or manual. Next time, we would specify observer semantics with the same precision as state transitions: what triggers the event, what the listener is allowed to do, and what still requires human action.
 
 *Walk through realistic scenarios during design.* The Invoice-Payment multiplicity flaw would have been caught immediately if we had traced a partial-payment scenario (for example, "200 cash now, 300 card later") through the CRC cards. In future designs, we would run at least one scenario per use case through the design model before calling it complete.
 
-*Wire patterns end-to-end or document why not.* We defined `IPricingStrategy` and `PricingTariff` but never connected them through `ServiceOffering`. The pattern looks good on the class diagram, but in the running code, `OrderProcessor` calls `PricingTariff` directly. The lesson is that a pattern declared but not exercised adds complexity without value. Next time, we would either complete the wiring or explicitly mark the interface as a future extension point.
+*Wire patterns end-to-end or document why not.* We defined `IPricingStrategy` and `PricingTariff` but never connected them through `ServiceOffering`. The pattern looks good on the class diagram, but in the running code, `OrderProcessor` calls `PricingTariff` directly. A pattern declared but not exercised adds complexity without value. Next time, we would either complete the wiring or explicitly mark the interface as a future extension point.
 
-*Include persistence and UI sketches early.* Assignment 2 deferred both, which was acceptable for a high-level design but meant we had to make major architectural decisions (transaction boundaries, schema versioning, validation rules) during coding without design guidance. Even a one-paragraph persistence contract and a rough UI wireframe would have reduced interpretation effort considerably.
+*Include persistence and UI sketches early.* Assignment 2 deferred both, which was acceptable for a high-level design but meant we had to make major architectural decisions (transaction boundaries, schema versioning, validation rules) during coding without design guidance. Even a one-paragraph persistence contract and a rough UI wireframe would have reduced the interpretation effort.
 
-*Invest in test automation from day one.* Our JUnit suite (76 test executions across 17 test classes) and the automated `ScreenshotDriver` paid for themselves many times over. Every time we changed a State class or refactored `DataStore`, the tests caught regressions within seconds. Working with Java 26 also taught us a practical lesson: SQLite JDBC requires the flag `--enable-native-access=ALL-UNNAMED`. This requirement is easy to miss and would block execution without the provided Makefile.
+*Invest in test automation from day one.* Our JUnit suite (76 test executions across 17 test classes) and the automated `ScreenshotDriver` paid for themselves many times over. Every time we changed a State class or refactored `DataStore`, the tests caught regressions within seconds. Working with Java 26 also taught us a practical lesson: SQLite JDBC requires the flag `--enable-native-access=ALL-UNNAMED`. This is easy to miss and would block execution without the provided Makefile.
 
 = Implementation and Testing
 
@@ -635,9 +635,9 @@ Building SmartFM taught us several lessons that would change how we approach hig
 
 SmartFM is implemented in Java 26 using a standard Maven project layout. The design elements and sequence diagrams map directly to the source code.
 
-*Coding standards and metrics:* The codebase adheres to the Google Java Style Guide @google2023javastyle. It uses standard naming conventions, explicit control blocks, and concise Javadoc comments. Source files compile with zero lint warnings under `javac -Xlint:all`. Code correctness is verified by 76 automated JUnit 5 test executions across 17 test classes (including parameterized tests that expand to multiple cases), covering domain states, event pipelines, SQLite persistence, and Swing GUI components. All tests pass with a 100% success rate.
+*Coding standards and metrics:* The codebase follows the Google Java Style Guide @google2023javastyle. It uses standard naming conventions, explicit control blocks, and concise Javadoc comments. Source files compile with zero lint warnings under `javac -Xlint:all`. We verify correctness with 76 automated JUnit 5 test executions across 17 test classes (including parameterized tests that expand to multiple cases), covering domain states, event pipelines, SQLite persistence, and Swing GUI components. All tests pass.
 
-*Development environment:* Development was conducted on Windows using PowerShell 7.6 and OpenJDK 26.0.2. The application requires Java 26 and the bundled library JARs in `implementation/lib/`. It runs locally without external database servers. Build options include Maven, GNU Make, or standard `javac`.
+*Development environment:* We developed on Windows using PowerShell 7.6 and OpenJDK 26.0.2. The application needs Java 26 and the bundled library JARs in `implementation/lib/`. It runs locally without external database servers. You can build with Maven, GNU Make, or standard `javac`.
 
 #figure(
   styled-table((2.0fr, 2.65fr, 3.8fr), (
@@ -653,7 +653,7 @@ SmartFM is implemented in Java 26 using a standard Maven project layout. The des
   caption: [Traceability from detailed design and selected sequence diagrams to Java source.],
 ) <tbl-design-code-map>
 
-*Task coverage.* The table below maps each SRS task (from Assignment 1) to its implementation status. Eight of fifteen tasks are fully implemented; the remaining seven are either partially supported or outside the selected four-area scope.
+*Task coverage.* The table below maps each SRS task (from Assignment 1) to its implementation status. Eight of fifteen tasks are fully implemented. The remaining seven are either partially supported or outside the four-area scope we selected.
 
 #figure(
   styled-table((2.0fr, 1.5fr, 4.5fr), (
@@ -695,7 +695,7 @@ SmartFM is implemented in Java 26 using a standard Maven project layout. The des
 
 == Compilation and Execution
 
-*Prerequisites:* Building and running the application requires JDK 26. SQLite is embedded, so no external database or network configuration is needed. All required library JARs are declared in `pom.xml` and stored in `implementation/lib/`. Running on Java 26 requires `--enable-native-access=ALL-UNNAMED` for SQLite JDBC native library loading. Execute commands from the `implementation/` directory using one of the methods below.
+*Prerequisites:* Building and running the application needs JDK 26. SQLite is embedded, so no external database or network configuration is needed. All required library JARs are declared in `pom.xml` and stored in `implementation/lib/`. Running on Java 26 requires `--enable-native-access=ALL-UNNAMED` for SQLite JDBC native library loading. Run commands from the `implementation/` directory using one of the methods below.
 
 *Using Maven (recommended):*
 
@@ -767,7 +767,7 @@ To regenerate all screenshots on a machine with JDK 26 and GNU Make, run `make s
 
 == Testing
 
-System testing includes compiler linting, automated unit and integration tests, scenario-based acceptance testing, and persistence verification.
+System testing covers compiler linting, automated unit and integration tests, scenario-based acceptance testing, and persistence verification.
 
 *Automated testing:* The JUnit 5 test suite (`src/test/java/smartfm/`) produces 76 test executions via `mvn test`, distributed across 17 test classes containing 65 written test methods (including four `@ParameterizedTest` methods that expand to multiple cases). The tests cover:
 1. *Common Layer:* Currency formatting, timestamp rendering, and field validators (`MoneyTest`, `ValidatorsTest`).
@@ -801,9 +801,9 @@ After running Scenario 05, `data/smartfm.db` contains committed database rows fo
 
 = Conclusion
 
-SmartFM demonstrates that a well-structured Assignment 2 design can be turned into working software with relatively few structural surprises. The core entities, State patterns, and controller responsibilities survived implementation largely intact. The changes we made (adding persistence, replacing vague observer descriptions with typed listeners, and relaxing the Invoice-Payment multiplicity) were motivated by concrete problems found during coding rather than design trends.
+SmartFM shows that a well-structured Assignment 2 design can turn into working software with relatively few structural surprises. The core entities, State patterns, and controller responsibilities survived implementation largely intact. The changes we made (adding persistence, replacing vague observer descriptions with typed listeners, and relaxing the Invoice-Payment multiplicity) came from concrete problems found during coding rather than design trends.
 
-The system compiles cleanly, passes all 76 automated test executions, and runs the four core business workflows end-to-end via its Swing GUI. Deferred features such as report generation and service browsing can be added in future iterations without restructuring the layered architecture. If we were to start this project again, we would invest more time in persistence contracts, UI sketches, and scenario walkthroughs during the design phase. However, the overall approach of GRASP Controllers, lifecycle State classes, and event-driven subsystem communication proved to be a solid foundation.
+The system compiles cleanly, passes all 76 automated test executions, and runs the four business workflows end-to-end through its Swing GUI. Deferred features such as report generation and service browsing can be added later without restructuring the layered architecture. If we were to start this project again, we would spend more time on persistence contracts, UI sketches, and scenario walkthroughs during the design phase. However, the overall approach of GRASP Controllers, lifecycle State classes, and event-driven subsystem communication turned out to be a solid foundation.
 
 = References
 
