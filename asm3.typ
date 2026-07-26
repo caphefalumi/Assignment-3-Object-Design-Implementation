@@ -573,45 +573,50 @@ Three architectural constraints enforce these rules:
 2. `DataStore` is accessed only through controllers. UI and domain classes never touch JDBC.
 3. Event publishers depend only on listener interfaces, not on concrete subscriber classes.
 
-= Design Quality
+= Design Quality (Discussion of Assignment 2 Design)
+
+Evaluating our Assignment 2 design against the completed Java implementation highlights structural strengths, missing elements, design flaws, and areas where coding required technical interpretation.
 
 == Good aspects of the Assignment 2 design
 
-The CRC cards from Assignment 2 mapped almost one-to-one to controller methods. For example, `OrderProcessor`'s three core responsibilities became `registerCustomer()`, `submitOrder()`, and `approveOrder()` with nothing extra bolted on. The CRC description was specific enough to code from directly. Defining lifecycle tables early was equally useful: each table row became a concrete State subclass, and writing JUnit tests for invalid transitions was straightforward because the expected behaviour was already written down.
+The Assignment 2 design provided a strong architectural foundation in five key areas:
 
-Design patterns chosen during Assignment 2 also worked well in practice. The Adapter pattern let us build `SimulatedGatewayAdapter` for development and swap it for a real payment gateway later without touching `PaymentProcessor`. The Observer pattern kept controllers decoupled. When order approval needed to notify `PaymentProcessor` about a newly created invoice, we registered it as an `InvoiceCreatedListener` rather than adding a direct call inside `OrderProcessor`.
+1. *Direct GRASP Controller Mapping:* The CRC cards from Assignment 2 mapped almost one-to-one to implementation controller methods. For instance, `OrderProcessor`'s core CRC responsibilities directly became `registerCustomer()`, `submitOrder()`, and `approveOrder()`, preserving high cohesion.
+2. *Precise Lifecycle State Tables:* Defining state transition tables early was highly effective. Each matrix row translated directly into a GoF `State` subclass (`OrderSubmittedState`, `ShipmentInTransitState`), making invalid transition checks and unit tests mechanical.
+3. *Effective GoF Adapter Decoupling:* The Adapter pattern specified in Assignment 2 allowed us to build `SimulatedGatewayAdapter` for development and swap it for a real banking gateway without touching `PaymentProcessor`.
+4. *Event-Driven Observer Decoupling:* Using the Observer pattern for cross-controller communication kept application controllers loosely coupled. For example, order approval notifies `PaymentProcessor` via `InvoiceCreatedListener` without creating a hard compile-time dependency inside `OrderProcessor`.
+5. *Layered Cohesion and Low Coupling:* Domain entities remain completely isolated from UI and JDBC persistence. Presentation components depend solely on Application Controllers, adhering strictly to GRASP Low Coupling and High Cohesion principles.
 
-The four controllers maintain high cohesion: each one owns a single business area and delegates domain logic to the entities it coordinates. Coupling stays low because the UI depends on controller methods (not domain internals) and cross-controller communication flows through abstract listener interfaces.
+== Missing aspects from the original design
 
-== Missing or ambiguous aspects
+Assignment 2 intentionally omitted several low-level implementation details, leaving five key gaps to fill during coding:
 
-Assignment 2 deliberately excluded UI and persistence details, which made sense for a high-level design but left gaps to fill during coding. We had to define input-validation rules (e.g. phone format, non-negative cargo weight), error-feedback flows for the GUI, the full SQLite schema, and the bootstrap/seeding sequence. These additions were substantial (`DataStore` alone grew to nearly 800 lines), but they did not contradict the original design. They extended it into areas that Assignment 2 had flagged as out of scope.
+1. *Persistence Gateway and Relational Schema:* Assignment 2 deferred data access (Assumption A1), leaving the SQLite relational schema, SQL queries, and the `DataStore` transactional gateway completely unmapped.
+2. *Input Validation Rules and Bounds:* While Assignment 2 defined entity attributes, it specified no input validation rules. We had to define regex patterns for phone numbers and email addresses, non-negative cargo weight limits, and mandatory non-blank name constraints in `smartfm.common.Validators`.
+3. *Presentation Layer and Error Feedback:* Assignment 2 deferred the UI boundary. We had to design the entire Swing desktop GUI (`smartfm.ui.gui`), including inline validation banners (`ResultBanner`, `ValidatedField`) and form reset flows.
+4. *System Seeding and Startup Wiring:* The original design omitted startup initialization. We implemented `Bootstrap.java` to seed initial branches, vehicles, drivers, and service offerings into SQLite upon database creation.
+5. *Concrete Adapter Behaviors:* While interface contracts (`IPaymentGateway`, `ITelemetrySource`) were defined, their concrete simulation behaviors were omitted. We defined `SimulatedGatewayAdapter` to return deterministic authorization codes and `ManualTelemetrySource` to format GPS coordinate strings.
 
-The main ambiguity was whether dispatch should be automatic or manual. Assignment 2 described `DispatchManager` as "subscribing to order approval events," which our team initially read as automatic assignment. During implementation, we realised this contradicted the SRS requirement for human dispatchers to choose vehicles and drivers. Resolving this took two team discussions before we settled on the current approach: the event notifies `DispatchManager` that an order is ready, but a dispatcher must still call `assignShipment(...)` explicitly.
+== Flawed aspects of the original design
 
-Two minor design gaps remain in the implementation:
+Implementation exposed five structural flaws in the initial Assignment 2 model:
 
-1. *Branch service validation:* `OrderProcessor.submitOrder()` does check whether a `ServiceOffering` is available at the origin branch via `offering.isAvailableAt(originBranchId)`, but the GUI does not dynamically filter the service dropdown by branch. A richer branch-aware UI could improve usability in future iterations.
-2. *Pricing Strategy wiring:* `IPricingStrategy` and `PricingTariff` exist as designed, but `OrderProcessor` calls `PricingTariff.calculateQuote()` directly instead of going through `ServiceOffering`. The indirection layer is ready for future pricing models but is not exercised today.
-
-== Flaws or errors in the initial design
-
-The most consequential flaw was the dispatch ambiguity discussed in Section 3.2. In hindsight, we should have drawn at least a basic dispatch screen wireframe during Assignment 2. A simple sketch showing a "Select Vehicle" dropdown and an "Assign" button would have made the manual-dispatch requirement obvious and saved two days of team debate during implementation.
-
-The second flaw was omitting any persistence contract. Assignment 2's Assumption A1 acknowledged that "data access is deferred," but it said nothing about _when_ to save or _how_ to initialise. This forced us to design the entire `DataStore` transaction model from scratch. It worked out, but even a brief paragraph in the original design would have helped.
-
-The third flaw was the 1-to-1 constraint between `Invoice` and `Payment`. We only discovered this was a problem when trying to implement a scenario where a customer pays in two instalments: cash first, then card. The fix (1-to-Many with `InvoicePartiallyPaidState`) was straightforward, but walking through realistic payment scenarios during design would have caught it earlier.
-
-Finally, `ServiceOffering` was documented as delegating to `IPricingStrategy`, but the delegation was never listed in the CRC collaborators. During coding, we wired `PricingTariff` directly into `OrderProcessor` rather than routing through `ServiceOffering`. The strategy pattern is structurally present but not fully exercised.
+1. *Dispatch Event Automation Ambiguity:* Assignment 2 stated that `DispatchManager` "subscribes to order approval events." We initially interpreted this as automatic vehicle dispatch, which contradicted the SRS requirement for human dispatchers to assign resources manually. Clarifying that event notification merely updates pending queues required two team discussions.
+2. *Invoice-to-Payment Multiplicity Constraint:* Assignment 2 enforced a strict 1-to-1 relationship between `Invoice` and `Payment`. This broke when implementing partial payments (\$200 cash deposit followed by \$300 card payment). We resolved this by changing the multiplicity to 1-to-Many and introducing `InvoicePartiallyPaidState`.
+3. *Strategy Pattern Collaborator Omission:* The CRC cards documented `ServiceOffering` as delegating pricing to `IPricingStrategy`, but omitted `IPricingStrategy` from `ServiceOffering`'s collaborators. Consequently, `OrderProcessor` called `PricingTariff.calculateQuote()` directly, leaving the strategy indirection unused in runtime code.
+4. *Omission of Persistence Lifecycle Triggers:* Deferred persistence caused confusion regarding *when* state changes should be saved. Without design guidance, we had to establish a transactional policy ensuring `DataStore` flushes to SQLite after every state mutation rather than on application exit.
+5. *Deferred Administrative Scope:* Assignment 2 omitted administrative reporting, leaving no design for system-wide metric aggregation. We added `Report`, `ReportProcessor`, and `ReportPanel` during implementation to satisfy Task T12.
 
 == Level of interpretation required
 
-Overall, the Assignment 2 design required moderate interpretation. The parts that were well specified (entity attributes, State transition tables, controller responsibilities, and pattern contracts) translated to code with little guesswork. The areas that needed the most interpretation were:
+Overall, the Assignment 2 design required a *moderate* level of interpretation during implementation:
 
-- *Persistence timing:* When should the system save? We chose "after every mutation" rather than "on exit only" so that user actions are committed to disk right away (Section 2.5.3).
-- *Input validation:* Assignment 2 defined what data each entity holds but not what counts as valid input. We added regex-based phone and email validation, non-negative weight checks, and non-blank name enforcement in `smartfm.common.Validators`.
-- *Adapter behaviour:* The interfaces were defined, but how a simulated gateway or manual telemetry source should behave was left open. We kept both adapters simple. `SimulatedGatewayAdapter` always approves and `ManualTelemetrySource` accepts free-text locations, making them easy to replace with real integrations.
-- *Dispatch workflow:* As discussed in Sections 3.2 and 3.3, the original observer description was ambiguous about automation versus notification.
+- *Low Interpretation Areas (Well-Specified):* Domain entity structures, State transition tables, GRASP Controller method boundaries, and Adapter interface contracts translated to Java with almost zero ambiguity.
+- *High Interpretation Areas (Required Technical Decisions):*
+  - *Persistence Timing:* Deciding between immediate auto-commit per transaction versus buffered memory flushes on exit.
+  - *Validation Contracts:* Formulating regex validation rules and user feedback error paths for form controls.
+  - *Adapter Simulations:* Determining stub behavior for payment gateways and manual telemetry sources.
+  - *Observer Invocation Semantics:* Resolving whether event notifications trigger automatic use-case execution or update presentation queues for manual intervention.
 
 == Lessons learnt
 
