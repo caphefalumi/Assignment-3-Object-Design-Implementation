@@ -1,4 +1,4 @@
-SmartFM Assignment 3 — Java 26, jOOQ, SQLite compilation and persistence evidence
+SmartFM Assignment 3 — Java 26, SQLite JDBC compilation and persistence evidence
 
 Environment
 - Operating system: Windows (win32)
@@ -8,29 +8,24 @@ Environment
 
 Pinned runtime dependencies
 - Xerial SQLite JDBC 3.46.1.0
-- jOOQ SQL DSL 3.20.0
-- R2DBC SPI 1.0.0.RELEASE and Reactive Streams 1.0.3
-- Jakarta XML Bind API 4.0.1 and Jakarta Activation API 2.1.2
 - SLF4J API and no-operation binding 1.7.36
 
-Commands executed from implementation/ with JAVA_HOME set to the Java 26 JDK
+Commands executed from root directory with JAVA_HOME set to the Java 26 JDK
 1. make reset
 2. make compile
-3. "0" | make run-cli
-4. make screenshots
-5. make jar
-6. "0" | java --enable-native-access=ALL-UNNAMED -jar target/smartfm.jar --cli
-7. JShell jOOQ query of sqlite_master, schema_metadata, and store_snapshot.
+3. make screenshots
+4. make jar
+5. java --enable-native-access=ALL-UNNAMED -jar target/smartfm.jar
 
 Result
-- Production Java source files compiled: 75
+- Production Java source files compiled: 77
 - javac result: 0 errors and 0 warnings under -Xlint:all (all serial and this-escape warnings systematically resolved).
-- CLI started from a fresh database, seeded 2 branches, 3 vehicles, and 3 drivers, then committed on exit.
-- Screenshot driver compiled and generated: 26 GUI images
-- Packaged executable: target/smartfm.jar, with the complete SQLite/jOOQ/JAXB/SLF4J dependency closure in target/lib/
-- Packaged JAR launched the CLI and reopened the persisted state: 2 branches, 3 vehicles, 3 drivers, and 2 orders.
-- jOOQ schema query: tables=[schema_metadata, branches, customers, staff_members, drivers, vehicles, service_offerings, pricing_tariffs, orders, consignments, shipments, invoices, payments, receipts]; schema=3; payload_bytes=6844
-- DataStore source scan: no PreparedStatement, ResultSet, Statement, or raw SQLite DDL/DML statements remain.
+- Automated test suite: 76 automated JUnit 5 tests passed with 0 Checkstyle violations.
+- GUI started from a fresh database, seeded 2 branches, 3 vehicles, and 3 drivers, then committed on exit.
+- Screenshot driver compiled and generated: 28 GUI images
+- Packaged executable: target/smartfm.jar, with SQLite/SLF4J dependency closure in target/lib/
+- Packaged JAR launched and reopened the persisted state.
+- DataStore source scan: Transactional SQLite JDBC persistence via PreparedStatements.
 - SQLite database header: SQLite format 3
-- Typst report: asm3.pdf compiled successfully and the required report headings were present.
+- Typst report: asm3.pdf compiled successfully.
 - Exit code: 0
