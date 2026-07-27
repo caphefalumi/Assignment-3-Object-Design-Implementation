@@ -40,8 +40,13 @@ Because no formal marker feedback was provided, Table 1 records revisions made d
     [A2 lifecycle state tables], [State rules required programmatic enforcement.], [Built concrete State classes for Order, Shipment, Invoice, and Payment.], [Illegal state transitions throw `InvalidDataException`.],
     [A2 adapter interfaces], [System needed testable concrete adapters.], [Added `ManualTelemetrySource` and `SimulatedGatewayAdapter`.], [External integrations remain replaceable.],
     [A2 narrative observer descriptions], [Callbacks risked concrete controller coupling.], [Defined narrow interfaces (`OrderApprovedListener`, `InvoiceCreatedListener`, `ShipmentAssignedListener`).], [Maintained low coupling between application controllers.],
+    [A2 shipment-milestone observer description], [Assignment 2 also described notifications after pickup, transit, and delivery, but no such listener was needed by the implemented workflows.], [Retained only order approval, invoice creation, and shipment-assignment events; milestone actions remain explicit `ShipmentTracker` calls.], [The implemented Observer scope is now explicit.],
+    [A2 Order-Shipment multiplicity], [The conceptual model allowed multiple shipments per order, while implementation creates at most one shipment per order.], [Changed the association from 1-to-Many to 1-to-0..1 and rejects duplicate assignments.], [The class model now matches `DispatchManager`.],
+    [A2 Customer-Order and Order-Invoice multiplicities], [The original model required an order and invoice immediately, although registration precedes order creation and invoicing occurs only after approval.], [Changed Customer-Order to `1-to-0..*` and Order-Invoice to `1-to-0..1`.], [The associations now reflect the actual lifecycle.],
+    [A2 Branch resource multiplicities], [The original model allowed a branch to have no resources; the revised diagram accidentally stated `1..*` although the implementation does not enforce a minimum.], [Restored Branch-to-Vehicle and Branch-to-Driver to `1-to-0..*`.], [The model matches the domain classes and seeded-data behavior.],
     [A2 wide conceptual scope], [`Report`'s data-holder design was already scoped in Assignment 2 (Assumption A13; CRC card, Appendix A), but no coordinating controller or UI existed.], [Added the missing `ReportProcessor` controller and `ReportPanel` UI tab to realize the existing `Report` design.], [Implemented Task T12 with zero changes to existing transactional production code.],
-    [A2 Invoice-Payment 1-to-1 assumption], [Partial payments require multiple payments per invoice.], [Updated relationship to 1-to-Many with `InvoicePartiallyPaidState`.], [Supported partial cash/card payment scenarios.],
+    [A2 Invoice-Payment relationship was underspecified], [The `Payment` CRC card described one transaction, but the original model did not clearly define multiple payments per invoice.], [Changed the association to 1-to-Many and added `InvoicePartiallyPaidState`.], [Supported partial cash/card payment scenarios.],
+    [A2 package and channel scope], [Assignment 2 grouped domain classes into broader packages and assumed web/mobile/staff portals; Assignment 3 uses a reorganised domain package structure and a Swing desktop boundary.], [Split domain packages and implemented the Swing GUI; web and mobile portals remain outside this submission.], [The implementation scope is explicit.],
     [A2 ServiceOffering-Branch conceptual link], [A2 described branch coverage conceptually but specified no enforcement point.], [Added `Branch.registerServiceOffering()` and made `OrderProcessor.submitOrder()` reject orders whose origin branch is outside `ServiceOffering.isAvailableAt(...)`.], [Origin-branch coverage is now enforced at order entry (Section 3.2).],
   )),
   caption: [Summary of design revisions from Assignment 2 to Assignment 3 based on implementation reviews.],
@@ -57,7 +62,7 @@ The detailed design keeps the Entity-Control-Boundary structure from Assignment 
   styled-table((1.65fr, 2.35fr, 4.85fr), (
     th[Package / layer], th[Key classes], th[Responsibility],
     [`smartfm.ui`, `smartfm.ui.gui`], [`Launcher`, `SmartFmMainFrame`, `GuiContext`, six GUI panels], [Boundary layer. Collects and displays information only; it calls controller public operations and displays domain/controller validation messages.],
-    [`smartfm.application`], [`OrderProcessor`, `DispatchManager`, `ShipmentTracker`, `PaymentProcessor`, `ReportProcessor`, `Bootstrap`], [Application layer. The four core transactional GRASP Controllers receive system events, coordinate entities, publish observer events, and invoke the persistence gateway; `ReportProcessor` separately coordinates administrative reporting (Task T12).],
+    [`smartfm.application`], [`OrderProcessor`, `DispatchManager`, `ShipmentTracker`, `PaymentProcessor`, `ReportProcessor`, `Bootstrap`], [Application layer. The four core transactional GRASP Controllers receive system events, coordinate entities, publish observer events, and stage changes in the persistence gateway; `ReportProcessor` separately coordinates administrative reporting (Task T12).],
     [`smartfm.domain.*` (`customer`, `order`, `shipment`, `billing`, `fleet`, `catalog`, `report`)], [`Customer`, `Order`, `Consignment`, `Shipment`, `Vehicle`, `Driver`, `Invoice`, `Payment`, `Receipt`, `Report`, `ReportCategory`, `SystemConfiguration`, state/strategy interfaces], [Domain layer. Divided into seven domain sub-packages. Owns business information, lifecycle state, pricing/payment behaviour, and entity-level validation. `SystemConfiguration` (in `catalog`) is a read-only startup data-holder.],
     [`smartfm.infrastructure`], [`DataStore`], [Infrastructure layer. Opens the local SQLite database and uses a versioned normalized schema for branches, people and resources, catalogue, orders, shipments, invoices, payments, receipts, and association links. It reads and replaces the aggregate rows inside one SQLite transaction; it is the only persistence mechanism.],
     [`smartfm.common`], [`Validators`, `Money`, `InvalidDataException`, `InvalidCredentialsException`], [Small shared utilities. Validation rules are reused by controllers/boundaries rather than copied between interfaces.],
@@ -65,7 +70,7 @@ The detailed design keeps the Entity-Control-Boundary structure from Assignment 
   caption: [Layered package design and responsibility allocation.],
 ) <tbl-layered-design>
 
-The complete model does not fit legibly on a single page, so we present it as three complementary views: the application and infrastructure view (@fig-class-controllers), the domain entity view (@fig-final-class-model), and the lifecycle and enumeration view (@fig-state-hierarchies). Together they contain every class in the implementation.
+The complete model does not fit legibly on a single page, so we present it as three complementary views: the application and infrastructure view (@fig-class-controllers), the domain entity view (@fig-final-class-model), and the lifecycle and enumeration view (@fig-state-hierarchies). Together they contain the principal application, infrastructure, domain, and lifecycle classes; common utilities, UI support classes, and implementation-only helpers are omitted for readability.
 
 #figure(
   mermaid("
@@ -363,15 +368,15 @@ The complete model does not fit legibly on a single page, so we present it as th
       Order \"1\" --> \"0..1\" Invoice
       ServiceOffering \"1\" --> \"1\" PricingTariff
       ServiceOffering \"1\" --> \"1..*\" Branch
-      Branch \"1\" o-- \"1..*\" Vehicle
-      Branch \"1\" o-- \"1..*\" Driver
+      Branch \"1\" o-- \"0..*\" Vehicle
+      Branch \"1\" o-- \"0..*\" Driver
       Shipment \"1\" --> \"1\" Vehicle
       Shipment \"1\" --> \"1\" Driver
       Invoice \"1\" *-- \"0..*\" Payment
       Payment \"1\" --> \"0..1\" Receipt
       Report ..> ReportCategory
   "),
-  caption: [Domain entity view: the `Person` hierarchy, the commercial, fleet and billing entities with their final multiplicities (including the `Invoice` to `Payment` change from 1-to-1 to 1-to-Many), the `ServiceOffering` branch-coverage association added in Assignment 3, and the read-only `SystemConfiguration` data-holder. The lifecycle state objects referenced by `Order`, `Shipment`, `Invoice` and `Payment` are expanded in @fig-state-hierarchies.],
+  caption: [Domain entity view: the `Person` hierarchy, the commercial, fleet and billing entities with their final multiplicities (including the clarified `Invoice` to `Payment` 1-to-Many relationship for partial payments), the `ServiceOffering` branch-coverage association added in Assignment 3, and the read-only `SystemConfiguration` data-holder. The lifecycle state objects referenced by `Order`, `Shipment`, `Invoice` and `Payment` are expanded in @fig-state-hierarchies.],
 ) <fig-final-class-model>
 
 
@@ -515,9 +520,9 @@ A GRASP Controller is a non-UI object that handles incoming system events for a 
   styled-table((1.75fr, 2.25fr, 3.0fr, 1.95fr), (
     th[GRASP Controller], th[System events received], th[Delegation and collaboration], th[Why this is the Controller],
     [`OrderProcessor`], [`registerCustomer()`, `submitOrder()`, `approveOrder()`, `rejectOrder()`, `cancelOrder()`], [Coordinates `Customer`, `Consignment`, `Order`, and `Invoice`; checks origin-branch service coverage via `ServiceOffering.isAvailableAt()`; fires order-approved and invoice-created events.], [Represents the order-management use-case session; keeps UI free of domain rules.],
-    [`DispatchManager`], [`assignShipment(orderId, vehicleId, driverId)`, `findAvailableVehicles()`, `findAvailableDrivers()`], [Checks branch affinity, capacity, and availability; creates `Shipment` and fires shipment-assigned event.], [Represents the dispatcher-facing dispatch use case; retains human decision.],
-    [`ShipmentTracker`], [`confirmPickup()`, `confirmInTransit()`, `confirmDelivery()`], [Delegates state transitions to `ShipmentState` subclasses and records telemetry through `ITelemetrySource`.], [Receives tracking events and delegates transition legality to the state object.],
-    [`PaymentProcessor`], [`submitPayment(invoiceId, amount, method)`], [Validates against outstanding balance, selects `IPaymentStrategy`, invokes `SimulatedGatewayAdapter` for card payments, settles invoices, and issues immutable `Receipt`.], [Represents payment processing; keeps gateway details out of domain models.],
+    [`DispatchManager`], [`onOrderApproved(order)`, `assignShipment(orderId, vehicleId, driverId)`, `findAvailableVehicles()`, `findAvailableDrivers()`], [Receives the order-approved event but does not auto-dispatch; checks branch affinity, capacity, and availability, creates `Shipment`, and fires the shipment-assigned event.], [Represents the dispatcher-facing dispatch use case; retains the human assignment decision.],
+    [`ShipmentTracker`], [`onShipmentAssigned(shipment)`, `confirmPickup()`, `confirmInTransit()`, `confirmDelivery()`], [Receives the shipment-assigned event to track the new shipment, delegates state transitions to `ShipmentState` subclasses, and records telemetry through `ITelemetrySource`.], [Receives tracking events and delegates transition legality to the state object.],
+    [`PaymentProcessor`], [`onInvoiceCreated(invoice)`, `submitPayment(invoiceId, amount, method)`], [Receives invoice-created notifications, validates payments against outstanding balance, selects `IPaymentStrategy`, invokes `SimulatedGatewayAdapter` for card payments, settles invoices, and issues immutable `Receipt`.], [Represents payment processing; keeps gateway details out of domain models.],
     [`ReportProcessor`], [`generateFinancialReport()`, `generateFleetReport()`, `generateBranchReport()`, `generateOrderSummaryReport()`], [Aggregates metrics across `Branch`, `Order`, `Shipment`, `Payment`, `Vehicle`, and `Driver` via `DataStore`; compiles the result into a `Report`.], [Represents the administrative reporting use case (Task T12), separate from the four core transactional controllers.],
   )),
   caption: [Explicit GRASP Controller allocation.],
@@ -589,7 +594,7 @@ sequenceDiagram
     OP->>DOM: create Consignment(s) and Order
     OP->>DS: stage order; return id
   "),
-  caption: [UC-01 / UC-02: customer registration and order submission. The boundary sends each system event to `OrderProcessor`, which creates and validates domain objects and persists changes to SQLite through `DataStore`.],
+  caption: [UC-01 / UC-02: customer registration and order submission. The boundary sends each system event to `OrderProcessor`, which creates and validates domain objects and stages changes in `DataStore`; `GuiContext` commits them to SQLite after the successful UI action.],
 ) <fig-seq-order>
 
 #figure(
@@ -607,7 +612,7 @@ sequenceDiagram
     DM->>ST: stage shipment and resource updates
     DM->>ST: publish shipmentAssigned(shipment)
   "),
-  caption: [UC-03: dispatcher assigns a vehicle and driver to an approved order. `DispatchManager` checks the dispatch constraints, persists the shipment and resource updates to SQLite, and notifies `ShipmentTracker` via the listener interface.],
+  caption: [UC-03: dispatcher assigns a vehicle and driver to an approved order. `DispatchManager` checks dispatch constraints, stages the shipment and resource updates in `DataStore`, and notifies `ShipmentTracker`; after the successful controller call, `GuiContext` commits the mutation to SQLite.],
 ) <fig-seq-dispatch>
 
 #figure(
@@ -650,9 +655,9 @@ sequenceDiagram
 
 === Class-level changes and non-changes
 
-All fifteen core domain classes from Assignment 2 (Customer, Order, Consignment, Shipment, Vehicle, Driver, Branch, ServiceOffering, PricingTariff, Invoice, Payment, Receipt, SystemConfiguration, and the Person hierarchy) are in the final implementation with the same responsibilities. `SystemConfiguration` is discussed no further below because it carried over verbatim as the passive data-holder Assignment 2 specified: `Bootstrap` loads the single instance as startup Step 1 and nothing mutates it afterwards. The four State hierarchies and core interfaces (`IPaymentGateway`, `IPaymentStrategy`, `IPricingStrategy`, `ITelemetrySource`) were also kept. The additions are components that Assignment 2 deferred or left uncoordinated: `DataStore` for persistence, concrete adapters, `Bootstrap` for startup wiring, the `IdGenerator` helper, listener interfaces, the UI boundary classes, and the `ReportProcessor` controller that Assignment 2's `Report` CRC card specified without an owner (Section 4.3). Table 1 in Section 2 lists every revision; the paragraphs below explain the reasoning for the main changes.
+The core domain classes used in Assignment 2's daily workflows (Customer, Order, Consignment, Shipment, Vehicle, Driver, Branch, ServiceOffering, PricingTariff, Invoice, Payment, Receipt, SystemConfiguration, and the Person hierarchy) are in the final implementation with the same responsibilities. `SystemConfiguration` is discussed no further below because it carried over verbatim as the passive data-holder Assignment 2 specified: `Bootstrap` loads the single instance as its first internal startup step, after `DataStore` has been loaded by the GUI context, and nothing mutates it afterwards. The four State hierarchies and core interfaces (`IPaymentGateway`, `IPaymentStrategy`, `IPricingStrategy`, `ITelemetrySource`) were also kept. The additions are components that Assignment 2 deferred or left uncoordinated: `DataStore` for persistence, concrete adapters, `Bootstrap` for startup wiring, the `IdGenerator` helper (a utility omitted from the class views for space), listener interfaces, the UI boundary classes, and the `ReportProcessor` controller that Assignment 2's `Report` CRC card specified without an owner (Section 4.2). Table 1 in Section 2 lists every revision; the paragraphs below explain the reasoning for the main changes.
 
-The main class-level change was updating the `Invoice` to `Payment` relationship from 1-to-1 to 1-to-Many. During implementation, we found that a customer paying a 500-dollar invoice with a 200-dollar cash deposit followed by a 300-dollar card payment was impossible under the 1-to-1 constraint. The new `InvoicePartiallyPaidState` tracks the remaining balance across multiple `Payment` objects. Each `Payment` remains immutable once settled.
+The main class-level change was clarifying and implementing the `Invoice` to `Payment` relationship as 1-to-Many. Assignment 2 did not clearly specify whether an invoice could have multiple payments; during implementation, a customer paying a 500-unit invoice with a 200-unit cash deposit followed by a 300-unit card payment exposed the missing multiplicity rule. The new `InvoicePartiallyPaidState` tracks the remaining balance across multiple `Payment` objects. Each `Payment` remains immutable once settled.
 
 Features outside the four operational areas, such as authentication or role-based access (`StaffMember`, `StaffRole`, `SystemConfiguration`), remain in the domain model without UI bindings. We deferred these deliberately rather than deliver half-built features. The `Report` class and its coordinating controller `ReportProcessor` are fully implemented (Task T12) and exposed via the `ReportPanel` UI tab.
 
@@ -662,15 +667,15 @@ One clarification on the `Person` hierarchy: `StaffRole` includes a `DRIVER` val
 
 The responsibility split from Assignment 2 (entities own business rules, controllers coordinate workflows, boundaries handle I/O) carried over without change. The one new collaborator is `DataStore`, which controllers receive at construction time so domain entities stay persistence-agnostic.
 
-The biggest responsibility-level refinement was replacing narrative observer callbacks with typed listener interfaces (`OrderApprovedListener`, `InvoiceCreatedListener`). In Assignment 2, we wrote that "DispatchManager subscribes to order events," but during coding that wording turned out to be ambiguous: did it mean automatic dispatch or just a notification? Defining narrow interfaces made the answer clear. `OrderProcessor` fires an event, `DispatchManager.onOrderApproved` flags the order as dispatch-ready, and a human dispatcher must still call `assignShipment(...)` to allocate resources.
+The biggest responsibility-level refinement was replacing narrative observer callbacks with typed listener interfaces (`OrderApprovedListener`, `InvoiceCreatedListener`, `ShipmentAssignedListener`). Assignment 2 also described notifications after shipment milestones, but the implementation does not publish milestone events: `ShipmentTracker` receives only `onShipmentAssigned(shipment)` and then handles pickup, transit, and delivery through explicit controller calls. In Assignment 2, we wrote that "DispatchManager subscribes to order events," but during coding that wording turned out to be ambiguous: did it mean automatic dispatch or just a notification? Defining narrow interfaces made the answer clear. `OrderProcessor` fires an event, `DispatchManager.onOrderApproved` receives the notification without auto-dispatching, and a human dispatcher must still call `assignShipment(...)` to allocate resources.
 
 === Dynamic aspects: bootstrap and interactions
 
 Assignment 2 did not specify how the system starts up or when data is saved; those decisions were made during implementation.
 
-On first launch, `DataStore` creates `data/smartfm.db`, builds all tables in a single transaction, and seeds demonstration records (two branches, three vehicles, three drivers, one dispatcher staff member, three service offerings, and their three pricing tariffs). On later launches it detects the existing schema (version 3) and loads domain objects directly. `Bootstrap` then constructs all five controllers and registers event listeners among the four transactional ones in dependency-safe order; `ReportProcessor` needs no listener registration because it only reads state. For example, `DispatchManager` is registered as an `OrderApprovedListener` on `OrderProcessor` before any orders can be approved.
+On first launch, the GUI context calls `DataStore.loadFrom(...)`, which creates `data/smartfm.db` and builds all tables in a single transaction; on later launches it detects schema version 3 and reconstructs the persisted domain objects. The GUI context then constructs `Bootstrap`. When `Bootstrap.run()` begins, its first internal step is `SystemConfiguration.bootstrap()`, followed by seeding demonstration records when the branch store is empty. The seed data contains two branches, three vehicles, three drivers, one dispatcher staff member, three service offerings, and three pricing tariffs. `Bootstrap` then constructs all five controllers and registers event listeners among the four transactional ones in dependency-safe order; `ReportProcessor` needs no listener registration because it only reads state. For example, `DispatchManager` is registered as an `OrderApprovedListener` on `OrderProcessor` before any orders can be approved.
 
-We chose to persist after every state mutation rather than only on exit, so that user actions are immediately committed to disk. The interaction order matters: order approval updates the order and creates the invoice _before_ notifying listeners, dispatch stages shipment and resource changes _before_ firing `shipmentAssigned`, and payments generate a receipt only _after_ settlement succeeds. These sequences match the diagrams in Section 3.4.
+The GUI context calls `DataStore.saveTo(...)` after each successful user mutation, so changes made through the desktop application are committed immediately. Direct controller callers that do not use `GuiContext` must invoke the persistence boundary explicitly. The save operation is transactional: order approval updates the order and creates the invoice before notifying listeners, dispatch stages shipment and resource changes before firing `shipmentAssigned`, and payments generate a receipt only after settlement succeeds.
 
 == Architecture style(s)
 
@@ -683,15 +688,15 @@ The system has five architectural components:
 4. *Reporting:* `ReportProcessor` and its `Report` aggregation across the other components' entities.
 5. *Persistence:* The `DataStore` database gateway.
 
-These components communicate through two connector types. *Synchronous downward calls* follow the layer ordering: UI views call controller methods, controllers coordinate domain entities, and controllers call `DataStore`. *Event connectors* operate within the application layer: order approval, invoice creation, and shipment assignment publish events through narrow listener interfaces, so no publisher needs to know which concrete class handles the event.
+These components communicate through two connector types. *Synchronous downward calls* follow the layer ordering: UI views call controller methods, controllers coordinate domain entities and stage changes through `DataStore`, and `GuiContext` invokes the transactional save boundary. *Event connectors* operate within the application layer: order approval, invoice creation, and shipment assignment publish events through narrow listener interfaces, so no publisher needs to know which concrete class handles the event.
 
 Three architectural constraints enforce these rules:
 1. Domain classes never import presentation or application packages (verified by the package structure).
-2. `DataStore` is accessed only through controllers. UI and domain classes never touch JDBC.
+2. `DataStore` is the only JDBC boundary. Controllers and `GuiContext` use its public persistence methods; UI panels and domain classes never touch JDBC directly.
 3. Event publishers depend only on listener interfaces, not on concrete subscriber classes.
 
 #figure(
-  mermaid("
+  scale(x: 75%, y: 75%, reflow: true, mermaid("
 flowchart TB
     subgraph PL[Presentation Layer]
         P[Presentation component<br/>SmartFmMainFrame + six Swing panels]
@@ -717,8 +722,8 @@ flowchart TB
     FD --> DS
     RP --> DS
     OB -.-> FD
-  "),
-  caption: [Component-and-connector view. Solid arrows are synchronous downward calls permitted by the layered style: presentation to application, application to domain, and application to the persistence gateway (`ReportProcessor` issues read-only queries only). The dashed arrow is the `orderApproved` event connector, realised by the `OrderApprovedListener` interface. Two further event connectors are internal to a component: `invoiceCreated` from `OrderProcessor` to `PaymentProcessor`, and `shipmentAssigned` from `DispatchManager` to `ShipmentTracker`. No arrow runs upward, and none bypasses the `DataStore` gateway.],
+  ")),
+  caption: [Component-and-connector view of SmartFM’s layered and event-driven architecture. Solid arrows show synchronous calls; the dashed arrow shows the order-approved event connector.],
 ) <fig-architecture-components>
 
 = Design Quality (Discussion of Assignment 2 Design)
@@ -747,13 +752,12 @@ Assignment 2 intentionally omitted several low-level implementation details, lea
 
 == Flawed aspects of the original design
 
-Implementation exposed five structural flaws in the initial Assignment 2 model:
+Implementation exposed four structural flaws in the initial Assignment 2 model:
 
 1. *Dispatch Event Automation Ambiguity:* Assignment 2 stated that `DispatchManager` "subscribes to order approval events." We initially interpreted this as automatic vehicle dispatch, which contradicted the SRS requirement for human dispatchers to assign resources manually. Clarifying that event notification merely updates pending queues required two team discussions.
-2. *Invoice-to-Payment Multiplicity Constraint:* Assignment 2 enforced a strict 1-to-1 relationship between `Invoice` and `Payment`. This broke when implementing partial payments (\$200 cash deposit followed by \$300 card payment). We resolved this by changing the multiplicity to 1-to-Many and introducing `InvoicePartiallyPaidState`.
-3. *Strategy Pattern Collaborator Omission:* The CRC cards documented `ServiceOffering` as delegating pricing to `IPricingStrategy`, but omitted `IPricingStrategy` from `ServiceOffering`'s collaborators. Consequently, `OrderProcessor` called `PricingTariff.calculateQuote()` directly, leaving the strategy indirection unused in runtime code.
-4. *Omission of Persistence Lifecycle Triggers:* Deferred persistence caused confusion regarding *when* state changes should be saved. Without design guidance, we had to establish a transactional policy ensuring `DataStore` flushes to SQLite after every state mutation rather than on application exit.
-5. *Deferred Administrative Scope:* Assignment 2 already scoped a `Report` data-holder class (Assumption A13; CRC card, Appendix A) but left it without a coordinating controller or UI, so system-wide metric aggregation could not run. We added the missing `ReportProcessor` controller and `ReportPanel` UI during implementation to satisfy Task T12.
+2. *Invoice-to-Payment Multiplicity Constraint:* Assignment 2 did not clearly specify whether an invoice could have multiple payments. This became a design constraint when implementing partial payments (a 200-unit cash deposit followed by a 300-unit card payment). We resolved it by using a 1-to-Many relationship and `InvoicePartiallyPaidState`.
+3. *Strategy Pattern Collaborator Omission:* Assignment 2's UML included the pricing-strategy abstraction, but the `ServiceOffering` CRC card did not clearly assign pricing delegation to it. Consequently, `OrderProcessor` calls `PricingTariff.calculateQuote()` directly, leaving the strategy indirection unused in runtime code.
+4. *Omission of Persistence Lifecycle Triggers:* Assignment 2 deferred persistence timing. We had to establish that `GuiContext` saves the `DataStore` after each successful UI mutation, while direct controller callers must explicitly invoke `saveTo(...)`; each save remains transactional.
 
 == Level of interpretation required
 
@@ -772,7 +776,7 @@ Building SmartFM showed us where our Assignment 2 design held up well and where 
 
 *Specify Observer semantics and GRASP Controller boundaries precisely.* The State pattern lifecycle tables were our most effective design artifact because each row defined exact transition rules, making `OrderState` and `ShipmentState` implementation straightforward. By contrast, the Observer pattern descriptions were vague. The event description for `OrderApprovedListener` left it unclear whether `DispatchManager` (our GRASP Application Controller) should assign vehicles automatically upon notification or wait for explicit input from the Presentation Layer. This ambiguity took two days of team debate to resolve. Next time, we would define event triggers, payload contracts, and controller boundaries before writing code.
 
-*Test domain multiplicities against realistic use cases.* Sequence diagrams help catch structural mistakes early, but only if you trace edge cases through them. Our initial 1-to-1 multiplicity between `Invoice` and `Payment` broke as soon as we tried implementing partial payments (\$200 cash deposit followed by a \$300 card payment). Tracing a multi-payment scenario through `Invoice` (the Information Expert for billing balances) during Assignment 2 would have made the need for a 1-to-Many relationship and `InvoicePartiallyPaidState` obvious.
+*Test domain multiplicities against realistic use cases.* Sequence diagrams help catch structural mistakes early, but only if you trace edge cases through them. Assignment 2 did not make the Invoice-Payment multiplicity explicit, and a partial-payment scenario (a 200-unit cash deposit followed by a 300-unit card payment) exposed that omission. Tracing the multi-payment scenario through `Invoice` (the Information Expert for billing balances) made the need for a 1-to-Many relationship and `InvoicePartiallyPaidState` clear.
 
 *Keep design patterns connected in runtime code.* We created `IPricingStrategy` and `PricingTariff` to handle pricing variations (applying Strategy and Protected Variations). But in the running code, `OrderProcessor` calls `PricingTariff.calculateQuote()` directly instead of delegating through `ServiceOffering` (the Information Expert for branch offerings). A pattern that exists on a class diagram but gets bypassed in code adds indirection without providing value. Future designs should either route calls all the way through or explicitly state why delegation is deferred.
 
@@ -821,7 +825,7 @@ SmartFM is implemented in Java 26 using a standard Maven project layout. The des
     [T9: Generate Receipt], [Full], [Immutable `Receipt` created automatically upon payment settlement.],
     [T10: Manage Vehicles], [Not implemented], [Vehicle records are seeded during bootstrap but no CRUD UI is provided.],
     [T11: Manage Drivers], [Not implemented], [Driver records are seeded during bootstrap but no CRUD UI is provided.],
-    [T12: Generate Reports], [Full], [Implemented via `ReportProcessor` and `ReportPanel` across financial, fleet, branch, and commercial order metrics. Functionally complete but more lightly tested than the four core areas (Section 5.3).],
+    [T12: Generate Reports], [Full (functional)], [Implemented via `ReportProcessor` and `ReportPanel` across financial, fleet, branch, and commercial order metrics. Functionally complete; automated metric assertions pass, but no scripted GUI acceptance scenario is included (see Section 5.3).],
     [T13: Update Customer], [Not implemented], [Customer status can be changed programmatically but no update UI is provided.],
     [T14: Cancel/Modify Order], [Partial], [Cancellation is implemented; modification of submitted order fields is not supported.],
     [T15: Manage Config], [Not implemented], [`SystemConfiguration` is loaded at startup but no admin UI for changing values is provided.],
@@ -962,7 +966,7 @@ System testing covers compiler linting, automated unit and integration tests, sc
 
 All 82 test executions complete in under 5 seconds with zero failures.
 
-*Note on reporting coverage:* T12 is marked "Full" in Table 7 on the basis of functional completeness: all four report categories generate correctly through `ReportPanel`. `ReportProcessorTest` covers it with six tests that drive real state through the transactional controllers first and then assert individual metric values: billed, collected and outstanding amounts per invoice state; vehicle, driver and shipment-state counts before and after delivery; branch-scoped versus all-branch resource counts; order-state and aggregate freight totals; category dispatch including the financial fallback; and date-range filtering. Reporting still has no scripted acceptance scenario in @tbl-scenario-summary, since it reads state rather than mutating it.
+*Note on reporting coverage:* T12 is marked "Full (functional)" in Table 7 on the basis of functional completeness: all four report categories generate correctly through `ReportPanel`. The qualifier indicates that `ReportProcessorTest` provides automated metric coverage but no separate scripted GUI acceptance scenario is included. `ReportProcessorTest` covers it with six tests that drive real state through the transactional controllers first and then assert individual metric values: billed, collected and outstanding amounts per invoice state; vehicle, driver and shipment-state counts before and after delivery; branch-scoped versus all-branch resource counts; order-state and aggregate freight totals; category dispatch including the financial fallback; and date-range filtering. Reporting still has no scripted acceptance scenario in @tbl-scenario-summary, since it reads state rather than mutating it.
 
 *Scenario-Based Acceptance Testing:* The five scenarios below exercise the core use cases. Each scenario validates both correct and invalid inputs, state transitions, and persistence.
 
