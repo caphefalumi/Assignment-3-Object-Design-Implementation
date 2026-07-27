@@ -21,11 +21,11 @@
 #set heading(numbering: "1.")
 = Introduction
 
-SmartFM is a fleet-logistics desktop application that our team designed in Assignment 2 and has now built as a working Java 26 system. It handles customer registration, order placement, dispatch, shipment tracking, billing, and payment. This report covers how we turned the high-level design into running code, what changed along the way, and what we learned.
+SmartFM is the fleet-logistics desktop application our team designed in Assignment 2 and has now implemented in Java 26. It covers customer registration, order placement, dispatch, shipment tracking, billing, and payment. This report explains how the high-level design became running code, what we revised during implementation, and what that process taught us.
 
-The report follows the assignment structure: Section 2 records revisions to Assignment 2; Section 3 presents the detailed class design, sequence diagrams, and architecture; Section 4 reflects on design quality and lessons learned; Section 5 provides code mappings, build instructions, execution evidence, and test results. The full Assignment 2 submission is attached in Appendix A.
+Section 2 records revisions from Assignment 2. Section 3 covers the detailed class design, sequence diagrams, and architecture. Section 4 discusses design quality and lessons learned. Section 5 maps design to code, gives build and run instructions, and presents execution and test evidence. Appendix A contains the full Assignment 2 submission.
 
-We implemented four core transactional business areas: Order Management, Fleet Dispatch, Shipment Tracking, and Billing & Payment, plus a fifth administrative reporting area (Task T12) coordinated by `ReportProcessor`. A Swing GUI (`smartfm.ui.gui`) provides operational forms that delegate all requests to the application controllers. The UI does not contain business rules; it only collects input and displays results.
+We built four transactional business areas (Order Management, Fleet Dispatch, Shipment Tracking, and Billing & Payment) plus administrative reporting (Task T12) via `ReportProcessor`. The Swing GUI (`smartfm.ui.gui`) collects input and shows results; it delegates every business request to application controllers and holds no domain rules of its own.
 
 = Summary of Design Revision
 
@@ -728,47 +728,47 @@ flowchart TB
 
 = Design Quality (Discussion of Assignment 2 Design)
 
-Evaluating our Assignment 2 design against the completed Java implementation highlights structural strengths, missing elements, design flaws, and areas where coding required technical interpretation.
+This section compares the Assignment 2 design with the Java we shipped: what carried over, what we had to invent, and where the original model was wrong.
 
 == Good aspects of the Assignment 2 design
 
-The Assignment 2 design provided a strong architectural foundation in five key areas:
+Several parts of the Assignment 2 design mapped into Java with little reinterpretation:
 
-1. *Direct GRASP Controller Mapping:* The CRC cards from Assignment 2 mapped almost one-to-one to implementation controller methods. For instance, `OrderProcessor`'s core CRC responsibilities directly became `registerCustomer()`, `submitOrder()`, and `approveOrder()`, preserving high cohesion.
-2. *Precise Lifecycle State Tables:* Defining state transition tables early was highly effective. Each matrix row translated directly into a GoF `State` subclass (`OrderSubmittedState`, `ShipmentInTransitState`), making invalid transition checks and unit tests mechanical.
-3. *Effective GoF Adapter Decoupling:* The Adapter pattern specified in Assignment 2 allowed us to build `SimulatedGatewayAdapter` for development and swap it for a real banking gateway without touching `PaymentProcessor`.
-4. *Event-Driven Observer Decoupling:* Using the Observer pattern for cross-controller communication kept application controllers loosely coupled. For example, order approval notifies `PaymentProcessor` via `InvoiceCreatedListener` without creating a hard compile-time dependency inside `OrderProcessor`.
-5. *Layered Cohesion and Low Coupling:* Domain entities remain completely isolated from UI and JDBC persistence. Presentation components depend solely on Application Controllers, adhering strictly to GRASP Low Coupling and High Cohesion principles.
+1. The CRC cards for the GRASP Controllers lined up almost one-to-one with controller methods. `OrderProcessor`'s CRC responsibilities became `registerCustomer()`, `submitOrder()`, and `approveOrder()` with almost no redesign, which kept those classes cohesive.
+2. The lifecycle state tables were the design artifact we used most. Each matrix row became a GoF `State` subclass (`OrderSubmittedState`, `ShipmentInTransitState`), so illegal-transition checks and the matching unit tests were mostly mechanical to write.
+3. Specifying Adapter interfaces early meant we could ship `SimulatedGatewayAdapter` for development and later swap in a real banking gateway without editing `PaymentProcessor`.
+4. Observer events kept the application controllers from taking hard compile-time dependencies on each other. Order approval notifies `PaymentProcessor` through `InvoiceCreatedListener` without `OrderProcessor` naming that class.
+5. Domain entities stay free of UI and JDBC imports. Presentation code talks only to application controllers, which matches the Low Coupling and High Cohesion intent from GRASP.
 
 == Missing aspects from the original design
 
-Assignment 2 intentionally omitted several low-level implementation details, leaving five key gaps to fill during coding:
+Assignment 2 left several implementation details open on purpose. During coding we still had to fill these gaps:
 
-1. *Persistence Gateway and Relational Schema:* Assignment 2 deferred data access (Assumption A1), leaving the SQLite relational schema, SQL queries, and the `DataStore` transactional gateway completely unmapped.
-2. *Input Validation Rules and Bounds:* While Assignment 2 defined entity attributes, it specified no input validation rules. We had to define regex patterns for phone numbers and email addresses, non-negative cargo weight limits, and mandatory non-blank name constraints in `smartfm.common.Validators`.
-3. *Presentation Layer and Error Feedback:* Assignment 2 deferred the UI boundary. We had to design the entire Swing desktop GUI (`smartfm.ui.gui`), including inline validation banners (`ResultBanner`, `ValidatedField`) and form reset flows.
-4. *System Seeding and Startup Wiring:* The original design omitted startup initialization. We implemented `Bootstrap.java` to seed initial branches, vehicles, drivers, and service offerings into SQLite upon database creation.
-5. *Concrete Adapter Behaviors:* While interface contracts (`IPaymentGateway`, `ITelemetrySource`) were defined, their concrete simulation behaviors were omitted. We defined `SimulatedGatewayAdapter` to return deterministic authorization codes and `ManualTelemetrySource` to format GPS coordinate strings.
+1. Persistence was deferred under Assumption A1, so the SQLite schema, SQL, and the transactional `DataStore` gateway had no design counterpart.
+2. Entity attributes were named, but input validation was not. We defined phone and email regexes, non-negative cargo weight limits, and non-blank name checks in `smartfm.common.Validators`.
+3. The UI boundary was deferred, so we designed the Swing desktop GUI (`smartfm.ui.gui`) from scratch, including inline banners (`ResultBanner`, `ValidatedField`) and form reset behaviour.
+4. Startup wiring was missing. `Bootstrap` seeds branches, vehicles, drivers, and service offerings into SQLite when the database is first created.
+5. Interface contracts (`IPaymentGateway`, `ITelemetrySource`) existed, but concrete simulation behaviour did not. `SimulatedGatewayAdapter` returns deterministic authorization codes; `ManualTelemetrySource` formats GPS coordinate strings.
 
 == Flawed aspects of the original design
 
-Implementation exposed four structural flaws in the initial Assignment 2 model:
+Coding also exposed problems in the Assignment 2 model itself:
 
-1. *Dispatch Event Automation Ambiguity:* Assignment 2 stated that `DispatchManager` "subscribes to order approval events." We initially interpreted this as automatic vehicle dispatch, which contradicted the SRS requirement for human dispatchers to assign resources manually. Clarifying that event notification merely updates pending queues required two team discussions.
-2. *Invoice-to-Payment Multiplicity Constraint:* Assignment 2 did not clearly specify whether an invoice could have multiple payments. This became a design constraint when implementing partial payments (a 200-unit cash deposit followed by a 300-unit card payment). We resolved it by using a 1-to-Many relationship and `InvoicePartiallyPaidState`.
-3. *Strategy Pattern Collaborator Omission:* Assignment 2's UML included the pricing-strategy abstraction, but the `ServiceOffering` CRC card did not clearly assign pricing delegation to it. Consequently, `OrderProcessor` calls `PricingTariff.calculateQuote()` directly, leaving the strategy indirection unused in runtime code.
-4. *Omission of Persistence Lifecycle Triggers:* Assignment 2 deferred persistence timing. We had to establish that `GuiContext` saves the `DataStore` after each successful UI mutation, while direct controller callers must explicitly invoke `saveTo(...)`; each save remains transactional.
+1. Assignment 2 said `DispatchManager` "subscribes to order approval events." We first read that as automatic vehicle dispatch, which conflicts with the SRS rule that a human dispatcher assigns resources. It took two team discussions to settle that the event only notifies; `assignShipment(...)` remains a separate, explicit call.
+2. The Invoice-to-Payment multiplicity was underspecified. A partial-payment case (200 cash, then 300 card against a 500-unit invoice) forced the issue. We made the association 1-to-Many and added `InvoicePartiallyPaidState`.
+3. The UML showed a pricing Strategy abstraction, but the `ServiceOffering` CRC card never clearly owned pricing delegation. In the running code, `OrderProcessor` calls `PricingTariff.calculateQuote()` directly, so the strategy indirection is unused.
+4. Persistence timing was deferred. We decided that `GuiContext` saves `DataStore` after each successful UI mutation, while direct controller callers must call `saveTo(...)` themselves; each save stays transactional.
 
 == Level of interpretation required
 
-Overall, the Assignment 2 design required a *moderate* level of interpretation during implementation:
+Overall, Assignment 2 needed a moderate amount of interpretation:
 
-- *Low Interpretation Areas (Well-Specified):* Domain entity structures, State transition tables, GRASP Controller method boundaries, and Adapter interface contracts translated to Java with almost zero ambiguity.
-- *High Interpretation Areas (Required Technical Decisions):*
-  - *Persistence Timing:* Deciding between immediate auto-commit per transaction versus buffered memory flushes on exit.
-  - *Validation Contracts:* Formulating regex validation rules and user feedback error paths for form controls.
-  - *Adapter Simulations:* Determining stub behavior for payment gateways and manual telemetry sources.
-  - *Observer Invocation Semantics:* Resolving whether event notifications trigger automatic use-case execution or update presentation queues for manual intervention.
+- Low interpretation (already well specified): domain entity shapes, State transition tables, GRASP Controller method boundaries, and Adapter interface contracts. These translated to Java with almost no ambiguity.
+- High interpretation (we had to decide while coding):
+  - Whether to auto-commit after each UI transaction or buffer writes until exit.
+  - Regex validation rules and how form controls surface errors.
+  - Stub behaviour for the payment gateway and telemetry source.
+  - Whether an observer notification should run a use case automatically or only update a pending queue for a human operator.
 
 == Lessons learnt
 
@@ -780,19 +780,19 @@ Building SmartFM showed us where our Assignment 2 design held up well and where 
 
 *Keep design patterns connected in runtime code.* We created `IPricingStrategy` and `PricingTariff` to handle pricing variations (applying Strategy and Protected Variations). But in the running code, `OrderProcessor` calls `PricingTariff.calculateQuote()` directly instead of delegating through `ServiceOffering` (the Information Expert for branch offerings). A pattern that exists on a class diagram but gets bypassed in code adds indirection without providing value. Future designs should either route calls all the way through or explicitly state why delegation is deferred.
 
-*Define persistence contracts and layer boundaries early.* Deferring UI and persistence details made sense for a high-level Assignment 2 design, but it left architectural boundaries unmapped. Building the Infrastructure Layer (`DataStore` as a Pure Fabrication gateway) meant we had to figure out transaction boundaries, schema versioning, and validation rules in `smartfm.common.Validators` on the fly. Writing down a clear layered architecture contract (Presentation -> Application -> Domain -> Infrastructure) upfront would have saved significant interpretation effort.
+*Define persistence contracts and layer boundaries early.* Deferring UI and persistence details made sense for a high-level Assignment 2 design, but it left architectural boundaries unmapped. Building the Infrastructure Layer (`DataStore` as a Pure Fabrication gateway) meant inventing transaction boundaries, schema versioning, and validation rules in `smartfm.common.Validators` while already writing code. A short layered architecture note (Presentation -> Application -> Domain -> Infrastructure) written during Assignment 2 would have cut that guesswork.
 
-*Use automated tests to enforce architectural rules.* Running 82 automated JUnit 5 tests across 18 test classes gave us confidence during refactoring. Whenever we edited `DataStore` SQL queries or added `ReportProcessor`, the test suite immediately confirmed that domain state rules and controller workflows were intact. Working with Java 26 also gave us a practical lesson in runtime dependencies: SQLite JDBC requires `--enable-native-access=ALL-UNNAMED` to load native libraries, which we configured directly in our Makefile.
+*Use automated tests to enforce architectural rules.* The 82 JUnit 5 tests across 18 test classes caught regressions while we refactored. Edits to `DataStore` SQL or additions like `ReportProcessor` were checked against domain state rules and controller workflows on the next `mvn test`. Java 26 also forced a practical runtime detail: SQLite JDBC needs `--enable-native-access=ALL-UNNAMED` to load native libraries, which we put in the Makefile.
 
 = Implementation and Testing
 
 == Mapping design to code
 
-SmartFM is implemented in Java 26 using a standard Maven project layout. The design elements and sequence diagrams map directly to the source code.
+SmartFM is implemented in Java 26 under a standard Maven layout. The design elements and sequence diagrams map to the source paths listed below.
 
-*Coding standards and metrics:* The codebase follows the Google Java Style Guide @google2023javastyle. It uses standard naming conventions, explicit control blocks, and concise Javadoc comments. Source files compile with zero lint warnings under `javac -Xlint:all`. We verify correctness with 82 automated JUnit 5 test executions across 18 test classes (including parameterized tests that expand to multiple cases), covering domain states, event pipelines, SQLite persistence, and Swing GUI components. All tests pass.
+*Coding standards and metrics:* The codebase follows the Google Java Style Guide @google2023javastyle: standard naming, explicit control blocks, and short Javadoc. Sources compile with zero lint warnings under `javac -Xlint:all`. Correctness is checked by 82 JUnit 5 test executions across 18 test classes (including parameterized cases), covering domain states, event pipelines, SQLite persistence, and Swing GUI behaviour. All tests pass.
 
-*Development environment:* We developed on Windows 11 using IntelliJ IDEA as the IDE, PowerShell 7.6 as the terminal, and OpenJDK 26.0.2. The application needs Java 26 and the bundled library JARs in `lib/`. It runs locally without external database servers. You can build with Maven, GNU Make, or standard `javac`.
+*Development environment:* Development was on Windows 11 with IntelliJ IDEA, PowerShell 7.6, and OpenJDK 26.0.2. The app needs Java 26 and the JARs under `lib/`. It runs locally with no external database server. Builds work with Maven, GNU Make, or plain `javac`.
 
 #figure(
   styled-table((2.0fr, 2.65fr, 3.8fr), (
@@ -863,15 +863,15 @@ SmartFM is implemented in Java 26 using a standard Maven project layout. The des
 
 *Option A: Maven Build & Execution (Recommended)*
 
-+ `mvn test` — Validates Checkstyle (0 errors) and runs all 82 JUnit 5 tests.
-+ `mvn package` — Compiles and packages the self-contained executable JAR in `target/`.
-+ `java --enable-native-access=ALL-UNNAMED -jar target/smartfm.jar` — Launches the packaged application.
++ `mvn test`: validates Checkstyle (0 errors) and runs all 82 JUnit 5 tests.
++ `mvn package`: compiles and packages the self-contained executable JAR in `target/`.
++ `java --enable-native-access=ALL-UNNAMED -jar target/smartfm.jar`: launches the packaged application.
 
 *Option B: GNU Make Shortcuts*
 
-+ `make compile` — Compiles Java sources with `-Xlint:all` to `target/classes`.
-+ `make run` — Launches the desktop GUI interface.
-+ `make reset` — Cleans compiled classes and resets SQLite database state.
++ `make compile`: compiles Java sources with `-Xlint:all` to `target/classes`.
++ `make run`: launches the desktop GUI.
++ `make reset`: cleans compiled classes and resets SQLite database state.
 
 #figure(
   image("images/compilation.png", width: 95%),
@@ -880,7 +880,7 @@ SmartFM is implemented in Java 26 using a standard Maven project layout. The des
 
 === GUI execution screenshots
 
-The screenshots below were generated by running `tools/java/smartfm/ui/gui/ScreenshotDriver.java`. The driver automates user actions and captures the application window directly across all scenarios. The key screenshots illustrating home screen, valid/invalid inputs, outputs, exit state, and compilation evidence are embedded in the report figures below.
+The screenshots below come from `tools/java/smartfm/ui/gui/ScreenshotDriver.java`, which drives the GUI and captures the window for each scenario. The figures show the home screen, valid and invalid input paths, successful outputs, and the state just before exit.
 
 #figure(
   grid(columns: (1fr, 1fr), gutter: 7pt,
@@ -952,23 +952,23 @@ To regenerate all screenshots on a machine with JDK 26 and GNU Make, run `make s
 
 == Testing
 
-System testing covers compiler linting, automated unit and integration tests, scenario-based acceptance testing, and persistence verification.
+System testing covers compiler linting, automated unit and integration tests, scenario-based acceptance runs, and persistence checks.
 
-*Automated testing:* The JUnit 5 test suite (`src/test/java/smartfm/`) produces 82 test executions via `mvn test`, distributed across 18 test classes containing 71 written test methods (including four `@ParameterizedTest` methods that expand to multiple cases). The tests cover:
-1. *Common Layer:* Currency formatting, timestamp rendering, and field validators (`MoneyTest`, `ValidatorsTest`).
-2. *Domain Layer:* Entity invariants, cargo aggregation, state transitions, receipt issuance, and pricing tariffs across domain packages.
-3. *Application Layer:* Event dispatch, shipment creation, resource allocation, and payment settlement across the four core transactional controllers, plus per-metric report assertions for all four report categories, category dispatch and date-range filtering (`ReportProcessorTest`; see note below).
-4. *Infrastructure Layer:* Saving and reloading normalized aggregates in SQLite (`DataStoreTest`).
-5. *Core E2E Workflows:* Full business flow execution from registration to payment settlement and database recovery (`SmartFmEndToEndTest`).
-6. *Swing GUI E2E:* Interactive GUI testing on the Event Dispatch Thread covering validation errors, dispatch, and window closure (`SmartFmGuiEndToEndTest`).
-7. *GUI Persistence:* Real-time SQLite auto-save verification upon UI state mutation (`GuiContextAndPersistenceTest`).
-8. *Coverage Helpers:* GUI component event handling and edge-case form input helpers (`SmartFmGuiCoverageTest`).
+*Automated testing:* `mvn test` runs 82 JUnit 5 executions from `src/test/java/smartfm/`, across 18 test classes with 71 written methods (four `@ParameterizedTest` methods expand into multiple cases). Coverage includes:
+1. *Common layer:* currency formatting, timestamps, and field validators (`MoneyTest`, `ValidatorsTest`).
+2. *Domain layer:* entity invariants, cargo aggregation, state transitions, receipt issuance, and pricing tariffs.
+3. *Application layer:* event dispatch, shipment creation, resource allocation, and payment settlement on the four transactional controllers, plus per-metric report assertions, category dispatch, and date-range filtering (`ReportProcessorTest`; see note below).
+4. *Infrastructure layer:* save and reload of normalized aggregates in SQLite (`DataStoreTest`).
+5. *Core E2E workflows:* registration through payment settlement and database recovery (`SmartFmEndToEndTest`).
+6. *Swing GUI E2E:* Event Dispatch Thread coverage of validation errors, dispatch, and window closure (`SmartFmGuiEndToEndTest`).
+7. *GUI persistence:* SQLite save after UI mutations (`GuiContextAndPersistenceTest`).
+8. *Coverage helpers:* GUI component events and edge-case form input (`SmartFmGuiCoverageTest`).
 
-All 82 test executions complete in under 5 seconds with zero failures.
+All 82 executions finish in under 5 seconds with zero failures.
 
-*Note on reporting coverage:* T12 is marked "Full (functional)" in Table 7 on the basis of functional completeness: all four report categories generate correctly through `ReportPanel`. The qualifier indicates that `ReportProcessorTest` provides automated metric coverage but no separate scripted GUI acceptance scenario is included. `ReportProcessorTest` covers it with six tests that drive real state through the transactional controllers first and then assert individual metric values: billed, collected and outstanding amounts per invoice state; vehicle, driver and shipment-state counts before and after delivery; branch-scoped versus all-branch resource counts; order-state and aggregate freight totals; category dispatch including the financial fallback; and date-range filtering. Reporting still has no scripted acceptance scenario in @tbl-scenario-summary, since it reads state rather than mutating it.
+*Note on reporting coverage:* Table 7 marks T12 as "Full (functional)" because all four report categories generate correctly in `ReportPanel`. `ReportProcessorTest` adds automated metric checks but there is no separate scripted GUI acceptance scenario. Those six tests drive state through the transactional controllers first, then assert individual metrics: billed, collected, and outstanding amounts by invoice state; vehicle, driver, and shipment-state counts before and after delivery; branch-scoped versus all-branch resource counts; order-state and freight totals; category dispatch including the financial fallback; and date-range filtering. Reporting is absent from @tbl-scenario-summary because it only reads state.
 
-*Scenario-Based Acceptance Testing:* The five scenarios below exercise the core use cases. Each scenario validates both correct and invalid inputs, state transitions, and persistence.
+*Scenario-based acceptance testing:* The five scenarios below exercise the core use cases, including both valid and invalid inputs, state transitions, and persistence.
 
 #figure(
   styled-table((1.1fr, 1.8fr, 2.7fr, 3.1fr), (
@@ -984,13 +984,13 @@ All 82 test executions complete in under 5 seconds with zero failures.
 
 
 
-After running Scenario 05, `data/smartfm.db` contains committed database rows for two customers, two orders (`ORD-0001` Approved, `ORD-0002` Cancelled), one delivered shipment, one paid invoice with a zero outstanding balance, two settled payments (one cash, one card), and two receipts. The table schema is set to version 3 with foreign keys enabled. Re-launching the application verifies that application state persists correctly across separate process runs.
+After Scenario 05, `data/smartfm.db` holds two customers, two orders (`ORD-0001` Approved, `ORD-0002` Cancelled), one delivered shipment, one paid invoice with a zero outstanding balance, two settled payments (cash and card), and two receipts. The schema is version 3 with foreign keys enabled. Starting the application again confirms that state survives a separate process run.
 
 = Conclusion
 
-SmartFM shows that a well-structured Assignment 2 design can turn into working software with relatively few structural surprises. The core entities, State patterns, and controller responsibilities survived implementation largely intact. The changes we made (adding persistence, replacing vague observer descriptions with typed listeners, and relaxing the Invoice-Payment multiplicity) came from concrete problems found during coding rather than design trends.
+The Assignment 2 design survived implementation more intact than we expected. Core entities, State hierarchies, and controller responsibilities mostly kept their original shape. Where we did change things (adding `DataStore`, replacing narrative observer callbacks with typed listeners, and opening Invoice-Payment to 1-to-Many), a concrete coding problem forced the change rather than a desire for a neater diagram.
 
-The system compiles cleanly, passes all 82 automated test executions, and runs the four core business workflows plus administrative reporting end-to-end through its Swing GUI. Deferred features such as service browsing can be added later without restructuring the layered architecture. If we were to start this project again, we would spend more time on persistence contracts, UI sketches, and scenario walkthroughs during the design phase. However, the overall approach of GRASP Controllers, lifecycle State classes, and event-driven subsystem communication turned out to be a solid foundation.
+The finished system compiles with zero lint warnings, passes all 82 automated test executions, and runs the four transactional workflows plus Task T12 reporting through the Swing GUI. Features we left out, such as service browsing and vehicle CRUD, can sit on the existing layers later. Next time we would lock down persistence timing, UI sketches, and a few edge-case walkthroughs earlier in the design phase; those were the gaps that cost us the most interpretation time.
 
 = References
 
