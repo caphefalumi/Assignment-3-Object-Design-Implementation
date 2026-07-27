@@ -25,7 +25,7 @@ SmartFM is the fleet-logistics desktop application our team designed in Assignme
 
 Section 2 records revisions from Assignment 2. Section 3 covers the detailed class design, sequence diagrams, and architecture. Section 4 discusses design quality and lessons learned. Section 5 maps design to code, gives build and run instructions, and presents execution and test evidence. Appendix A contains the full Assignment 2 submission.
 
-We built four transactional business areas (Order Management, Fleet Dispatch, Shipment Tracking, and Billing & Payment) plus administrative reporting (Task T12) via `ReportProcessor`. The Swing GUI (`smartfm.ui.gui`) collects input and shows results; it delegates every business request to application controllers and holds no domain rules of its own.
+We built four transactional business areas (Order Management, Fleet Dispatch, Shipment Tracking, and Billing & Payment) plus administrative reporting (Task T12) via `ReportProcessor`. The Swing GUI (`smartfm.ui.gui`) collects input and shows results. It delegates every business request to application controllers and holds no domain rules of its own.
 
 = Summary of Design Revision
 
@@ -61,10 +61,10 @@ The detailed design keeps the Entity-Control-Boundary structure from Assignment 
 #figure(
   styled-table((1.65fr, 2.35fr, 4.85fr), (
     th[Package / layer], th[Key classes], th[Responsibility],
-    [`smartfm.ui`, `smartfm.ui.gui`], [`Launcher`, `SmartFmMainFrame`, `GuiContext`, six GUI panels], [Boundary layer. Collects and displays information only; it calls controller public operations and displays domain/controller validation messages.],
-    [`smartfm.application`], [`OrderProcessor`, `DispatchManager`, `ShipmentTracker`, `PaymentProcessor`, `ReportProcessor`, `Bootstrap`], [Application layer. The four core transactional GRASP Controllers receive system events, coordinate entities, publish observer events, and stage changes in the persistence gateway; `ReportProcessor` separately coordinates administrative reporting (Task T12).],
+    [`smartfm.ui`, `smartfm.ui.gui`], [`Launcher`, `SmartFmMainFrame`, `GuiContext`, six GUI panels], [Boundary layer. Collects and displays information only. It calls controller public operations and displays domain/controller validation messages.],
+    [`smartfm.application`], [`OrderProcessor`, `DispatchManager`, `ShipmentTracker`, `PaymentProcessor`, `ReportProcessor`, `Bootstrap`], [Application layer. The four core transactional GRASP Controllers receive system events, coordinate entities, publish observer events, and stage changes in the persistence gateway. `ReportProcessor` separately coordinates administrative reporting (Task T12).],
     [`smartfm.domain.*` (`customer`, `order`, `shipment`, `billing`, `fleet`, `catalog`, `report`)], [`Customer`, `Order`, `Consignment`, `Shipment`, `Vehicle`, `Driver`, `Invoice`, `Payment`, `Receipt`, `Report`, `ReportCategory`, `SystemConfiguration`, state/strategy interfaces], [Domain layer. Divided into seven domain sub-packages. Owns business information, lifecycle state, pricing/payment behaviour, and entity-level validation. `SystemConfiguration` (in `catalog`) is a read-only startup data-holder.],
-    [`smartfm.infrastructure`], [`DataStore`], [Infrastructure layer. Opens the local SQLite database and uses a versioned normalized schema for branches, people and resources, catalogue, orders, shipments, invoices, payments, receipts, and association links. It reads and replaces the aggregate rows inside one SQLite transaction; it is the only persistence mechanism.],
+    [`smartfm.infrastructure`], [`DataStore`], [Infrastructure layer. Opens the local SQLite database and uses a versioned normalized schema for branches, people and resources, catalogue, orders, shipments, invoices, payments, receipts, and association links. It reads and replaces the aggregate rows inside one SQLite transaction as the only persistence mechanism.],
     [`smartfm.common`], [`Validators`, `Money`, `InvalidDataException`, `InvalidCredentialsException`], [Small shared utilities. Validation rules are reused by controllers/boundaries rather than copied between interfaces.],
   )),
   caption: [Layered package design and responsibility allocation.],
@@ -594,7 +594,7 @@ sequenceDiagram
     OP->>DOM: create Consignment(s) and Order
     OP->>DS: stage order; return id
   "),
-  caption: [UC-01 / UC-02: customer registration and order submission. The boundary sends each system event to `OrderProcessor`, which creates and validates domain objects and stages changes in `DataStore`; `GuiContext` commits them to SQLite after the successful UI action.],
+  caption: [UC-01 / UC-02: customer registration and order submission. The boundary sends each system event to `OrderProcessor`, which creates and validates domain objects and stages changes in `DataStore`. `GuiContext` commits them to SQLite after the successful UI action.],
 ) <fig-seq-order>
 
 #figure(
@@ -612,7 +612,7 @@ sequenceDiagram
     DM->>ST: stage shipment and resource updates
     DM->>ST: publish shipmentAssigned(shipment)
   "),
-  caption: [UC-03: dispatcher assigns a vehicle and driver to an approved order. `DispatchManager` checks dispatch constraints, stages the shipment and resource updates in `DataStore`, and notifies `ShipmentTracker`; after the successful controller call, `GuiContext` commits the mutation to SQLite.],
+  caption: [UC-03: dispatcher assigns a vehicle and driver to an approved order. `DispatchManager` checks dispatch constraints, stages the shipment and resource updates in `DataStore`, and notifies `ShipmentTracker`. After the successful controller call, `GuiContext` commits the mutation to SQLite.],
 ) <fig-seq-dispatch>
 
 #figure(
@@ -648,7 +648,7 @@ sequenceDiagram
     PP->>GW: verify (gateway only for card)
     PP->>GW: settle, issue Receipt, stage aggregate
   "),
-  caption: [UC-05: billing and payment. `PaymentProcessor` validates the amount before strategy/gateway processing; a receipt is issued only after settlement.],
+  caption: [UC-05: billing and payment. `PaymentProcessor` validates the amount before strategy/gateway processing. A receipt is issued only after settlement.],
 ) <fig-seq-payment>
 
 == Justification of changes and non-changes
@@ -661,7 +661,7 @@ The main class-level change was clarifying and implementing the `Invoice` to `Pa
 
 Features outside the four operational areas, such as authentication or role-based access (`StaffMember`, `StaffRole`, `SystemConfiguration`), remain in the domain model without UI bindings. We deferred these deliberately rather than deliver half-built features. The `Report` class and its coordinating controller `ReportProcessor` are fully implemented (Task T12) and exposed via the `ReportPanel` UI tab.
 
-One clarification on the `Person` hierarchy: `StaffRole` includes a `DRIVER` value alongside the five back-office roles, which could look like a second, competing way to represent a driver next to the `Driver` subclass. It is not. `Driver`'s constructor passes `StaffRole.DRIVER` to `super(...)` unconditionally, so the role is derived from the concrete class rather than set independently, and the two representations cannot diverge. `Driver` remains the single source of driver identity (it alone owns `licenseNumber` and `dutyState`, per Assignment 2 Simplification #1); the enum value exists only so that `StaffMember.getRole()` returns a total function for every person in the system.
+One clarification on the `Person` hierarchy: `StaffRole` includes a `DRIVER` value alongside the five back-office roles, which could look like a second, competing way to represent a driver next to the `Driver` subclass. It is not. `Driver`'s constructor passes `StaffRole.DRIVER` to `super(...)` unconditionally, so the role is derived from the concrete class rather than set independently, and the two representations cannot diverge. `Driver` remains the single source of driver identity (it alone owns `licenseNumber` and `dutyState` per Assignment 2 Simplification #1). The enum value exists only so that `StaffMember.getRole()` returns a total function for every person in the system.
 
 === Responsibilities and collaborators
 
@@ -754,10 +754,10 @@ Assignment 2 left several implementation details open on purpose. During coding 
 
 Coding also exposed problems in the Assignment 2 model itself:
 
-1. Assignment 2 said `DispatchManager` "subscribes to order approval events." We first read that as automatic vehicle dispatch, which conflicts with the SRS rule that a human dispatcher assigns resources. It took two team discussions to settle that the event only notifies; `assignShipment(...)` remains a separate, explicit call.
+1. Assignment 2 said `DispatchManager` "subscribes to order approval events." We first read that as automatic vehicle dispatch, which conflicts with the SRS rule that a human dispatcher assigns resources. It took two team discussions to settle that the event only notifies, while `assignShipment(...)` remains a separate, explicit call.
 2. The Invoice-to-Payment multiplicity was underspecified. A partial-payment case (200 cash, then 300 card against a 500-unit invoice) forced the issue. We made the association 1-to-Many and added `InvoicePartiallyPaidState`.
 3. The UML showed a pricing Strategy abstraction, but the `ServiceOffering` CRC card never clearly owned pricing delegation. In the running code, `OrderProcessor` calls `PricingTariff.calculateQuote()` directly, so the strategy indirection is unused.
-4. Persistence timing was deferred. We decided that `GuiContext` saves `DataStore` after each successful UI mutation, while direct controller callers must call `saveTo(...)` themselves; each save stays transactional.
+4. Persistence timing was deferred. We decided that `GuiContext` saves `DataStore` after each successful UI mutation, while direct controller callers must call `saveTo(...)` themselves, with each save staying transactional.
 
 == Level of interpretation required
 
@@ -895,7 +895,7 @@ The screenshots below come from `tools/java/smartfm/ui/gui/ScreenshotDriver.java
     image("images/02a_order_management_empty.png", width: 100%),
     image("images/02b_order_management_invalid_weight.png", width: 100%),
   ),
-  caption: [Empty Order Management tab at the start of Scenario 02 (left); a negative consignment weight is rejected before the consignment is added (right).],
+  caption: [Empty Order Management tab at the start of Scenario 02 (left). A negative consignment weight is rejected before the consignment is added (right).],
 ) <fig-gui-order-empty-validation>
 
 #figure(
