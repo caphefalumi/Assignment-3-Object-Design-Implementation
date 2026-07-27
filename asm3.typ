@@ -25,7 +25,7 @@ SmartFM is a fleet-logistics desktop application that our team designed in Assig
 
 The report follows the assignment structure: Section 1 lists revisions to Assignment 2; Section 2 presents the detailed class design, sequence diagrams, and architecture; Section 3 reflects on design quality and lessons learned; Section 4 provides code mappings, build instructions, execution evidence, and test results. The full Assignment 2 submission is attached in Appendix A.
 
-We implemented four business areas: Order Management, Fleet Dispatch, Shipment Tracking, and Billing & Payment. A Swing GUI (`smartfm.ui.gui`) provides operational forms that delegate all requests to the application controllers. The UI does not contain business rules; it only collects input and displays results.
+We implemented four core transactional business areas: Order Management, Fleet Dispatch, Shipment Tracking, and Billing & Payment, plus a fifth administrative reporting area (Task T12) coordinated by `ReportProcessor`. A Swing GUI (`smartfm.ui.gui`) provides operational forms that delegate all requests to the application controllers. The UI does not contain business rules; it only collects input and displays results.
 
 = Summary of Design Revision
 
@@ -40,7 +40,7 @@ Because no formal marker feedback was provided, Table 1 records revisions made d
     [A2 lifecycle state tables], [State rules required programmatic enforcement.], [Built concrete State classes for Order, Shipment, Invoice, and Payment.], [Illegal state transitions throw `InvalidDataException`.],
     [A2 adapter interfaces], [System needed testable concrete adapters.], [Added `ManualTelemetrySource` and `SimulatedGatewayAdapter`.], [External integrations remain replaceable.],
     [A2 narrative observer descriptions], [Callbacks risked concrete controller coupling.], [Defined narrow interfaces (`OrderApprovedListener`, `InvoiceCreatedListener`, `ShipmentAssignedListener`).], [Maintained low coupling between application controllers.],
-    [A2 wide conceptual scope], [Reporting was independent of the four core areas.], [Added `Report` entity, `ReportProcessor` controller, and `ReportPanel` UI tab for administrative reporting.], [Implemented Task T12 with zero changes to existing transactional layers.],
+    [A2 wide conceptual scope], [`Report`'s data-holder design was already scoped in Assignment 2 (Assumption A13; CRC card, Appendix A), but no coordinating controller or UI existed.], [Added the missing `ReportProcessor` controller and `ReportPanel` UI tab to realize the existing `Report` design.], [Implemented Task T12 with zero changes to existing transactional layers.],
     [A2 Invoice-Payment 1-to-1 assumption], [Partial payments require multiple payments per invoice.], [Updated relationship to 1-to-Many with `InvoicePartiallyPaidState`.], [Supported partial cash/card payment scenarios.],
     [A2 ServiceOffering-Branch conceptual link], [Branch availability check was not enforced during order entry.], [Added `Branch.registerServiceOffering()`; origin branch check deferred.], [Documented as a minor scope boundary in Section 3.2.],
   )),
@@ -58,7 +58,7 @@ The detailed design keeps the Entity-Control-Boundary structure from Assignment 
   styled-table((1.65fr, 2.35fr, 4.85fr), (
     th[Package / layer], th[Key classes], th[Responsibility],
     [`smartfm.ui`, `smartfm.ui.gui`], [`Launcher`, `SmartFmMainFrame`, five GUI panels], [Boundary layer. Collects and displays information only; it calls controller public operations and displays domain/controller validation messages.],
-    [`smartfm.application`], [`OrderProcessor`, `DispatchManager`, `ShipmentTracker`, `PaymentProcessor`, `Bootstrap`], [Application layer. The four GRASP Controllers receive system events, coordinate entities, publish observer events, and invoke the persistence gateway.],
+    [`smartfm.application`], [`OrderProcessor`, `DispatchManager`, `ShipmentTracker`, `PaymentProcessor`, `ReportProcessor`, `Bootstrap`], [Application layer. The four core transactional GRASP Controllers receive system events, coordinate entities, publish observer events, and invoke the persistence gateway; `ReportProcessor` separately coordinates administrative reporting (Task T12).],
     [`smartfm.domain.*` (`customer`, `order`, `shipment`, `billing`, `fleet`, `catalog`)], [`Customer`, `Order`, `Consignment`, `Shipment`, `Vehicle`, `Driver`, `Invoice`, `Payment`, `Receipt`, state/strategy interfaces], [Domain layer. Divided into six domain sub-packages. Owns business information, lifecycle state, pricing/payment behaviour, and entity-level validation.],
     [`smartfm.infrastructure`], [`DataStore`], [Infrastructure layer. Opens the local SQLite database and uses a versioned normalized schema for branches, people and resources, catalogue, orders, shipments, invoices, payments, receipts, and association links. It reads and replaces the aggregate rows inside one SQLite transaction; it is the only persistence mechanism.],
     [`smartfm.common`], [`Validators`, `Money`, `InvalidDataException`, `InvalidCredentialsException`], [Small shared utilities. Validation rules are reused by controllers/boundaries rather than copied between interfaces.],
@@ -407,20 +407,21 @@ A GRASP Controller is a non-UI object that handles incoming system events for a 
     [`DispatchManager`], [`assignShipment(orderId, vehicleId, driverId)`, `findAvailableVehicles()`, `findAvailableDrivers()`], [Checks branch affinity, capacity, and availability; creates `Shipment` and fires shipment-assigned event.], [Represents the dispatcher-facing dispatch use case; retains human decision.],
     [`ShipmentTracker`], [`confirmPickup()`, `confirmInTransit()`, `confirmDelivery()`], [Delegates state transitions to `ShipmentState` subclasses and records telemetry through `ITelemetrySource`.], [Receives tracking events and delegates transition legality to the state object.],
     [`PaymentProcessor`], [`submitPayment(invoiceId, amount, method)`], [Validates against outstanding balance, selects `IPaymentStrategy`, invokes `SimulatedGatewayAdapter` for card payments, settles invoices, and issues immutable `Receipt`.], [Represents payment processing; keeps gateway details out of domain models.],
+    [`ReportProcessor`], [`generateFinancialReport()`, `generateFleetReport()`, `generateBranchReport()`, `generateOrderSummaryReport()`], [Aggregates metrics across `Branch`, `Order`, `Shipment`, `Payment`, `Vehicle`, and `Driver` via `DataStore`; compiles the result into a `Report`.], [Represents the administrative reporting use case (Task T12), separate from the four core transactional controllers.],
   )),
   caption: [Explicit GRASP Controller allocation.],
 ) <tbl-grasp-controller>
 
 == Lifecycle, patterns, and dynamic constraints
 
-We used the State pattern to enforce lifecycle rules so that illegal transitions are caught at the point of request rather than discovered later in corrupted data. Each lifecycle uses a polymorphic class hierarchy: concrete state subclasses override only the transitions they permit and inherit default rejection from the abstract base. Orders move from Submitted to Approved, Rejected (with reason), or Cancelled. Shipments progress strictly from Assigned to Picked Up to In Transit to Delivered, with no shortcuts. Invoices go from Unpaid to Partially Paid or Paid depending on the outstanding balance, and Payments go from Pending to Verified to Settled, or to Failed at any point before settlement. Any out-of-order transition throws an `InvalidDataException`. For example, a shipment cannot be marked Delivered without first passing through Picked Up and In Transit. An early bug during development confirmed this guard was worth the sixteen concrete State subclasses across the four hierarchies.
+We used the State pattern to enforce lifecycle rules so that illegal transitions are caught at the point of request rather than discovered later in corrupted data. Each lifecycle uses a polymorphic class hierarchy: concrete state subclasses override only the transitions they permit and inherit default rejection from the abstract base. Orders move from Submitted to Approved, Rejected (with reason), or Cancelled. Shipments progress strictly from Assigned to Picked Up to In Transit to Delivered, with no shortcuts. Invoices go from Unpaid to Partially Paid or Paid depending on the outstanding balance, and Payments go from Pending to Verified to Settled, or to Failed at any point before settlement. Any out-of-order transition throws an `InvalidDataException`. For example, a shipment cannot be marked Delivered without first passing through Picked Up and In Transit. An early bug during development confirmed this guard was worth the fifteen concrete State subclasses across the four hierarchies.
 
 #figure(
   styled-table((1.7fr, 3.15fr, 4.1fr), (
     th[Pattern / GRASP principle], th[Concrete implementation], th[Reason and resulting constraint],
-    [State], [Four abstract hierarchies with sixteen concrete subclasses (e.g. `OrderSubmittedState`, `ShipmentAssignedState`, `InvoiceUnpaidState`, `PaymentPendingState`)], [Moves rules out of large conditional controllers. Each state accepts only its legal next operation.],
+    [State], [Four abstract hierarchies with fifteen concrete subclasses (e.g. `OrderSubmittedState`, `ShipmentAssignedState`, `InvoiceUnpaidState`, `PaymentPendingState`)], [Moves rules out of large conditional controllers. Each state accepts only its legal next operation.],
     [Observer], [Listener interfaces for order approval, invoice creation, and shipment assignment], [Coordinates operational areas without a publisher referring to a concrete subscriber class.],
-    [Strategy], [`IPaymentStrategy` (`CashPaymentStrategy` vs `GatewayPaymentStrategy`); `IPricingStrategy` / `PricingTariff`], [`PaymentProcessor` delegates cash and card processing through `IPaymentStrategy`. `IPricingStrategy` / `PricingTariff` provides pluggable pricing via `calculateQuote(distanceKm, totalWeightKg, isPeakPeriod)` (Section 3.2).],
+    [Strategy], [`IPaymentStrategy` (`CashPaymentStrategy` vs `GatewayPaymentStrategy`); `IPricingStrategy` / `PricingTariff`], [`PaymentProcessor` delegates cash and card processing through `IPaymentStrategy`. `IPricingStrategy` is defined for pluggable pricing but is not currently invoked polymorphically: `OrderProcessor` calls the concrete `PricingTariff.calculateQuote(distanceKm, totalWeightKg, isPeakPeriod)` directly (see Section 4.3).],
     [Adapter / Protected Variations], [`SimulatedGatewayAdapter` (implements `IPaymentGateway`), `ManualTelemetrySource` (implements `ITelemetrySource`)], [External systems are accessed through stable interfaces (`verifyTransaction()`, `stageLocation()`/`readLocation()`), allowing replacement with real integrations later.],
     [Creator / Information Expert], [Controllers create aggregates; entities/states own transition knowledge], [Construction occurs where inputs are available; invariant checks occur where knowledge resides.],
     [Indirection / Low Coupling], [`DataStore` and listener interfaces], [Controllers do not expose JDBC/SQL or concrete cross-controller dependencies to UI/domain layers.],
@@ -560,11 +561,12 @@ We chose to persist after every state mutation rather than only on exit, so that
 
 SmartFM uses two complementary architecture styles: a *Layered Architecture* for structural organisation and an *Event-Driven Architecture* for cross-subsystem communication. We chose this combination because a pure layered design would have forced `OrderProcessor` to call `DispatchManager` directly when an order is approved, creating tight coupling between two independent business areas. Adding event connectors at the application layer keeps the dispatch decision with the human operator while notifying the tracking subsystem automatically.
 
-The system has four architectural components:
+The system has five architectural components:
 1. *Presentation:* `SmartFmMainFrame` and the Swing panel classes (`smartfm.ui.gui`).
 2. *Order and Billing:* `OrderProcessor`, `PaymentProcessor`, and their domain entities.
 3. *Fleet and Dispatch:* `DispatchManager`, `ShipmentTracker`, and their domain entities.
-4. *Persistence:* The `DataStore` database gateway.
+4. *Reporting:* `ReportProcessor` and its `Report` aggregation across the other components' entities.
+5. *Persistence:* The `DataStore` database gateway.
 
 These components communicate through two connector types. *Synchronous downward calls* follow the layer ordering: UI views call controller methods, controllers coordinate domain entities, and controllers call `DataStore`. *Event connectors* operate within the application layer: order approval, invoice creation, and shipment assignment publish events through narrow listener interfaces, so no publisher needs to know which concrete class handles the event.
 
@@ -605,7 +607,7 @@ Implementation exposed five structural flaws in the initial Assignment 2 model:
 2. *Invoice-to-Payment Multiplicity Constraint:* Assignment 2 enforced a strict 1-to-1 relationship between `Invoice` and `Payment`. This broke when implementing partial payments (\$200 cash deposit followed by \$300 card payment). We resolved this by changing the multiplicity to 1-to-Many and introducing `InvoicePartiallyPaidState`.
 3. *Strategy Pattern Collaborator Omission:* The CRC cards documented `ServiceOffering` as delegating pricing to `IPricingStrategy`, but omitted `IPricingStrategy` from `ServiceOffering`'s collaborators. Consequently, `OrderProcessor` called `PricingTariff.calculateQuote()` directly, leaving the strategy indirection unused in runtime code.
 4. *Omission of Persistence Lifecycle Triggers:* Deferred persistence caused confusion regarding *when* state changes should be saved. Without design guidance, we had to establish a transactional policy ensuring `DataStore` flushes to SQLite after every state mutation rather than on application exit.
-5. *Deferred Administrative Scope:* Assignment 2 omitted administrative reporting, leaving no design for system-wide metric aggregation. We added `Report`, `ReportProcessor`, and `ReportPanel` during implementation to satisfy Task T12.
+5. *Deferred Administrative Scope:* Assignment 2 already scoped a `Report` data-holder class (Assumption A13; CRC card, Appendix A) but left it without a coordinating controller or UI, so system-wide metric aggregation could not run. We added the missing `ReportProcessor` controller and `ReportPanel` UI during implementation to satisfy Task T12.
 
 == Level of interpretation required
 
@@ -688,7 +690,7 @@ SmartFM is implemented in Java 26 using a standard Maven project layout. The des
     [`src/main/java/smartfm/common/`], [Shared utility classes: money formatting, regex validators, and domain exceptions.],
     [`src/main/java/smartfm/domain/`], [Six domain sub-packages owning entities, lifecycle state hierarchies, and strategy/adapter contracts.],
     [`src/test/java/smartfm/`], [JUnit 5 unit, integration, and E2E test suite covering all layers.],
-    [`src/main/java/smartfm/application/`], [Four GRASP Controllers, observer interfaces, bootstrap, and ID generation.],
+    [`src/main/java/smartfm/application/`], [Four core GRASP Controllers plus `ReportProcessor`, observer interfaces, bootstrap, and ID generation.],
     [`src/main/java/smartfm/infrastructure/`], [The `DataStore` SQLite persistence gateway.],
     [`src/main/java/smartfm/ui/`, `src/main/java/smartfm/ui/gui/`], [Swing desktop GUI presentation layer over application controllers.],
     [`tools/java/`], [GUI screenshot automation driver.],
@@ -784,7 +786,7 @@ System testing covers compiler linting, automated unit and integration tests, sc
 *Automated testing:* The JUnit 5 test suite (`src/test/java/smartfm/`) produces 76 test executions via `mvn test`, distributed across 17 test classes containing 65 written test methods (including four `@ParameterizedTest` methods that expand to multiple cases). The tests cover:
 1. *Common Layer:* Currency formatting, timestamp rendering, and field validators (`MoneyTest`, `ValidatorsTest`).
 2. *Domain Layer:* Entity invariants, cargo aggregation, state transitions, receipt issuance, and pricing tariffs across domain packages.
-3. *Application Layer:* Event dispatch, shipment creation, resource allocation, and payment settlement across all four controllers.
+3. *Application Layer:* Event dispatch, shipment creation, resource allocation, and payment settlement across the four core transactional controllers, plus report generation assertions against `ReportProcessor` embedded in `OrderProcessorTest` (see note below).
 4. *Infrastructure Layer:* Saving and reloading normalized aggregates in SQLite (`DataStoreTest`).
 5. *Core E2E Workflows:* Full business flow execution from registration to payment settlement and database recovery (`SmartFmEndToEndTest`).
 6. *Swing GUI E2E:* Interactive GUI testing on the Event Dispatch Thread covering validation errors, dispatch, and window closure (`SmartFmGuiEndToEndTest`).
@@ -792,6 +794,8 @@ System testing covers compiler linting, automated unit and integration tests, sc
 8. *Coverage Helpers:* GUI component event handling and edge-case form input helpers (`SmartFmGuiCoverageTest`).
 
 All 76 test executions complete in under 5 seconds with zero failures.
+
+*Note on reporting coverage:* Unlike the four core controllers, `ReportProcessor` has no dedicated test class or acceptance scenario; its only automated coverage is a handful of assertions embedded inside `OrderProcessorTest`. This is a known gap given T12 is marked "Full" in Table 6.
 
 *Scenario-Based Acceptance Testing:* The five scenarios below exercise the core use cases. Each scenario validates both correct and invalid inputs, state transitions, and persistence.
 
@@ -815,7 +819,7 @@ After running Scenario 05, `data/smartfm.db` contains committed database rows fo
 
 SmartFM shows that a well-structured Assignment 2 design can turn into working software with relatively few structural surprises. The core entities, State patterns, and controller responsibilities survived implementation largely intact. The changes we made (adding persistence, replacing vague observer descriptions with typed listeners, and relaxing the Invoice-Payment multiplicity) came from concrete problems found during coding rather than design trends.
 
-The system compiles cleanly, passes all 76 automated test executions, and runs the four business workflows end-to-end through its Swing GUI. Deferred features such as report generation and service browsing can be added later without restructuring the layered architecture. If we were to start this project again, we would spend more time on persistence contracts, UI sketches, and scenario walkthroughs during the design phase. However, the overall approach of GRASP Controllers, lifecycle State classes, and event-driven subsystem communication turned out to be a solid foundation.
+The system compiles cleanly, passes all 76 automated test executions, and runs the four core business workflows plus administrative reporting end-to-end through its Swing GUI. Deferred features such as service browsing can be added later without restructuring the layered architecture. If we were to start this project again, we would spend more time on persistence contracts, UI sketches, and scenario walkthroughs during the design phase. However, the overall approach of GRASP Controllers, lifecycle State classes, and event-driven subsystem communication turned out to be a solid foundation.
 
 = References
 
