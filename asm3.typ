@@ -23,7 +23,7 @@
 
 SmartFM is a fleet-logistics desktop application that our team designed in Assignment 2 and has now built as a working Java 26 system. It handles customer registration, order placement, dispatch, shipment tracking, billing, and payment. This report covers how we turned the high-level design into running code, what changed along the way, and what we learned.
 
-The report follows the assignment structure: Section 1 lists revisions to Assignment 2; Section 2 presents the detailed class design, sequence diagrams, and architecture; Section 3 reflects on design quality and lessons learned; Section 4 provides code mappings, build instructions, execution evidence, and test results. The full Assignment 2 submission is attached in Appendix A.
+The report follows the assignment structure: Section 2 records revisions to Assignment 2; Section 3 presents the detailed class design, sequence diagrams, and architecture; Section 4 reflects on design quality and lessons learned; Section 5 provides code mappings, build instructions, execution evidence, and test results. The full Assignment 2 submission is attached in Appendix A.
 
 We implemented four core transactional business areas: Order Management, Fleet Dispatch, Shipment Tracking, and Billing & Payment, plus a fifth administrative reporting area (Task T12) coordinated by `ReportProcessor`. A Swing GUI (`smartfm.ui.gui`) provides operational forms that delegate all requests to the application controllers. The UI does not contain business rules; it only collects input and displays results.
 
@@ -40,7 +40,7 @@ Because no formal marker feedback was provided, Table 1 records revisions made d
     [A2 lifecycle state tables], [State rules required programmatic enforcement.], [Built concrete State classes for Order, Shipment, Invoice, and Payment.], [Illegal state transitions throw `InvalidDataException`.],
     [A2 adapter interfaces], [System needed testable concrete adapters.], [Added `ManualTelemetrySource` and `SimulatedGatewayAdapter`.], [External integrations remain replaceable.],
     [A2 narrative observer descriptions], [Callbacks risked concrete controller coupling.], [Defined narrow interfaces (`OrderApprovedListener`, `InvoiceCreatedListener`, `ShipmentAssignedListener`).], [Maintained low coupling between application controllers.],
-    [A2 wide conceptual scope], [`Report`'s data-holder design was already scoped in Assignment 2 (Assumption A13; CRC card, Appendix A), but no coordinating controller or UI existed.], [Added the missing `ReportProcessor` controller and `ReportPanel` UI tab to realize the existing `Report` design.], [Implemented Task T12 with zero changes to existing transactional layers.],
+    [A2 wide conceptual scope], [`Report`'s data-holder design was already scoped in Assignment 2 (Assumption A13; CRC card, Appendix A), but no coordinating controller or UI existed.], [Added the missing `ReportProcessor` controller and `ReportPanel` UI tab to realize the existing `Report` design.], [Implemented Task T12 with zero changes to existing transactional production code.],
     [A2 Invoice-Payment 1-to-1 assumption], [Partial payments require multiple payments per invoice.], [Updated relationship to 1-to-Many with `InvoicePartiallyPaidState`.], [Supported partial cash/card payment scenarios.],
     [A2 ServiceOffering-Branch conceptual link], [A2 described branch coverage conceptually but specified no enforcement point.], [Added `Branch.registerServiceOffering()` and made `OrderProcessor.submitOrder()` reject orders whose origin branch is outside `ServiceOffering.isAvailableAt(...)`.], [Origin-branch coverage is now enforced at order entry (Section 3.2).],
   )),
@@ -53,36 +53,88 @@ Because no formal marker feedback was provided, Table 1 records revisions made d
 
 The detailed design keeps the Entity-Control-Boundary structure from Assignment 2. Domain entities store business data and enforce state rules. Application controllers coordinate user requests. UI boundaries handle input and display output, and infrastructure classes isolate database persistence. This follows several GRASP principles (Controller, Information Expert, Low Coupling, Indirection) as described by Larman @larman2004uml.
 
-#colbreak()
 #figure(
   styled-table((1.65fr, 2.35fr, 4.85fr), (
     th[Package / layer], th[Key classes], th[Responsibility],
     [`smartfm.ui`, `smartfm.ui.gui`], [`Launcher`, `SmartFmMainFrame`, `GuiContext`, six GUI panels], [Boundary layer. Collects and displays information only; it calls controller public operations and displays domain/controller validation messages.],
     [`smartfm.application`], [`OrderProcessor`, `DispatchManager`, `ShipmentTracker`, `PaymentProcessor`, `ReportProcessor`, `Bootstrap`], [Application layer. The four core transactional GRASP Controllers receive system events, coordinate entities, publish observer events, and invoke the persistence gateway; `ReportProcessor` separately coordinates administrative reporting (Task T12).],
-    [`smartfm.domain.*` (`customer`, `order`, `shipment`, `billing`, `fleet`, `catalog`)], [`Customer`, `Order`, `Consignment`, `Shipment`, `Vehicle`, `Driver`, `Invoice`, `Payment`, `Receipt`, `SystemConfiguration`, state/strategy interfaces], [Domain layer. Divided into six domain sub-packages. Owns business information, lifecycle state, pricing/payment behaviour, and entity-level validation. `SystemConfiguration` (in `catalog`) is a read-only startup data-holder.],
+    [`smartfm.domain.*` (`customer`, `order`, `shipment`, `billing`, `fleet`, `catalog`, `report`)], [`Customer`, `Order`, `Consignment`, `Shipment`, `Vehicle`, `Driver`, `Invoice`, `Payment`, `Receipt`, `Report`, `ReportCategory`, `SystemConfiguration`, state/strategy interfaces], [Domain layer. Divided into seven domain sub-packages. Owns business information, lifecycle state, pricing/payment behaviour, and entity-level validation. `SystemConfiguration` (in `catalog`) is a read-only startup data-holder.],
     [`smartfm.infrastructure`], [`DataStore`], [Infrastructure layer. Opens the local SQLite database and uses a versioned normalized schema for branches, people and resources, catalogue, orders, shipments, invoices, payments, receipts, and association links. It reads and replaces the aggregate rows inside one SQLite transaction; it is the only persistence mechanism.],
     [`smartfm.common`], [`Validators`, `Money`, `InvalidDataException`, `InvalidCredentialsException`], [Small shared utilities. Validation rules are reused by controllers/boundaries rather than copied between interfaces.],
   )),
   caption: [Layered package design and responsibility allocation.],
 ) <tbl-layered-design>
 
-
+The complete model does not fit legibly on a single page, so we present it as three complementary views: the application and infrastructure view (@fig-class-controllers), the domain entity view (@fig-final-class-model), and the lifecycle and enumeration view (@fig-state-hierarchies). Together they contain every class in the implementation.
 
 #figure(
   mermaid("
   classDiagram
       direction TB
-  
-      %% ============ Interfaces ============
-      class IPricingStrategy {
-          <<interface>>
-          +calculateQuote(distanceKm, totalWeightKg, isPeakPeriod) double
+
+      %% ============ Application controllers ============
+      class OrderProcessor {
+          <<control>>
+          -DataStore store
+          +registerCustomer(name, gender, dob, phone, email, address) Customer
+          +submitOrder(custId, svcId, originId, destId, distKm, pickupDate, consignments) Order
+          +approveOrder(orderId) Invoice
+          +rejectOrder(orderId, reason) void
+          +cancelOrder(orderId) void
       }
-      class IPaymentStrategy {
-          <<interface>>
-          +process(paymentId, amount) boolean
-          +getMethod() PaymentMethod
+      class DispatchManager {
+          <<control>>
+          -DataStore store
+          +assignShipment(orderId, vehicleId, driverId) Shipment
+          +findAvailableVehicles(branchId, weightKg, volumeM3) List
+          +findAvailableDrivers(branchId) List
+          +onOrderApproved(order) void
       }
+      class ShipmentTracker {
+          <<control>>
+          -DataStore store
+          -ITelemetrySource telemetry
+          +confirmPickup(shipmentId, location) void
+          +confirmInTransit(shipmentId, location) void
+          +confirmDelivery(shipmentId, location) void
+          +onShipmentAssigned(shipment) void
+      }
+      class PaymentProcessor {
+          <<control>>
+          -DataStore store
+          -IPaymentGateway gateway
+          +submitPayment(invoiceId, amount, method) Receipt
+          +onInvoiceCreated(invoice) void
+      }
+      class ReportProcessor {
+          <<control>>
+          -DataStore store
+          +generateFinancialReport(from, to) Report
+          +generateFleetReport(from, to) Report
+          +generateBranchReport(branchId, from, to) Report
+          +generateOrderSummaryReport(from, to) Report
+      }
+      class Bootstrap {
+          -DataStore store
+          +run() void
+          +getOrderProcessor() OrderProcessor
+      }
+
+      %% ============ Observer interfaces ============
+      class OrderApprovedListener {
+          <<interface>>
+          +onOrderApproved(order) void
+      }
+      class InvoiceCreatedListener {
+          <<interface>>
+          +onInvoiceCreated(invoice) void
+      }
+      class ShipmentAssignedListener {
+          <<interface>>
+          +onShipmentAssigned(shipment) void
+      }
+
+      %% ============ Adapter interfaces and implementations ============
       class ITelemetrySource {
           <<interface>>
           +stageLocation(shipmentId, rawLocation) void
@@ -92,8 +144,242 @@ The detailed design keeps the Entity-Control-Boundary structure from Assignment 
           <<interface>>
           +verifyTransaction(paymentId, amount) boolean
       }
-  
-      %% ============ State hierarchies (State pattern) ============
+      class IPaymentStrategy {
+          <<interface>>
+          +process(paymentId, amount) boolean
+          +getMethod() PaymentMethod
+      }
+      class ManualTelemetrySource {
+          -Map staged
+          +stageLocation(shipmentId, rawLocation) void
+          +readLocation(shipmentId) String
+      }
+      class SimulatedGatewayAdapter {
+          +verifyTransaction(paymentId, amount) boolean
+      }
+      class CashPaymentStrategy {
+          +process(paymentId, amount) boolean
+          +getMethod() PaymentMethod
+      }
+      class GatewayPaymentStrategy {
+          -IPaymentGateway gateway
+          -PaymentMethod method
+          +process(paymentId, amount) boolean
+          +getMethod() PaymentMethod
+      }
+
+      %% ============ Persistence gateway ============
+      class DataStore {
+          <<repository>>
+          +loadFrom(databasePath) DataStore$
+          +saveTo(databasePath) void
+          +customers() Map
+          +orders() Map
+          +shipments() Map
+          +invoices() Map
+          +payments() Map
+      }
+
+      %% ============ Realization ============
+      OrderApprovedListener <|.. DispatchManager
+      InvoiceCreatedListener <|.. PaymentProcessor
+      ShipmentAssignedListener <|.. ShipmentTracker
+      ITelemetrySource <|.. ManualTelemetrySource
+      IPaymentGateway <|.. SimulatedGatewayAdapter
+      IPaymentStrategy <|.. CashPaymentStrategy
+      IPaymentStrategy <|.. GatewayPaymentStrategy
+
+      %% ============ Wiring and connectors ============
+      Bootstrap ..> OrderProcessor
+      Bootstrap ..> DispatchManager
+      Bootstrap ..> ShipmentTracker
+      Bootstrap ..> PaymentProcessor
+      Bootstrap ..> ReportProcessor
+      OrderProcessor --> OrderApprovedListener
+      OrderProcessor --> InvoiceCreatedListener
+      DispatchManager --> ShipmentAssignedListener
+      ShipmentTracker --> ITelemetrySource
+      PaymentProcessor --> IPaymentStrategy
+      PaymentProcessor --> IPaymentGateway
+      GatewayPaymentStrategy --> IPaymentGateway
+      OrderProcessor --> DataStore
+      DispatchManager --> DataStore
+      ShipmentTracker --> DataStore
+      PaymentProcessor --> DataStore
+      ReportProcessor --> DataStore
+  "),
+  caption: [Application and infrastructure view: the five GRASP Controllers, the three Observer listener interfaces they publish through, the adapter and strategy interfaces with their concrete implementations, and the `DataStore` persistence gateway. The domain entities each controller coordinates are listed in @tbl-grasp-controller and detailed in @fig-final-class-model.],
+) <fig-class-controllers>
+
+#figure(
+  mermaid("
+  classDiagram
+      direction TB
+
+      %% ============ People ============
+      class Person {
+          <<abstract>>
+          #String id
+          #String fullName
+          #String phone
+          #String email
+      }
+      class Customer {
+          -CustomerStatus status
+          -List orderIds
+          +recordOrder(orderId) void
+      }
+      class StaffMember {
+          -StaffRole role
+          -String homeBranchId
+          +getRole() StaffRole
+      }
+      class Driver {
+          -String licenseNumber
+          -DutyState dutyState
+          +setDutyState(state) void
+          +isAvailable() boolean
+      }
+
+      %% ============ Commercial and ordering ============
+      class Order {
+          -String id
+          -OrderState state
+          -double quotedAmount
+          -List consignments
+          +approve() void
+          +reject(reason) void
+          +cancel() void
+          +addConsignment(c) void
+      }
+      class Consignment {
+          -String id
+          -double weightKg
+          -double volumeM3
+          +getWeightKg() double
+      }
+      class ServiceOffering {
+          -String id
+          -String name
+          -String pricingTariffId
+          +addCoveredBranch(branchId) void
+          +isAvailableAt(branchId) boolean
+      }
+      class IPricingStrategy {
+          <<interface>>
+          +calculateQuote(distanceKm, totalWeightKg, isPeakPeriod) double
+      }
+      class PricingTariff {
+          -double baseRate
+          -double perKmRate
+          -double perKgRate
+          +calculateQuote(distanceKm, totalWeightKg, isPeakPeriod) double
+      }
+
+      %% ============ Fleet and resources ============
+      class Branch {
+          -String id
+          -String name
+          -String city
+          +registerVehicle(id) void
+          +registerDriver(id) void
+          +registerServiceOffering(id) void
+      }
+      class Vehicle {
+          -String id
+          -double maxWeightCapacityKg
+          -VehicleStatus status
+          +canCarry(weightKg, volumeM3) boolean
+          +isAvailable() boolean
+      }
+      class Shipment {
+          -String id
+          -ShipmentState state
+          -String lastKnownLocation
+          +pickUp() void
+          +transit() void
+          +deliver() void
+          +updateLocation(loc) void
+      }
+
+      %% ============ Billing and settlement ============
+      class Invoice {
+          -String id
+          -double totalAmount
+          -double outstandingBalance
+          -InvoiceState state
+          +applyPayment(paymentId, amount) void
+          +isSettled() boolean
+      }
+      class Payment {
+          -String id
+          -double amount
+          -PaymentState state
+          +verify() void
+          +settle() void
+          +fail(reason) void
+      }
+      class Receipt {
+          -String id
+          -LocalDateTime issuedAt
+          +toString() String
+      }
+
+      %% ============ Reporting and configuration ============
+      class Report {
+          -String id
+          -String title
+          -ReportCategory category
+          -Map metrics
+          -String content
+          +getMetrics() Map
+      }
+      class ReportCategory {
+          <<enumeration>>
+          FINANCIAL
+          FLEET
+          BRANCH
+          ORDER_SUMMARY
+      }
+      class SystemConfiguration {
+          <<data-holder>>
+          -int maxFailedLoginAttempts
+          -double defaultPeakMultiplier
+          -int sessionTimeoutMinutes
+          +bootstrap() SystemConfiguration$
+      }
+
+      %% ============ Generalization and realization ============
+      Person <|-- Customer
+      Person <|-- StaffMember
+      StaffMember <|-- Driver
+      IPricingStrategy <|.. PricingTariff
+
+      %% ============ Associations ============
+      Customer \"1\" --> \"0..*\" Order
+      Order \"1\" *-- \"1..*\" Consignment
+      Order \"1\" --> \"1\" ServiceOffering
+      Order \"1\" --> \"0..1\" Shipment
+      Order \"1\" --> \"0..1\" Invoice
+      ServiceOffering \"1\" --> \"1\" PricingTariff
+      ServiceOffering \"1\" --> \"1..*\" Branch
+      Branch \"1\" o-- \"1..*\" Vehicle
+      Branch \"1\" o-- \"1..*\" Driver
+      Shipment \"1\" --> \"1\" Vehicle
+      Shipment \"1\" --> \"1\" Driver
+      Invoice \"1\" *-- \"0..*\" Payment
+      Payment \"1\" --> \"0..1\" Receipt
+      Report ..> ReportCategory
+  "),
+  caption: [Domain entity view: the `Person` hierarchy, the commercial, fleet and billing entities with their final multiplicities (including the `Invoice` to `Payment` change from 1-to-1 to 1-to-Many), the `ServiceOffering` branch-coverage association added in Assignment 3, and the read-only `SystemConfiguration` data-holder. The lifecycle state objects referenced by `Order`, `Shipment`, `Invoice` and `Payment` are expanded in @fig-state-hierarchies.],
+) <fig-final-class-model>
+
+
+#figure(
+  grid(columns: (1fr, 1fr), gutter: 10pt, row-gutter: 14pt,
+    mermaid("
+  classDiagram
+      direction LR
       class OrderState {
           <<abstract>>
           +approve(order) void
@@ -105,7 +391,16 @@ The detailed design keeps the Entity-Control-Boundary structure from Assignment 
       class OrderApprovedState { +name() = Approved }
       class OrderRejectedState { +name() = Rejected }
       class OrderCancelledState { +name() = Cancelled }
-  
+      class Order
+      OrderState <|-- OrderSubmittedState
+      OrderState <|-- OrderApprovedState
+      OrderState <|-- OrderRejectedState
+      OrderState <|-- OrderCancelledState
+      Order --> OrderState
+  "),
+    mermaid("
+  classDiagram
+      direction LR
       class ShipmentState {
           <<abstract>>
           +pickUp(shipment) void
@@ -117,7 +412,16 @@ The detailed design keeps the Entity-Control-Boundary structure from Assignment 
       class ShipmentPickedUpState { +name() = Picked Up }
       class ShipmentInTransitState { +name() = In Transit }
       class ShipmentDeliveredState { +name() = Delivered }
-  
+      class Shipment
+      ShipmentState <|-- ShipmentAssignedState
+      ShipmentState <|-- ShipmentPickedUpState
+      ShipmentState <|-- ShipmentInTransitState
+      ShipmentState <|-- ShipmentDeliveredState
+      Shipment --> ShipmentState
+  "),
+    mermaid("
+  classDiagram
+      direction LR
       class InvoiceState {
           <<abstract>>
           +applyPayment(invoice, amount) void
@@ -126,7 +430,15 @@ The detailed design keeps the Entity-Control-Boundary structure from Assignment 
       class InvoiceUnpaidState { +name() = Unpaid }
       class InvoicePartiallyPaidState { +name() = Partially Paid }
       class InvoicePaidState { +name() = Paid }
-  
+      class Invoice
+      InvoiceState <|-- InvoiceUnpaidState
+      InvoiceState <|-- InvoicePartiallyPaidState
+      InvoiceState <|-- InvoicePaidState
+      Invoice --> InvoiceState
+  "),
+    mermaid("
+  classDiagram
+      direction LR
       class PaymentState {
           <<abstract>>
           +verify(payment) void
@@ -138,8 +450,21 @@ The detailed design keeps the Entity-Control-Boundary structure from Assignment 
       class PaymentVerifiedState { +name() = Verified }
       class PaymentSettledState { +name() = Settled }
       class PaymentFailedState { +name() = Failed }
-  
-      %% ============ Enumerations ============
+      class Payment
+      PaymentState <|-- PaymentPendingState
+      PaymentState <|-- PaymentVerifiedState
+      PaymentState <|-- PaymentSettledState
+      PaymentState <|-- PaymentFailedState
+      Payment --> PaymentState
+  "),
+  ),
+  caption: [Lifecycle view: the four abstract State classes and their fifteen concrete subclasses, one hierarchy per quadrant (order, shipment, invoice, payment). Each concrete subclass overrides only the transitions it permits and inherits `InvalidDataException` rejection from its abstract base, so the owning entity never needs a transition conditional. The `InvoicePartiallyPaidState` in the lower-left hierarchy is the subclass added in Assignment 3 for partial payments.],
+) <fig-state-hierarchies>
+
+#figure(
+  mermaid("
+  classDiagram
+      direction TB
       class DutyState {
           <<enumeration>>
           OFF_DUTY
@@ -169,271 +494,23 @@ The detailed design keeps the Entity-Control-Boundary structure from Assignment 
           CARD
           DIGITAL_WALLET
       }
-  
-      %% ============ Controllers ============
-      class OrderProcessor {
-          <<control>>
-          -DataStore store
-          +registerCustomer(name, gender, dob, phone, email, address) Customer
-          +submitOrder(custId, svcId, originId, destId, distKm, pickupDate, consignments) Order
-          +approveOrder(orderId) Invoice
-          +rejectOrder(orderId, reason) void
-          +cancelOrder(orderId) void
-      }
-      class DispatchManager {
-          <<control>>
-          -DataStore store
-          +assignShipment(orderId, vehicleId, driverId) Shipment
-          +findAvailableVehicles(branchId, weightKg, volumeM3) List
-          +findAvailableDrivers(branchId) List
-          +onOrderApproved(order) void
-      }
-      class ShipmentTracker {
-          <<control>>
-          -DataStore store
-          -ITelemetrySource telemetry
-          +confirmPickup(shipmentId, location) void
-          +confirmInTransit(shipmentId, location) void
-          +confirmDelivery(shipmentId, location) void
-      }
-      class PaymentProcessor {
-          <<control>>
-          -DataStore store
-          -IPaymentGateway gateway
-          +submitPayment(invoiceId, amount, method) Receipt
-      }
-      class ReportProcessor {
-          <<control>>
-          -DataStore store
-          +generateFinancialReport(from, to) Report
-          +generateFleetReport(from, to) Report
-          +generateBranchReport(branchId, from, to) Report
-          +generateOrderSummaryReport(from, to) Report
-      }
-  
-      %% ============ Infrastructure ============
-      class DataStore {
-          <<repository>>
-          -Map customers
-          -Map orders
-          +loadFrom(databasePath) DataStore$
-          +saveTo(databasePath) void
-          +customers() Map
-          +orders() Map
-      }
-      class ManualTelemetrySource {
-          -Map staged
-          +stageLocation(shipmentId, rawLocation) void
-          +readLocation(shipmentId) String
-      }
-      class SimulatedGatewayAdapter {
-          +verifyTransaction(paymentId, amount) boolean
-      }
-  
-      %% ============ People ============
-      class Person {
-          <<abstract>>
-          #String id
-          #String fullName
-          #String phone
-          #String email
-      }
-      class Customer {
-          -CustomerStatus status
-          -List orderIds
-          +recordOrder(orderId) void
-      }
-      class StaffMember {
-          -StaffRole role
-          -String homeBranchId
-          +getRole() StaffRole
-      }
-      class Driver {
-          -String licenseNumber
-          -DutyState dutyState
-          +setDutyState(state) void
-          +isAvailable() boolean
-      }
-  
-      %% ============ Core Domain ============
-      class Order {
-          -String id
-          -OrderState state
-          -double quotedAmount
-          -List consignments
-          +approve() void
-          +reject(reason) void
-          +cancel() void
-          +addConsignment(c) void
-      }
-      class Consignment {
-          -String id
-          -double weightKg
-          -double volumeM3
-          +getWeightKg() double
-      }
-      class ServiceOffering {
-          -String id
-          -String name
-          -String pricingTariffId
-          +isAvailableAt(branchId) boolean
-      }
-      class PricingTariff {
-          -double baseRate
-          -double perKmRate
-          -double perKgRate
-          +calculateQuote(distanceKm, totalWeightKg, isPeakPeriod) double
-      }
-      class Branch {
-          -String id
-          -String name
-          -String city
-          +registerVehicle(id) void
-          +registerDriver(id) void
-      }
-      class Vehicle {
-          -String id
-          -double maxWeightCapacityKg
-          -VehicleStatus status
-          +canCarry(weightKg, volumeM3) boolean
-          +isAvailable() boolean
-      }
-      class Shipment {
-          -String id
-          -ShipmentState state
-          -String lastKnownLocation
-          +pickUp() void
-          +transit() void
-          +deliver() void
-          +updateLocation(loc) void
-      }
-      class Invoice {
-          -String id
-          -double totalAmount
-          -double outstandingBalance
-          -InvoiceState state
-          +applyPayment(paymentId, amount) void
-          +isSettled() boolean
-      }
-      class Payment {
-          -String id
-          -double amount
-          -PaymentState state
-          +verify() void
-          +settle() void
-          +fail(reason) void
-      }
-      class Receipt {
-          -String id
-          -LocalDateTime issuedAt
-          +toString() String
-      }
-      class Report {
-          -String id
-          -String title
-          -ReportCategory category
-          -Map metrics
-          -String content
-          +getMetrics() Map
-      }
-      class ReportCategory {
-          <<enumeration>>
-          FINANCIAL
-          FLEET
-          BRANCH
-          ORDER_SUMMARY
-      }
-      class SystemConfiguration {
-          <<data-holder>>
-          -int maxFailedLoginAttempts
-          -double defaultPeakMultiplier
-          -int sessionTimeoutMinutes
-          +bootstrap() SystemConfiguration$
-      }
-  
-      %% ============ State Generalization ============
-      OrderState <|-- OrderSubmittedState
-      OrderState <|-- OrderApprovedState
-      OrderState <|-- OrderRejectedState
-      OrderState <|-- OrderCancelledState
-      ShipmentState <|-- ShipmentAssignedState
-      ShipmentState <|-- ShipmentPickedUpState
-      ShipmentState <|-- ShipmentInTransitState
-      ShipmentState <|-- ShipmentDeliveredState
-      InvoiceState <|-- InvoiceUnpaidState
-      InvoiceState <|-- InvoicePartiallyPaidState
-      InvoiceState <|-- InvoicePaidState
-      PaymentState <|-- PaymentPendingState
-      PaymentState <|-- PaymentVerifiedState
-      PaymentState <|-- PaymentSettledState
-      PaymentState <|-- PaymentFailedState
-  
-      %% ============ Generalization ============
-      Person <|-- Customer
-      Person <|-- StaffMember
-      StaffMember <|-- Driver
-  
-      %% ============ Realization ============
-      IPricingStrategy <|.. PricingTariff
-      IPaymentStrategy <|.. CashPaymentStrategy
-      IPaymentStrategy <|.. GatewayPaymentStrategy
-      ITelemetrySource <|.. ManualTelemetrySource
-      IPaymentGateway <|.. SimulatedGatewayAdapter
-  
-      %% ============ Controller dependencies ============
-      OrderProcessor ..> Customer
-      OrderProcessor ..> Order
-      OrderProcessor ..> Invoice
-      OrderProcessor ..> DataStore
-      DispatchManager ..> Branch
-      DispatchManager ..> Shipment
-      DispatchManager ..> DataStore
-      ShipmentTracker ..> Shipment
-      ShipmentTracker ..> DataStore
-      ShipmentTracker --> ITelemetrySource
-      PaymentProcessor ..> Payment
-      PaymentProcessor ..> Invoice
-      PaymentProcessor ..> DataStore
-      PaymentProcessor --> IPaymentGateway
-      PaymentProcessor --> IPaymentStrategy
-      ReportProcessor ..> DataStore
-      ReportProcessor ..> Report
-      Report ..> ReportCategory
-  
-      %% ============ Domain associations ============
-      Customer \"1\" --> \"0..*\" Order
-      Order \"1\" *-- \"1..*\" Consignment
-      Order \"1\" --> \"1\" ServiceOffering
-      Order \"1\" --> \"0..1\" Shipment
-      Order \"1\" --> \"0..1\" Invoice
-      ServiceOffering \"1\" --> \"1\" PricingTariff
-
-      Branch \"1\" o-- \"1..*\" Vehicle
-      Branch \"1\" o-- \"1..*\" Driver
-      Shipment \"1\" --> \"1\" Vehicle
-      Shipment \"1\" --> \"1\" Driver
-
-      Invoice \"1\" *-- \"0..*\" Payment
-      Payment \"1\" --> \"0..1\" Receipt
-  
-      %% ============ State usage ============
-      Order --> OrderState
-      Shipment --> ShipmentState
-      Invoice --> InvoiceState
-      Payment --> PaymentState
+      class Driver
+      class Vehicle
+      class StaffMember
+      class Payment
       Driver ..> DutyState
       Vehicle ..> VehicleStatus
       StaffMember ..> StaffRole
       Payment ..> PaymentMethod
   "),
-  caption: [Final implementation class diagram showing the five application controllers, domain entities, state and strategy patterns, and persistence relationships.],
-) <fig-final-class-model>
+  caption: [The four domain enumerations and the entities that own them. `StaffRole.DRIVER` is set by the `Driver` constructor rather than independently, so it cannot diverge from the `Driver` subclass (Section 3.5.1).],
+) <fig-enumerations>
+
 
 == GRASP Controller assignments
 
 A GRASP Controller is a non-UI object that handles incoming system events for a use-case session or operational domain @larman2004uml. SmartFM has one application controller per business area. UI event handlers do not construct domain entities or change state directly. Instead, `Launcher` creates a `Bootstrap` instance that wires controllers and event listeners. UI actions then pass all requests to these controller operations.
 
-#colbreak()
 #figure(
   styled-table((1.75fr, 2.25fr, 3.0fr, 1.95fr), (
     th[GRASP Controller], th[System events received], th[Delegation and collaboration], th[Why this is the Controller],
@@ -469,7 +546,7 @@ We used the State pattern to enforce lifecycle rules so that illegal transitions
 
 `DataStore` is the persistence gateway, filling the role that Assumption A1 from Assignment 2 left open, while keeping domain models independent of database logic. It connects to the embedded SQLite database (`data/smartfm.db`) using the pinned Xerial JDBC driver. All database operations use prepared statements within explicit transactions.
 
-When saving, `DataStore` atomically updates the normalized aggregate tables. When loading, it reconstructs domain objects, relationships, and state hierarchies in dependency order. The system checks for schema version 3 on startup and rejects incompatible database versions, requiring a database reset if an older schema is found.
+When saving, `DataStore` atomically updates the normalized aggregate tables. When loading, it reconstructs domain objects, relationships, and state hierarchies in dependency order. The system checks the stored schema version on startup and rejects any version other than 3, requiring a database reset before the application will run.
 
 #figure(
   image("images/db.png", width: 95%),
@@ -494,7 +571,7 @@ When saving, `DataStore` atomically updates the normalized aggregate tables. Whe
 
 == Selected use-case sequence diagrams
 
-The four sequence diagrams below show the main implemented use cases. Each diagram shows the controller methods that the GUI boundary calls. Section 4.1 maps these interactions to source code, and Section 4.3 provides execution evidence for each flow.
+The four sequence diagrams below show the main implemented use cases. Each diagram shows the controller methods that the GUI boundary calls. Section 5.1 maps these interactions to source code, and Section 5.2.1 provides execution evidence for each flow.
 
 #figure(
   mermaid("
@@ -573,7 +650,7 @@ sequenceDiagram
 
 === Class-level changes and non-changes
 
-All fifteen core domain classes from Assignment 2 (Customer, Order, Consignment, Shipment, Vehicle, Driver, Branch, ServiceOffering, PricingTariff, Invoice, Payment, Receipt, SystemConfiguration, and the Person hierarchy) are in the final implementation with the same responsibilities. `SystemConfiguration` is discussed no further below because it carried over verbatim as the passive data-holder Assignment 2 specified: `Bootstrap` loads the single instance as startup Step 1 and nothing mutates it afterwards. The four State hierarchies and core interfaces (`IPaymentGateway`, `IPaymentStrategy`, `IPricingStrategy`, `ITelemetrySource`) were also kept. The only additions are components that Assignment 2 explicitly deferred: `DataStore` for persistence, concrete adapters, `Bootstrap` for startup wiring, listener interfaces, and the UI boundary classes. Table 1 in Section 1 lists every revision; the paragraphs below explain the reasoning for the main changes.
+All fifteen core domain classes from Assignment 2 (Customer, Order, Consignment, Shipment, Vehicle, Driver, Branch, ServiceOffering, PricingTariff, Invoice, Payment, Receipt, SystemConfiguration, and the Person hierarchy) are in the final implementation with the same responsibilities. `SystemConfiguration` is discussed no further below because it carried over verbatim as the passive data-holder Assignment 2 specified: `Bootstrap` loads the single instance as startup Step 1 and nothing mutates it afterwards. The four State hierarchies and core interfaces (`IPaymentGateway`, `IPaymentStrategy`, `IPricingStrategy`, `ITelemetrySource`) were also kept. The additions are components that Assignment 2 deferred or left uncoordinated: `DataStore` for persistence, concrete adapters, `Bootstrap` for startup wiring, the `IdGenerator` helper, listener interfaces, the UI boundary classes, and the `ReportProcessor` controller that Assignment 2's `Report` CRC card specified without an owner (Section 4.3). Table 1 in Section 2 lists every revision; the paragraphs below explain the reasoning for the main changes.
 
 The main class-level change was updating the `Invoice` to `Payment` relationship from 1-to-1 to 1-to-Many. During implementation, we found that a customer paying a 500-dollar invoice with a 200-dollar cash deposit followed by a 300-dollar card payment was impossible under the 1-to-1 constraint. The new `InvoicePartiallyPaidState` tracks the remaining balance across multiple `Payment` objects. Each `Payment` remains immutable once settled.
 
@@ -593,7 +670,7 @@ Assignment 2 did not specify how the system starts up or when data is saved; tho
 
 On first launch, `DataStore` creates `data/smartfm.db`, builds all tables in a single transaction, and seeds demonstration records (two branches, three vehicles, three drivers, one dispatcher staff member, three service offerings, and their three pricing tariffs). On later launches it detects the existing schema (version 3) and loads domain objects directly. `Bootstrap` then constructs all five controllers and registers event listeners among the four transactional ones in dependency-safe order; `ReportProcessor` needs no listener registration because it only reads state. For example, `DispatchManager` is registered as an `OrderApprovedListener` on `OrderProcessor` before any orders can be approved.
 
-We chose to persist after every state mutation rather than only on exit, so that user actions are immediately committed to disk. The interaction order matters: order approval updates the order and creates the invoice _before_ notifying listeners, dispatch stages shipment and resource changes _before_ firing `shipmentAssigned`, and payments generate a receipt only _after_ settlement succeeds. These sequences match the diagrams in Section 2.4.
+We chose to persist after every state mutation rather than only on exit, so that user actions are immediately committed to disk. The interaction order matters: order approval updates the order and creates the invoice _before_ notifying listeners, dispatch stages shipment and resource changes _before_ firing `shipmentAssigned`, and payments generate a receipt only _after_ settlement succeeds. These sequences match the diagrams in Section 3.4.
 
 == Architecture style(s)
 
@@ -612,6 +689,37 @@ Three architectural constraints enforce these rules:
 1. Domain classes never import presentation or application packages (verified by the package structure).
 2. `DataStore` is accessed only through controllers. UI and domain classes never touch JDBC.
 3. Event publishers depend only on listener interfaces, not on concrete subscriber classes.
+
+#figure(
+  mermaid("
+flowchart TB
+    subgraph PL[Presentation Layer]
+        P[Presentation component<br/>SmartFmMainFrame + six Swing panels]
+    end
+    subgraph AL[Application Layer]
+        OB[Order and Billing component<br/>OrderProcessor, PaymentProcessor]
+        FD[Fleet and Dispatch component<br/>DispatchManager, ShipmentTracker]
+        RP[Reporting component<br/>ReportProcessor]
+    end
+    subgraph DL[Domain Layer]
+        DOM[Domain entities, four state hierarchies,<br/>strategy and adapter interfaces]
+    end
+    subgraph IL[Infrastructure Layer]
+        DS[Persistence component<br/>DataStore SQLite gateway]
+    end
+
+    P --> OB
+    P --> FD
+    P --> RP
+    OB --> DOM
+    FD --> DOM
+    OB --> DS
+    FD --> DS
+    RP --> DS
+    OB -.-> FD
+  "),
+  caption: [Component-and-connector view. Solid arrows are synchronous downward calls permitted by the layered style: presentation to application, application to domain, and application to the persistence gateway (`ReportProcessor` issues read-only queries only). The dashed arrow is the `orderApproved` event connector, realised by the `OrderApprovedListener` interface. Two further event connectors are internal to a component: `invoiceCreated` from `OrderProcessor` to `PaymentProcessor`, and `shipmentAssigned` from `DispatchManager` to `ShipmentTracker`. No arrow runs upward, and none bypasses the `DataStore` gateway.],
+) <fig-architecture-components>
 
 = Design Quality (Discussion of Assignment 2 Design)
 
@@ -670,7 +778,7 @@ Building SmartFM showed us where our Assignment 2 design held up well and where 
 
 *Define persistence contracts and layer boundaries early.* Deferring UI and persistence details made sense for a high-level Assignment 2 design, but it left architectural boundaries unmapped. Building the Infrastructure Layer (`DataStore` as a Pure Fabrication gateway) meant we had to figure out transaction boundaries, schema versioning, and validation rules in `smartfm.common.Validators` on the fly. Writing down a clear layered architecture contract (Presentation -> Application -> Domain -> Infrastructure) upfront would have saved significant interpretation effort.
 
-*Use automated tests to enforce architectural rules.* Running 76 automated JUnit 5 tests across 17 test classes gave us confidence during refactoring. Whenever we edited `DataStore` SQL queries or added `ReportProcessor`, the test suite immediately confirmed that domain state rules and controller workflows were intact. Working with Java 26 also gave us a practical lesson in runtime dependencies: SQLite JDBC requires `--enable-native-access=ALL-UNNAMED` to load native libraries, which we configured directly in our Makefile.
+*Use automated tests to enforce architectural rules.* Running 82 automated JUnit 5 tests across 18 test classes gave us confidence during refactoring. Whenever we edited `DataStore` SQL queries or added `ReportProcessor`, the test suite immediately confirmed that domain state rules and controller workflows were intact. Working with Java 26 also gave us a practical lesson in runtime dependencies: SQLite JDBC requires `--enable-native-access=ALL-UNNAMED` to load native libraries, which we configured directly in our Makefile.
 
 = Implementation and Testing
 
@@ -678,9 +786,9 @@ Building SmartFM showed us where our Assignment 2 design held up well and where 
 
 SmartFM is implemented in Java 26 using a standard Maven project layout. The design elements and sequence diagrams map directly to the source code.
 
-*Coding standards and metrics:* The codebase follows the Google Java Style Guide @google2023javastyle. It uses standard naming conventions, explicit control blocks, and concise Javadoc comments. Source files compile with zero lint warnings under `javac -Xlint:all`. We verify correctness with 76 automated JUnit 5 test executions across 17 test classes (including parameterized tests that expand to multiple cases), covering domain states, event pipelines, SQLite persistence, and Swing GUI components. All tests pass.
+*Coding standards and metrics:* The codebase follows the Google Java Style Guide @google2023javastyle. It uses standard naming conventions, explicit control blocks, and concise Javadoc comments. Source files compile with zero lint warnings under `javac -Xlint:all`. We verify correctness with 82 automated JUnit 5 test executions across 18 test classes (including parameterized tests that expand to multiple cases), covering domain states, event pipelines, SQLite persistence, and Swing GUI components. All tests pass.
 
-*Development environment:* We developed on Windows using PowerShell 7.6 and OpenJDK 26.0.2. The application needs Java 26 and the bundled library JARs in `lib/`. It runs locally without external database servers. You can build with Maven, GNU Make, or standard `javac`.
+*Development environment:* We developed on Windows 11 using IntelliJ IDEA as the IDE, PowerShell 7.6 as the terminal, and OpenJDK 26.0.2. The application needs Java 26 and the bundled library JARs in `lib/`. It runs locally without external database servers. You can build with Maven, GNU Make, or standard `javac`.
 
 #figure(
   styled-table((2.0fr, 2.65fr, 3.8fr), (
@@ -726,7 +834,7 @@ SmartFM is implemented in Java 26 using a standard Maven project layout. The des
     th[Project path], th[Purpose],
     [`pom.xml`], [Maven descriptor: Java `26` release target, pinned dependencies, SLF4J, JUnit Jupiter, and executable shaded JAR.],
     [`src/main/java/smartfm/common/`], [Shared utility classes: money formatting, regex validators, and domain exceptions.],
-    [`src/main/java/smartfm/domain/`], [Six domain sub-packages owning entities, lifecycle state hierarchies, strategy/adapter contracts, and `SystemConfiguration` (`domain/catalog`).],
+    [`src/main/java/smartfm/domain/`], [Seven domain sub-packages owning entities, lifecycle state hierarchies, strategy/adapter contracts, `Report` (`domain/report`), and `SystemConfiguration` (`domain/catalog`).],
     [`src/test/java/smartfm/`], [JUnit 5 unit, integration, and E2E test suite covering all layers.],
     [`src/main/java/smartfm/application/`], [Four core GRASP Controllers plus `ReportProcessor`, observer interfaces, bootstrap, and ID generation.],
     [`src/main/java/smartfm/infrastructure/`], [The `DataStore` SQLite persistence gateway.],
@@ -743,27 +851,27 @@ SmartFM is implemented in Java 26 using a standard Maven project layout. The des
 *Step-by-step setup and execution guide for external evaluators:*
 
 1. *Extract the submission package:* Unzip the project files to a local directory on any Windows, macOS, or Linux machine with JDK 26 installed.
-2. *Compile and run tests:* Open a terminal in the root directory and execute `mvn test` (or `make compile`). This validates Checkstyle compliance and executes all 76 automated JUnit 5 tests.
+2. *Compile and run tests:* Open a terminal in the `implementation/` directory and execute `mvn test`. This runs Checkstyle in the Maven `validate` phase (0 violations) and executes all 82 automated JUnit 5 tests. `make compile` is available if you only want to compile the sources with `-Xlint:all`.
 3. *Launch the GUI application:* Execute `make run` (or build the executable shaded JAR via `mvn package` and run `java --enable-native-access=ALL-UNNAMED -jar target/smartfm.jar`). The SmartFM desktop interface will launch on the first of six tabs, "Register Customer", followed by "1. Order Management", "2. Fleet Dispatch", "3. Shipment Tracking", "4. Billing and Payment", and "5. Reports".
 4. *Reset demonstration data (optional):* State is persisted locally in `data/smartfm.db`. To reset the system to its initial seeded state (2 branches, 3 vehicles, 3 drivers, 1 dispatcher, 3 service offerings, 3 pricing tariffs), execute `make reset` or delete `data/smartfm.db*`.
 
 *Build tool options summary:*
 
-#console(```
-# Option A: Maven Build & Execution (Recommended)
-mvn test          # Validates Checkstyle (0 errors) and runs all 76 JUnit 5 tests
-mvn package       # Compiles and packages self-contained executable JAR in target/
-java --enable-native-access=ALL-UNNAMED -jar target/smartfm.jar
+*Option A: Maven Build & Execution (Recommended)*
 
-# Option B: GNU Make Shortcuts
-make compile      # Compiles Java sources with -Xlint:all to target/classes
-make run          # Launches the desktop GUI interface
-make reset        # Cleans compiled classes and resets SQLite database state
-```)
++ `mvn test` — Validates Checkstyle (0 errors) and runs all 82 JUnit 5 tests.
++ `mvn package` — Compiles and packages the self-contained executable JAR in `target/`.
++ `java --enable-native-access=ALL-UNNAMED -jar target/smartfm.jar` — Launches the packaged application.
+
+*Option B: GNU Make Shortcuts*
+
++ `make compile` — Compiles Java sources with `-Xlint:all` to `target/classes`.
++ `make run` — Launches the desktop GUI interface.
++ `make reset` — Cleans compiled classes and resets SQLite database state.
 
 #figure(
   image("images/compilation.png", width: 95%),
-  caption: [Compilation and test execution evidence: Maven build executing all 76 automated JUnit 5 tests successfully and packaging the self-contained executable JAR.],
+  caption: [Compilation and test execution evidence: console transcript of `mvn clean package`, showing 0 Checkstyle violations, all 82 automated JUnit 5 tests passing across the 18 test classes, and the self-contained executable JAR being packaged. Absolute project paths are abbreviated to `<project>`.],
 ) <fig-compilation>
 
 === GUI execution screenshots
@@ -780,11 +888,24 @@ The screenshots below were generated by running `tools/java/smartfm/ui/gui/Scree
 
 #figure(
   grid(columns: (1fr, 1fr), gutter: 7pt,
+    image("images/02a_order_management_empty.png", width: 100%),
+    image("images/02b_order_management_invalid_weight.png", width: 100%),
+  ),
+  caption: [Empty Order Management tab at the start of Scenario 02 (left); a negative consignment weight is rejected before the consignment is added (right).],
+) <fig-gui-order-empty-validation>
+
+#figure(
+  grid(columns: (1fr, 1fr), gutter: 7pt,
     image("images/01c_customer_registration_success.png", width: 100%),
     image("images/02f_order_management_order_cancelled.png", width: 100%),
   ),
   caption: [Accepted customer input and successful account creation (left); a customer change of mind cancels an order without deleting unrelated data (right).],
 ) <fig-gui-input-change>
+
+#figure(
+  image("images/02g_order_management_order_approved.png", width: 75%),
+  caption: [Approval of order `ORD-0001` transitions it to Approved and creates invoice `INV-0001` with the quoted amount as its outstanding balance.],
+) <fig-gui-order-approved>
 
 #figure(
   grid(columns: (1fr, 1fr), gutter: 7pt,
@@ -801,6 +922,14 @@ The screenshots below were generated by running `tools/java/smartfm/ui/gui/Scree
   ),
   caption: [Successful delivery transition (left); simulated payment completion, receipt issuance, and a paid invoice (right). No real banking transaction is performed.],
 ) <fig-gui-completion>
+
+#figure(
+  grid(columns: (1fr, 1fr), gutter: 7pt,
+    image("images/05b_billing_payment_exceeds_balance_rejected.png", width: 100%),
+    image("images/05c_billing_payment_partial_success.png", width: 100%),
+  ),
+  caption: [A payment above the outstanding balance is rejected before any `Payment` object is created (left); an accepted partial cash deposit moves the invoice to Partially Paid and leaves the remaining balance outstanding (right).],
+) <fig-gui-payment-validation-partial>
 
 #figure(
   grid(columns: (1fr, 1fr), gutter: 7pt,
@@ -821,19 +950,19 @@ To regenerate all screenshots on a machine with JDK 26 and GNU Make, run `make s
 
 System testing covers compiler linting, automated unit and integration tests, scenario-based acceptance testing, and persistence verification.
 
-*Automated testing:* The JUnit 5 test suite (`src/test/java/smartfm/`) produces 76 test executions via `mvn test`, distributed across 17 test classes containing 65 written test methods (including four `@ParameterizedTest` methods that expand to multiple cases). The tests cover:
+*Automated testing:* The JUnit 5 test suite (`src/test/java/smartfm/`) produces 82 test executions via `mvn test`, distributed across 18 test classes containing 71 written test methods (including four `@ParameterizedTest` methods that expand to multiple cases). The tests cover:
 1. *Common Layer:* Currency formatting, timestamp rendering, and field validators (`MoneyTest`, `ValidatorsTest`).
 2. *Domain Layer:* Entity invariants, cargo aggregation, state transitions, receipt issuance, and pricing tariffs across domain packages.
-3. *Application Layer:* Event dispatch, shipment creation, resource allocation, and payment settlement across the four core transactional controllers, plus report generation assertions against `ReportProcessor` embedded in `OrderProcessorTest` (see note below).
+3. *Application Layer:* Event dispatch, shipment creation, resource allocation, and payment settlement across the four core transactional controllers, plus per-metric report assertions for all four report categories, category dispatch and date-range filtering (`ReportProcessorTest`; see note below).
 4. *Infrastructure Layer:* Saving and reloading normalized aggregates in SQLite (`DataStoreTest`).
 5. *Core E2E Workflows:* Full business flow execution from registration to payment settlement and database recovery (`SmartFmEndToEndTest`).
 6. *Swing GUI E2E:* Interactive GUI testing on the Event Dispatch Thread covering validation errors, dispatch, and window closure (`SmartFmGuiEndToEndTest`).
 7. *GUI Persistence:* Real-time SQLite auto-save verification upon UI state mutation (`GuiContextAndPersistenceTest`).
 8. *Coverage Helpers:* GUI component event handling and edge-case form input helpers (`SmartFmGuiCoverageTest`).
 
-All 76 test executions complete in under 5 seconds with zero failures.
+All 82 test executions complete in under 5 seconds with zero failures.
 
-*Note on reporting coverage:* T12 is marked "Full" in Table 6 on the basis of functional completeness: all four report categories generate correctly through `ReportPanel`. Its test depth is shallower than the four core areas, though. `ReportProcessor` has no dedicated test class and no acceptance scenario; its automated coverage is a set of assertions embedded in `OrderProcessorTest` that exercise each of the four `generate*Report()` methods and the `Report` entity. Adding a dedicated `ReportProcessorTest` with per-metric assertions is the first item on our follow-up list.
+*Note on reporting coverage:* T12 is marked "Full" in Table 7 on the basis of functional completeness: all four report categories generate correctly through `ReportPanel`. `ReportProcessorTest` covers it with six tests that drive real state through the transactional controllers first and then assert individual metric values: billed, collected and outstanding amounts per invoice state; vehicle, driver and shipment-state counts before and after delivery; branch-scoped versus all-branch resource counts; order-state and aggregate freight totals; category dispatch including the financial fallback; and date-range filtering. Reporting still has no scripted acceptance scenario in @tbl-scenario-summary, since it reads state rather than mutating it.
 
 *Scenario-Based Acceptance Testing:* The five scenarios below exercise the core use cases. Each scenario validates both correct and invalid inputs, state transitions, and persistence.
 
@@ -841,10 +970,10 @@ All 76 test executions complete in under 5 seconds with zero failures.
   styled-table((1.1fr, 1.8fr, 2.7fr, 3.1fr), (
     th[Scenario], th[Use Case / Area], th[User Entry & Verification Path], th[Evidence & Outcome],
     [01 Customer], [Customer Registration (UC-01)], [Enter details. Invalid phone/email is rejected; valid input creates customer record.], [Customer `CUS-0001` created (@fig-gui-empty-validation, @fig-gui-input-change).],
-    [02 Order], [Order Management (UC-02)], [Select customer/route. Negative cargo weight is rejected; submitted order can be cancelled or approved.], [Approval creates invoice `INV-0001` (@fig-gui-input-change).],
+    [02 Order], [Order Management (UC-02)], [Select customer/route. Negative cargo weight is rejected (@fig-gui-order-empty-validation); submitted order can be cancelled or approved.], [`ORD-0002` cancelled (@fig-gui-input-change); approving `ORD-0001` creates invoice `INV-0001` (@fig-gui-order-approved).],
     [03 Dispatch], [Fleet Dispatch (UC-03)], [Select approved order and compatible vehicle/driver. Missing order selection is rejected.], [Shipment `SHP-0001` created (@fig-gui-dispatch-tracking-validation).],
     [04 Tracking], [Shipment Tracking (UC-04)], [Record milestones. Delivery before pickup is rejected by State pattern; sequential progress succeeds.], [Delivered state achieved (@fig-gui-completion).],
-    [05 Payment], [Billing & Payment (UC-05)], [Select invoice and amount. Overpayment is rejected; partial cash deposit and card settlement succeed.], [Receipt issued, invoice Paid (@fig-gui-completion).],
+    [05 Payment], [Billing & Payment (UC-05)], [Select invoice and amount. Overpayment is rejected and a partial cash deposit is accepted (@fig-gui-payment-validation-partial); card settlement clears the balance.], [Receipt issued, invoice Paid (@fig-gui-completion).],
   )),
   caption: [Scenario instructions, validation paths, and execution evidence.],
 ) <tbl-scenario-summary>
@@ -857,7 +986,7 @@ After running Scenario 05, `data/smartfm.db` contains committed database rows fo
 
 SmartFM shows that a well-structured Assignment 2 design can turn into working software with relatively few structural surprises. The core entities, State patterns, and controller responsibilities survived implementation largely intact. The changes we made (adding persistence, replacing vague observer descriptions with typed listeners, and relaxing the Invoice-Payment multiplicity) came from concrete problems found during coding rather than design trends.
 
-The system compiles cleanly, passes all 76 automated test executions, and runs the four core business workflows plus administrative reporting end-to-end through its Swing GUI. Deferred features such as service browsing can be added later without restructuring the layered architecture. If we were to start this project again, we would spend more time on persistence contracts, UI sketches, and scenario walkthroughs during the design phase. However, the overall approach of GRASP Controllers, lifecycle State classes, and event-driven subsystem communication turned out to be a solid foundation.
+The system compiles cleanly, passes all 82 automated test executions, and runs the four core business workflows plus administrative reporting end-to-end through its Swing GUI. Deferred features such as service browsing can be added later without restructuring the layered architecture. If we were to start this project again, we would spend more time on persistence contracts, UI sketches, and scenario walkthroughs during the design phase. However, the overall approach of GRASP Controllers, lifecycle State classes, and event-driven subsystem communication turned out to be a solid foundation.
 
 = References
 
@@ -872,7 +1001,7 @@ Our full Assignment 2 Object Design submission is attached below. Any mention of
 #counter("appendix").update(1)
 #colbreak()
 
-#for page-num in range(1, 32) {
+#for page-num in range(1, 48) {
   place(top + left, dx: -50pt, dy: -55pt, image("asm2.pdf", page: page-num, width: 21.59cm, height: 27.94cm))
   colbreak()
 }
