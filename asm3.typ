@@ -18,7 +18,7 @@
 
 #outline(title: [Table of Contents])
 #colbreak()
-
+#set heading(numbering: "1.")
 = Introduction
 
 SmartFM is a fleet-logistics desktop application that our team designed in Assignment 2 and has now built as a working Java 26 system. It handles customer registration, order placement, dispatch, shipment tracking, billing, and payment. This report covers how we turned the high-level design into running code, what changed along the way, and what we learned.

@@ -124,16 +124,8 @@
   set list(indent: 10pt, body-indent: 9pt)
 
   // Configure headings.
-  set heading(numbering: "I.A.a)")
-  show heading: it => {
-    // Find out the final number of the heading counter.
-    let levels = counter(heading).get()
-    let deepest = if levels != () {
-      levels.last()
-    } else {
-      1
-    }
-
+  set heading(numbering: "1.1")
+  show heading: it => context {
     set text(12pt, weight: 400) // ヘディングのフォントサイズを指定
     if it.level == 1 {
       // First-level headings are centered smallcaps.
@@ -144,26 +136,26 @@
       show: block.with(above: 15pt, below: 13.75pt, sticky: true)
       show: smallcaps
       if it.numbering != none and not is-ack {
-        numbering("I.", deepest)
+        counter(heading).display()
         h(7pt, weak: true)
       }
       it.body
     } else if it.level == 2 {
-      // Second-level headings are run-ins.
+      // Second-level headings
       set par(first-line-indent: 0pt)
       set text(style: "italic")
       show: block.with(spacing: 20pt, sticky: true) // spacing: ヘディングのあとの行間スペース
       if it.numbering != none {
-        numbering("A.", deepest)
+        counter(heading).display()
         h(7pt, weak: true)
       }
       it.body
     } else [
-      // Third level headings are run-ins too, but different.
-      #if it.level == 3 {
-        numbering("a)", deepest)
-        [ ]
-      }
+      // Third level and deeper headings
+      #if it.numbering != none [
+        #counter(heading).display()
+        #h(4pt, weak: true)
+      ]
       _#(it.body):_
     ]
   }
