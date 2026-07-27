@@ -25,7 +25,7 @@ import smartfm.domain.shipment.Shipment;
  * GUI panel for Business Area 2: Fleet Dispatch. Reuses {@link
  * smartfm.application.DispatchManager} unchanged. Depends on Business
  * Area 1 (an order must already be Approved), matching the dependency
- * chain documented in asm3.typ Part V.C.
+ * chain documented in asm3.typ Section 3.2 (GRASP Controller assignments).
  */
 @SuppressWarnings({"serial", "this-escape"})
 public class FleetDispatchPanel extends JPanel {

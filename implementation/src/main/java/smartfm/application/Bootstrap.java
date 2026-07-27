@@ -20,8 +20,10 @@ import smartfm.infrastructure.DataStore;
  * controllers in an order that lets each later transactional controller
  * register as an Observer of the earlier ones before any transactional
  * object is created. {@code ReportProcessor} is constructed last and
- * registers no listeners because it only reads existing state. See asm3.typ Part I.C for the full justification of any
- * changes made to this sequence during implementation.
+ * registers no listeners because it only reads existing state. See
+ * asm3.typ Section 3.5.3 (Dynamic aspects: bootstrap and interactions)
+ * for the full justification of any changes made to this sequence
+ * during implementation.
  */
 public final class Bootstrap {
 

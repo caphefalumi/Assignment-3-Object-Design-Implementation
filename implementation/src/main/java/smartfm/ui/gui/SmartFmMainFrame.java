@@ -21,7 +21,7 @@ import javax.swing.UIManager;
  * workflows - customer registration, the four business areas, and
  * administrative reporting - as tabs in a single
  * window, each backed by application controller classes (Assignment 2 Section 5.3.3,
- * layered architecture; Assignment 3 Part IV, Presentation component).
+ * layered architecture; asm3.typ Section 3.6, Presentation component).
  */
 @SuppressWarnings({"serial", "this-escape"})
 public class SmartFmMainFrame extends JFrame {

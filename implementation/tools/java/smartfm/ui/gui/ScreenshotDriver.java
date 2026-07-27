@@ -45,7 +45,14 @@ public final class ScreenshotDriver {
   private void run() throws Exception {
     onEdt(() -> {
       frame = new SmartFmMainFrame(DATA_FILE);
+      // Deterministic capture size, independent of the capturing machine's
+      // screen. It is tall and wide enough that every panel's result banner
+      // and result table stay inside the captured window, so evidence images
+      // are never truncated by a scroll pane. ScreenshotCapture renders the
+      // frame off-screen, so this may exceed the physical display size.
+      frame.setSize(new java.awt.Dimension(1320, 1400));
       frame.setVisible(true);
+      frame.validate();
     });
     pause(400);
 
@@ -164,14 +171,19 @@ public final class ScreenshotDriver {
     clickButton(panel, "Submit Order");
     shoot("02e_order_management_second_order_submitted");
 
-    // Select the second order and cancel it (customer change of mind).
+    // Select the second order and cancel it (customer change of mind). The
+    // pending-orders section and its result banner sit below the order form,
+    // so scroll to them first; otherwise the captured window would show the
+    // form instead of the outcome of the click.
     onEdt(() -> selectTableRowContaining(panel.pendingOrdersTable(), "ORD-0002"));
     clickButton(panel, "Cancel Selected (change of mind)");
+    scrollToBottom(panel.contentScroll());
     shoot("02f_order_management_order_cancelled");
 
     // Select the first order and approve it, generating an invoice.
     onEdt(() -> selectTableRowContaining(panel.pendingOrdersTable(), "ORD-0001"));
     clickButton(panel, "Approve Selected");
+    scrollToBottom(panel.contentScroll());
     shoot("02g_order_management_order_approved");
   }
 
@@ -329,6 +341,15 @@ public final class ScreenshotDriver {
       }
     }
     return combo.getItemCount() > 0 ? combo.getItemAt(0) : null;
+  }
+
+  /** Scrolls a panel's outer scroll pane to the bottom so result banners are captured. */
+  private void scrollToBottom(javax.swing.JScrollPane scroll) throws Exception {
+    onEdt(() -> {
+      javax.swing.JScrollBar bar = scroll.getVerticalScrollBar();
+      bar.setValue(bar.getMaximum());
+    });
+    pause(150);
   }
 
   private void shoot(String name) throws Exception {

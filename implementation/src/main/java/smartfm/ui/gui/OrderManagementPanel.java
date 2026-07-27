@@ -90,6 +90,9 @@ public class OrderManagementPanel extends JPanel {
   private final JButton rejectBtn = UiStyle.dangerButton("Reject Selected");
   private final JButton cancelBtn = UiStyle.secondaryButton("Cancel Selected (change of mind)");
 
+  /** Outer scroll pane holding both sections; exposed for evidence capture. */
+  private JScrollPane contentScroll;
+
   public OrderManagementPanel(GuiContext context) {
     super(new BorderLayout(UiStyle.GAP_MEDIUM, UiStyle.GAP_MEDIUM));
     this.context = context;
@@ -106,11 +109,11 @@ public class OrderManagementPanel extends JPanel {
     mainContainer.add(Box.createVerticalStrut(UiStyle.GAP_MEDIUM));
     mainContainer.add(buildManageOrdersSection());
 
-    JScrollPane scrollPane = new JScrollPane(mainContainer);
-    scrollPane.setBorder(null);
-    scrollPane.getViewport().setBackground(UiStyle.WINDOW_BG);
-    scrollPane.getVerticalScrollBar().setUnitIncrement(16);
-    add(scrollPane, BorderLayout.CENTER);
+    contentScroll = new JScrollPane(mainContainer);
+    contentScroll.setBorder(null);
+    contentScroll.getViewport().setBackground(UiStyle.WINDOW_BG);
+    contentScroll.getVerticalScrollBar().setUnitIncrement(16);
+    add(contentScroll, BorderLayout.CENTER);
 
     pendingOrdersTable.getSelectionModel().addListSelectionListener(e -> updateActionButtonsEnabled());
     updateActionButtonsEnabled();
@@ -491,6 +494,10 @@ public class OrderManagementPanel extends JPanel {
   // Package-private accessors used only by ScreenshotDriver (evidence
   // capture for asm3.typ). Not part of the panel's public API.
   // ---------------------------------------------------------------
+
+  JScrollPane contentScroll() {
+    return contentScroll;
+  }
 
   JComboBox<String> customerCombo() {
     return customerCombo;
