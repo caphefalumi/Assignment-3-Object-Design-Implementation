@@ -4,7 +4,7 @@
 #show: ieee.with(
   title: "SWE30003 Assignment 3\nObject Design Implementation and Reflection",
   sub_title: "Smart Fleet Management System",
-  date_of_submission: "9th August 2026",
+  date_of_submission: "3rd August 2026",
   header-left: "Assignment 3",
   header-right: "Swinburne University of Technology",
   bibliography-file: none,
@@ -42,7 +42,7 @@ Because no formal marker feedback was provided, Table 1 records revisions made d
     [A2 narrative observer descriptions], [Callbacks risked concrete controller coupling.], [Defined narrow interfaces (`OrderApprovedListener`, `InvoiceCreatedListener`, `ShipmentAssignedListener`).], [Maintained low coupling between application controllers.],
     [A2 wide conceptual scope], [`Report`'s data-holder design was already scoped in Assignment 2 (Assumption A13; CRC card, Appendix A), but no coordinating controller or UI existed.], [Added the missing `ReportProcessor` controller and `ReportPanel` UI tab to realize the existing `Report` design.], [Implemented Task T12 with zero changes to existing transactional layers.],
     [A2 Invoice-Payment 1-to-1 assumption], [Partial payments require multiple payments per invoice.], [Updated relationship to 1-to-Many with `InvoicePartiallyPaidState`.], [Supported partial cash/card payment scenarios.],
-    [A2 ServiceOffering-Branch conceptual link], [Branch availability check was not enforced during order entry.], [Added `Branch.registerServiceOffering()`; origin branch check deferred.], [Documented as a minor scope boundary in Section 3.2.],
+    [A2 ServiceOffering-Branch conceptual link], [A2 described branch coverage conceptually but specified no enforcement point.], [Added `Branch.registerServiceOffering()` and made `OrderProcessor.submitOrder()` reject orders whose origin branch is outside `ServiceOffering.isAvailableAt(...)`.], [Origin-branch coverage is now enforced at order entry (Section 3.2).],
   )),
   caption: [Summary of design revisions from Assignment 2 to Assignment 3 based on implementation reviews.],
 ) <tbl-revision-summary>
@@ -57,9 +57,9 @@ The detailed design keeps the Entity-Control-Boundary structure from Assignment 
 #figure(
   styled-table((1.65fr, 2.35fr, 4.85fr), (
     th[Package / layer], th[Key classes], th[Responsibility],
-    [`smartfm.ui`, `smartfm.ui.gui`], [`Launcher`, `SmartFmMainFrame`, five GUI panels], [Boundary layer. Collects and displays information only; it calls controller public operations and displays domain/controller validation messages.],
+    [`smartfm.ui`, `smartfm.ui.gui`], [`Launcher`, `SmartFmMainFrame`, `GuiContext`, six GUI panels], [Boundary layer. Collects and displays information only; it calls controller public operations and displays domain/controller validation messages.],
     [`smartfm.application`], [`OrderProcessor`, `DispatchManager`, `ShipmentTracker`, `PaymentProcessor`, `ReportProcessor`, `Bootstrap`], [Application layer. The four core transactional GRASP Controllers receive system events, coordinate entities, publish observer events, and invoke the persistence gateway; `ReportProcessor` separately coordinates administrative reporting (Task T12).],
-    [`smartfm.domain.*` (`customer`, `order`, `shipment`, `billing`, `fleet`, `catalog`)], [`Customer`, `Order`, `Consignment`, `Shipment`, `Vehicle`, `Driver`, `Invoice`, `Payment`, `Receipt`, state/strategy interfaces], [Domain layer. Divided into six domain sub-packages. Owns business information, lifecycle state, pricing/payment behaviour, and entity-level validation.],
+    [`smartfm.domain.*` (`customer`, `order`, `shipment`, `billing`, `fleet`, `catalog`)], [`Customer`, `Order`, `Consignment`, `Shipment`, `Vehicle`, `Driver`, `Invoice`, `Payment`, `Receipt`, `SystemConfiguration`, state/strategy interfaces], [Domain layer. Divided into six domain sub-packages. Owns business information, lifecycle state, pricing/payment behaviour, and entity-level validation. `SystemConfiguration` (in `catalog`) is a read-only startup data-holder.],
     [`smartfm.infrastructure`], [`DataStore`], [Infrastructure layer. Opens the local SQLite database and uses a versioned normalized schema for branches, people and resources, catalogue, orders, shipments, invoices, payments, receipts, and association links. It reads and replaces the aggregate rows inside one SQLite transaction; it is the only persistence mechanism.],
     [`smartfm.common`], [`Validators`, `Money`, `InvalidDataException`, `InvalidCredentialsException`], [Small shared utilities. Validation rules are reused by controllers/boundaries rather than copied between interfaces.],
   )),
@@ -202,13 +202,22 @@ The detailed design keeps the Entity-Control-Boundary structure from Assignment 
           -IPaymentGateway gateway
           +submitPayment(invoiceId, amount, method) Receipt
       }
+      class ReportProcessor {
+          <<control>>
+          -DataStore store
+          +generateFinancialReport(from, to) Report
+          +generateFleetReport(from, to) Report
+          +generateBranchReport(branchId, from, to) Report
+          +generateOrderSummaryReport(from, to) Report
+      }
   
       %% ============ Infrastructure ============
       class DataStore {
           <<repository>>
-          -Connection conn
-          +load() void
-          +save() void
+          -Map customers
+          -Map orders
+          +loadFrom(databasePath) DataStore$
+          +saveTo(databasePath) void
           +customers() Map
           +orders() Map
       }
@@ -319,6 +328,28 @@ The detailed design keeps the Entity-Control-Boundary structure from Assignment 
           -LocalDateTime issuedAt
           +toString() String
       }
+      class Report {
+          -String id
+          -String title
+          -ReportCategory category
+          -Map metrics
+          -String content
+          +getMetrics() Map
+      }
+      class ReportCategory {
+          <<enumeration>>
+          FINANCIAL
+          FLEET
+          BRANCH
+          ORDER_SUMMARY
+      }
+      class SystemConfiguration {
+          <<data-holder>>
+          -int maxFailedLoginAttempts
+          -double defaultPeakMultiplier
+          -int sessionTimeoutMinutes
+          +bootstrap() SystemConfiguration$
+      }
   
       %% ============ State Generalization ============
       OrderState <|-- OrderSubmittedState
@@ -365,13 +396,16 @@ The detailed design keeps the Entity-Control-Boundary structure from Assignment 
       PaymentProcessor ..> DataStore
       PaymentProcessor --> IPaymentGateway
       PaymentProcessor --> IPaymentStrategy
+      ReportProcessor ..> DataStore
+      ReportProcessor ..> Report
+      Report ..> ReportCategory
   
       %% ============ Domain associations ============
-      Customer \"1\" --> \"1..*\" Order
+      Customer \"1\" --> \"0..*\" Order
       Order \"1\" *-- \"1..*\" Consignment
       Order \"1\" --> \"1\" ServiceOffering
       Order \"1\" --> \"0..1\" Shipment
-      Order \"1\" --> \"1\" Invoice
+      Order \"1\" --> \"0..1\" Invoice
       ServiceOffering \"1\" --> \"1\" PricingTariff
 
       Branch \"1\" o-- \"1..*\" Vehicle
@@ -379,7 +413,7 @@ The detailed design keeps the Entity-Control-Boundary structure from Assignment 
       Shipment \"1\" --> \"1\" Vehicle
       Shipment \"1\" --> \"1\" Driver
 
-      Invoice \"1\" *-- \"1..*\" Payment
+      Invoice \"1\" *-- \"0..*\" Payment
       Payment \"1\" --> \"0..1\" Receipt
   
       %% ============ State usage ============
@@ -392,7 +426,7 @@ The detailed design keeps the Entity-Control-Boundary structure from Assignment 
       StaffMember ..> StaffRole
       Payment ..> PaymentMethod
   "),
-  caption: [Final implementation class diagram showing application controllers, domain entities, state and strategy patterns, and persistence relationships.],
+  caption: [Final implementation class diagram showing the five application controllers, domain entities, state and strategy patterns, and persistence relationships.],
 ) <fig-final-class-model>
 
 == GRASP Controller assignments
@@ -403,7 +437,7 @@ A GRASP Controller is a non-UI object that handles incoming system events for a 
 #figure(
   styled-table((1.75fr, 2.25fr, 3.0fr, 1.95fr), (
     th[GRASP Controller], th[System events received], th[Delegation and collaboration], th[Why this is the Controller],
-    [`OrderProcessor`], [`registerCustomer()`, `submitOrder()`, `approveOrder()`, `rejectOrder()`, `cancelOrder()`], [Coordinates `Customer`, `Consignment`, `Order`, and `Invoice`; fires order-approved and invoice-created events.], [Represents the order-management use-case session; keeps UI free of domain rules.],
+    [`OrderProcessor`], [`registerCustomer()`, `submitOrder()`, `approveOrder()`, `rejectOrder()`, `cancelOrder()`], [Coordinates `Customer`, `Consignment`, `Order`, and `Invoice`; checks origin-branch service coverage via `ServiceOffering.isAvailableAt()`; fires order-approved and invoice-created events.], [Represents the order-management use-case session; keeps UI free of domain rules.],
     [`DispatchManager`], [`assignShipment(orderId, vehicleId, driverId)`, `findAvailableVehicles()`, `findAvailableDrivers()`], [Checks branch affinity, capacity, and availability; creates `Shipment` and fires shipment-assigned event.], [Represents the dispatcher-facing dispatch use case; retains human decision.],
     [`ShipmentTracker`], [`confirmPickup()`, `confirmInTransit()`, `confirmDelivery()`], [Delegates state transitions to `ShipmentState` subclasses and records telemetry through `ITelemetrySource`.], [Receives tracking events and delegates transition legality to the state object.],
     [`PaymentProcessor`], [`submitPayment(invoiceId, amount, method)`], [Validates against outstanding balance, selects `IPaymentStrategy`, invokes `SimulatedGatewayAdapter` for card payments, settles invoices, and issues immutable `Receipt`.], [Represents payment processing; keeps gateway details out of domain models.],
@@ -411,6 +445,8 @@ A GRASP Controller is a non-UI object that handles incoming system events for a 
   )),
   caption: [Explicit GRASP Controller allocation.],
 ) <tbl-grasp-controller>
+
+Assignment 2 linked `ServiceOffering` to `Branch` conceptually but never named the class responsible for enforcing that link. We assigned it to `ServiceOffering` as the Information Expert for its own branch coverage: `Branch.registerServiceOffering()` records which services a branch supports, `ServiceOffering.addCoveredBranch()` mirrors the association, and `ServiceOffering.isAvailableAt(branchId)` answers the question. `OrderProcessor.submitOrder()` calls this check before creating the `Order` and raises `InvalidDataException` when a customer selects a service their origin branch does not support, so an unsupported route can never reach the pricing or dispatch stages.
 
 == Lifecycle, patterns, and dynamic constraints
 
@@ -537,11 +573,13 @@ sequenceDiagram
 
 === Class-level changes and non-changes
 
-All fourteen core domain classes from Assignment 2 (Customer, Order, Consignment, Shipment, Vehicle, Driver, Branch, ServiceOffering, PricingTariff, Invoice, Payment, Receipt, and the Person hierarchy) are in the final implementation with the same responsibilities. The four State hierarchies and core interfaces (`IPaymentGateway`, `IPaymentStrategy`, `IPricingStrategy`, `ITelemetrySource`) were also kept. The only additions are components that Assignment 2 explicitly deferred: `DataStore` for persistence, concrete adapters, `Bootstrap` for startup wiring, listener interfaces, and the UI boundary classes. Table 1 in Section 1 lists every revision; the paragraphs below explain the reasoning for the main changes.
+All fifteen core domain classes from Assignment 2 (Customer, Order, Consignment, Shipment, Vehicle, Driver, Branch, ServiceOffering, PricingTariff, Invoice, Payment, Receipt, SystemConfiguration, and the Person hierarchy) are in the final implementation with the same responsibilities. `SystemConfiguration` is discussed no further below because it carried over verbatim as the passive data-holder Assignment 2 specified: `Bootstrap` loads the single instance as startup Step 1 and nothing mutates it afterwards. The four State hierarchies and core interfaces (`IPaymentGateway`, `IPaymentStrategy`, `IPricingStrategy`, `ITelemetrySource`) were also kept. The only additions are components that Assignment 2 explicitly deferred: `DataStore` for persistence, concrete adapters, `Bootstrap` for startup wiring, listener interfaces, and the UI boundary classes. Table 1 in Section 1 lists every revision; the paragraphs below explain the reasoning for the main changes.
 
 The main class-level change was updating the `Invoice` to `Payment` relationship from 1-to-1 to 1-to-Many. During implementation, we found that a customer paying a 500-dollar invoice with a 200-dollar cash deposit followed by a 300-dollar card payment was impossible under the 1-to-1 constraint. The new `InvoicePartiallyPaidState` tracks the remaining balance across multiple `Payment` objects. Each `Payment` remains immutable once settled.
 
 Features outside the four operational areas, such as authentication or role-based access (`StaffMember`, `StaffRole`, `SystemConfiguration`), remain in the domain model without UI bindings. We deferred these deliberately rather than deliver half-built features. The `Report` class and its coordinating controller `ReportProcessor` are fully implemented (Task T12) and exposed via the `ReportPanel` UI tab.
+
+One clarification on the `Person` hierarchy: `StaffRole` includes a `DRIVER` value alongside the five back-office roles, which could look like a second, competing way to represent a driver next to the `Driver` subclass. It is not. `Driver`'s constructor passes `StaffRole.DRIVER` to `super(...)` unconditionally, so the role is derived from the concrete class rather than set independently, and the two representations cannot diverge. `Driver` remains the single source of driver identity (it alone owns `licenseNumber` and `dutyState`, per Assignment 2 Simplification #1); the enum value exists only so that `StaffMember.getRole()` returns a total function for every person in the system.
 
 === Responsibilities and collaborators
 
@@ -553,7 +591,7 @@ The biggest responsibility-level refinement was replacing narrative observer cal
 
 Assignment 2 did not specify how the system starts up or when data is saved; those decisions were made during implementation.
 
-On first launch, `DataStore` creates `data/smartfm.db`, builds all tables in a single transaction, and seeds demonstration records (two branches, three vehicles, three drivers, and three service offerings). On later launches it detects the existing schema (version 3) and loads domain objects directly. `Bootstrap` then wires the four controllers and registers their event listeners in dependency-safe order. For example, `DispatchManager` is registered as an `OrderApprovedListener` on `OrderProcessor` before any orders can be approved.
+On first launch, `DataStore` creates `data/smartfm.db`, builds all tables in a single transaction, and seeds demonstration records (two branches, three vehicles, three drivers, one dispatcher staff member, three service offerings, and their three pricing tariffs). On later launches it detects the existing schema (version 3) and loads domain objects directly. `Bootstrap` then constructs all five controllers and registers event listeners among the four transactional ones in dependency-safe order; `ReportProcessor` needs no listener registration because it only reads state. For example, `DispatchManager` is registered as an `OrderApprovedListener` on `OrderProcessor` before any orders can be approved.
 
 We chose to persist after every state mutation rather than only on exit, so that user actions are immediately committed to disk. The interaction order matters: order approval updates the order and creates the invoice _before_ notifying listeners, dispatch stages shipment and resource changes _before_ firing `shipmentAssigned`, and payments generate a receipt only _after_ settlement succeeds. These sequences match the diagrams in Section 2.4.
 
@@ -675,7 +713,7 @@ SmartFM is implemented in Java 26 using a standard Maven project layout. The des
     [T9: Generate Receipt], [Full], [Immutable `Receipt` created automatically upon payment settlement.],
     [T10: Manage Vehicles], [Not implemented], [Vehicle records are seeded during bootstrap but no CRUD UI is provided.],
     [T11: Manage Drivers], [Not implemented], [Driver records are seeded during bootstrap but no CRUD UI is provided.],
-    [T12: Generate Reports], [Full], [Implemented via `ReportProcessor` and `ReportPanel` across financial, fleet, branch, and commercial order metrics.],
+    [T12: Generate Reports], [Full], [Implemented via `ReportProcessor` and `ReportPanel` across financial, fleet, branch, and commercial order metrics. Functionally complete but more lightly tested than the four core areas (Section 5.3).],
     [T13: Update Customer], [Not implemented], [Customer status can be changed programmatically but no update UI is provided.],
     [T14: Cancel/Modify Order], [Partial], [Cancellation is implemented; modification of submitted order fields is not supported.],
     [T15: Manage Config], [Not implemented], [`SystemConfiguration` is loaded at startup but no admin UI for changing values is provided.],
@@ -688,7 +726,7 @@ SmartFM is implemented in Java 26 using a standard Maven project layout. The des
     th[Project path], th[Purpose],
     [`pom.xml`], [Maven descriptor: Java `26` release target, pinned dependencies, SLF4J, JUnit Jupiter, and executable shaded JAR.],
     [`src/main/java/smartfm/common/`], [Shared utility classes: money formatting, regex validators, and domain exceptions.],
-    [`src/main/java/smartfm/domain/`], [Six domain sub-packages owning entities, lifecycle state hierarchies, and strategy/adapter contracts.],
+    [`src/main/java/smartfm/domain/`], [Six domain sub-packages owning entities, lifecycle state hierarchies, strategy/adapter contracts, and `SystemConfiguration` (`domain/catalog`).],
     [`src/test/java/smartfm/`], [JUnit 5 unit, integration, and E2E test suite covering all layers.],
     [`src/main/java/smartfm/application/`], [Four core GRASP Controllers plus `ReportProcessor`, observer interfaces, bootstrap, and ID generation.],
     [`src/main/java/smartfm/infrastructure/`], [The `DataStore` SQLite persistence gateway.],
@@ -706,8 +744,8 @@ SmartFM is implemented in Java 26 using a standard Maven project layout. The des
 
 1. *Extract the submission package:* Unzip the project files to a local directory on any Windows, macOS, or Linux machine with JDK 26 installed.
 2. *Compile and run tests:* Open a terminal in the root directory and execute `mvn test` (or `make compile`). This validates Checkstyle compliance and executes all 76 automated JUnit 5 tests.
-3. *Launch the GUI application:* Execute `make run` (or build the executable shaded JAR via `mvn package` and run `java --enable-native-access=ALL-UNNAMED -jar target/smartfm.jar`). The SmartFM desktop interface will launch displaying Tab 1 ("1. Customer Registration").
-4. *Reset demonstration data (optional):* State is persisted locally in `data/smartfm.db`. To reset the system to its initial seeded state (2 branches, 3 vehicles, 3 drivers, 3 service offerings), execute `make reset` or delete `data/smartfm.db*`.
+3. *Launch the GUI application:* Execute `make run` (or build the executable shaded JAR via `mvn package` and run `java --enable-native-access=ALL-UNNAMED -jar target/smartfm.jar`). The SmartFM desktop interface will launch on the first of six tabs, "Register Customer", followed by "1. Order Management", "2. Fleet Dispatch", "3. Shipment Tracking", "4. Billing and Payment", and "5. Reports".
+4. *Reset demonstration data (optional):* State is persisted locally in `data/smartfm.db`. To reset the system to its initial seeded state (2 branches, 3 vehicles, 3 drivers, 1 dispatcher, 3 service offerings, 3 pricing tariffs), execute `make reset` or delete `data/smartfm.db*`.
 
 *Build tool options summary:*
 
@@ -795,7 +833,7 @@ System testing covers compiler linting, automated unit and integration tests, sc
 
 All 76 test executions complete in under 5 seconds with zero failures.
 
-*Note on reporting coverage:* Unlike the four core controllers, `ReportProcessor` has no dedicated test class or acceptance scenario; its only automated coverage is a handful of assertions embedded inside `OrderProcessorTest`. This is a known gap given T12 is marked "Full" in Table 6.
+*Note on reporting coverage:* T12 is marked "Full" in Table 6 on the basis of functional completeness: all four report categories generate correctly through `ReportPanel`. Its test depth is shallower than the four core areas, though. `ReportProcessor` has no dedicated test class and no acceptance scenario; its automated coverage is a set of assertions embedded in `OrderProcessorTest` that exercise each of the four `generate*Report()` methods and the `Report` entity. Adding a dedicated `ReportProcessorTest` with per-metric assertions is the first item on our follow-up list.
 
 *Scenario-Based Acceptance Testing:* The five scenarios below exercise the core use cases. Each scenario validates both correct and invalid inputs, state transitions, and persistence.
 
@@ -813,7 +851,7 @@ All 76 test executions complete in under 5 seconds with zero failures.
 
 
 
-After running Scenario 05, `data/smartfm.db` contains committed database rows for two customers, three orders, one delivered shipment, one paid invoice, two settled payments, and two receipts. The table schema is set to version 3 with foreign keys enabled. Re-launching the application verifies that application state persists correctly across separate process runs.
+After running Scenario 05, `data/smartfm.db` contains committed database rows for two customers, two orders (`ORD-0001` Approved, `ORD-0002` Cancelled), one delivered shipment, one paid invoice with a zero outstanding balance, two settled payments (one cash, one card), and two receipts. The table schema is set to version 3 with foreign keys enabled. Re-launching the application verifies that application state persists correctly across separate process runs.
 
 = Conclusion
 
@@ -829,7 +867,7 @@ The system compiles cleanly, passes all 76 automated test executions, and runs t
 
 == Appendix A: Assignment 2 Object Design (Complete Submission) <appendix-asm2>
 
-The complete Assignment 2 Object Design submission is attached below so this report is self-contained. References such as “Assignment 2 lifecycle table” and “Assignment 2 Assumption A1” refer to this attached document.
+Our full Assignment 2 Object Design submission is attached below. Any mention of Assignment 2 in this report, such as the lifecycle table or Assumption A1, points to this document.
 
 #counter("appendix").update(1)
 #colbreak()

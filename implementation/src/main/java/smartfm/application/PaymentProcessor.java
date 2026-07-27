@@ -25,8 +25,8 @@ import smartfm.infrastructure.DataStore;
  * 2 Section 5.2.1), and acts as the Factory Method for {@code Payment}
  * and {@code Receipt} (Assignment 2 Section 5.1.1).
  *
- * <p>This is one of the four controllers implemented for Assignment 3's
- * "Business Area 4: Billing and Payment". Depends on Business Area 1
+ * <p>This is one of the four core transactional controllers implemented
+ * for Assignment 3's "Business Area 4: Billing and Payment". Depends on Business Area 1
  * (an invoice is only known to this controller once {@code
  * OrderProcessor} approves an order and publishes the invoice-created
  * event). As required by the Assignment 3 brief, no real banking

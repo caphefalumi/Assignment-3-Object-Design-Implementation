@@ -20,8 +20,8 @@ import smartfm.infrastructure.DataStore;
  * ITelemetrySource} adapter (Adapter pattern, Assignment 2 Section
  * 5.3.2) so it never depends on a specific GPS vendor protocol.
  *
- * <p>This is one of the four controllers implemented for Assignment 3's
- * "Business Area 3: Shipment Tracking". Depends on Business Area 2
+ * <p>This is one of the four core transactional controllers implemented
+ * for Assignment 3's "Business Area 3: Shipment Tracking". Depends on Business Area 2
  * (a shipment must already exist and have an assigned vehicle/driver).
  */
 public class ShipmentTracker implements ShipmentAssignedListener {

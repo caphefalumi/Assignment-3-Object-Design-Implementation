@@ -22,8 +22,8 @@ import smartfm.infrastructure.DataStore;
  * 5.3.1), and as the Factory Method for {@code Order} and {@code
  * Invoice} (Assignment 2 Section 5.1.1).
  *
- * <p>This is one of the four controllers implemented for Assignment 3's
- * "Business Area 1: Order Management".
+ * <p>This is one of the four core transactional controllers implemented
+ * for Assignment 3's "Business Area 1: Order Management".
  */
 public class OrderProcessor {
 

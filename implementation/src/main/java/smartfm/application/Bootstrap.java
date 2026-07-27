@@ -16,10 +16,11 @@ import smartfm.infrastructure.DataStore;
 /**
  * Drives the exact startup order specified in Assignment 2 Section 6
  * (Bootstrap Process): configuration, then branches, then fleet and
- * personnel resources, then the commercial catalogue, then the four
- * controllers in an order that lets each later controller register as
- * an Observer of the earlier ones before any transactional object is
- * created. See asm3.typ Part I.C for the full justification of any
+ * personnel resources, then the commercial catalogue, then the five
+ * controllers in an order that lets each later transactional controller
+ * register as an Observer of the earlier ones before any transactional
+ * object is created. {@code ReportProcessor} is constructed last and
+ * registers no listeners because it only reads existing state. See asm3.typ Part I.C for the full justification of any
  * changes made to this sequence during implementation.
  */
 public final class Bootstrap {

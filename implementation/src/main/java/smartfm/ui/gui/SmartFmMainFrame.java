@@ -17,8 +17,9 @@ import javax.swing.UIManager;
 /**
  * Graphical (Swing) user interface for the SmartFM Assignment 3
  * implementation, satisfying the Assignment 3 brief's requirement for
- * "a simple user interface (graphical or textual)". Presents five core
- * workflows - customer registration plus the four business areas - as tabs in a single
+ * "a simple user interface (graphical or textual)". Presents six core
+ * workflows - customer registration, the four business areas, and
+ * administrative reporting - as tabs in a single
  * window, each backed by application controller classes (Assignment 2 Section 5.3.3,
  * layered architecture; Assignment 3 Part IV, Presentation component).
  */

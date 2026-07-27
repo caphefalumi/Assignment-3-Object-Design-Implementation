@@ -20,8 +20,8 @@ import smartfm.infrastructure.DataStore;
  * (Observer pattern) and acts as the Factory Method for {@code
  * Shipment} (Assignment 2 Section 5.1.1).
  *
- * <p>This is one of the four controllers implemented for Assignment 3's
- * "Business Area 2: Fleet Dispatch". Depends on Business Area 1 (an
+ * <p>This is one of the four core transactional controllers implemented
+ * for Assignment 3's "Business Area 2: Fleet Dispatch". Depends on Business Area 1 (an
  * order must already be Approved before a shipment can be created;
  * Assumption A6), which is the "dependency between implemented areas"
  * the Assignment 3 brief asks groups to consider explicitly.
